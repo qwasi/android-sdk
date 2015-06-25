@@ -1,4 +1,3 @@
-//apply plugin: 'java'
 apply plugin: 'maven'
 
 //android support
@@ -44,6 +43,24 @@ dependencies{
 	compile 'org.json:json:20090211'
 }
 
+uploadArchives{
+	repositories{
+		ivy{
+			credentials{
+				username "ccoulton"
+				password "1Portalgun!"
+			}
+			url "https://code.qwasi.com/users/ccoulton/repos/android-sdk/browse?at=refs%2Fheads%2FGradle_plugin"
+		}
+		//mavenDeployer{
+			//credentials{
+				//username "ccoulton"
+				//password "1Portalgun!"
+			//}
+			//repository(url:"https://code.qwasi.com/users/ccoulton/repos/android-sdk/browse?at=refs%2Fheads%2FGradle_plugin")
+		//}
+	}
+}
 task tester(type: JavaExec){
      main = 'org.qwasi.test.Test'
 }
