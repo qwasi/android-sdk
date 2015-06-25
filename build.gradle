@@ -1,0 +1,50 @@
+//apply plugin: 'java'
+apply plugin: 'maven'
+
+//android support
+buildscript{
+    repositories{
+        jcenter()
+        
+    }
+
+    dependencies {
+	classpath 'com.android.tools.build:gradle:1.2.3'
+	
+    }
+}
+
+allprojects{
+    repositories{
+	jcenter()
+    }
+}
+
+apply plugin: 'android'
+
+android {
+    compileSdkVersion 20
+    buildToolsVersion "20.0.0"
+}
+
+repositories{
+	mavenCentral()
+	maven{
+	    url "http://mvnrepository.com/artifact/org.json/json"
+    	}
+}
+
+dependencies{
+	compile fileTree(dir: 'libs', include: ['*.jar'])
+	//compile 'com.android.support:appcompat-v7:20.+'
+	compile 'com.google.android.gms:play-services:6.1.71'
+	compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
+	compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
+	compile 'net.minidev:json-smart:2.0'
+	compile 'org.json:json:20090211'
+}
+
+task tester(type: JavaExec){
+     main = 'org.qwasi.test.Test'
+}
+
