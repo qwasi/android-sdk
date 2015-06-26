@@ -65,7 +65,7 @@ public class QwasiConfig extends HashMap<String, Object> {
             else{ //read from the xml file
                 //set up new application info w/  Application.packageManager.getApplicationInfo("application name", get the meta data)
                 ApplicationInfo applicationInfo = sharedApplication.getPackageManager().getApplicationInfo(sharedApplication.getPackageName(), PackageManager.GET_META_DATA);
-                if(!applicationInfo.metaData.isEmpty()){  //make sure we have meta data to parse
+                if((applicationInfo.metaData != null)&&(!applicationInfo.metaData.isEmpty())){  //make sure we have meta data to parse
                     //start looking for key values
                     if(applicationInfo.metaData.containsKey("apiKey")){  //is and apikey value present
                         apiKey = (String) applicationInfo.metaData.get("apiKey");  //get the value of apiKey from the manifest
@@ -78,6 +78,9 @@ public class QwasiConfig extends HashMap<String, Object> {
                     if(applicationInfo.metaData.containsKey("apiUrl")){
                         url = new URL((String) applicationInfo.metaData.get("apiUrl"));
                     }
+                }
+                else{
+                    //handle if meta data is null or empty
                 }
             }
         }
