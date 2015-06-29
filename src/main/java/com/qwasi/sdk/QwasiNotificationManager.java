@@ -86,6 +86,8 @@ public class QwasiNotificationManager extends Object{
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
                     String senderId = appinfo.metaData.get("gcm_senderid").toString();
                     int appVersion = appinfo.metaData.getInt("AppVersion"); //probly null
+                    //InstanceID iId = InstanceID.getInstance(mContext);
+                    //token = iId.getToken(getString(senderId), GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
                     token = GoogleCloudMessaging.getInstance(mContext).register(senderId);
                     if (!token.isEmpty()) {
                         mpushToken = token;

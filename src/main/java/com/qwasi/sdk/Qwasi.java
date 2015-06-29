@@ -15,6 +15,7 @@ import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import org.json.JSONException;
@@ -57,6 +58,7 @@ public class Qwasi{// implements Plugin{
         this.mclient = new QwasiClient();
         this.networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         qwasiNotificationManager = new QwasiNotificationManager(context);
+        mlocationManager = new QwasiLocationManager();
     }
 
     public Qwasi qwasiWithConfig(QwasiConfig config) {
@@ -88,11 +90,12 @@ public class Qwasi{// implements Plugin{
 
         mconfig = config;
         this.setConfig(config);
-        /* todo fix location updates and events
+        /* todo fix location updates
         locationUpdatefilter
         locationEventFilter
         locationSyncFilter
         */
+        mlocationManager.init(sharedApplication);
         preferences = context.getSharedPreferences("qwasi_sdk", Context.MODE_PRIVATE);
         if (preferences.contains("localNote")){
             museLocalNotifications = preferences.getBoolean("localNote", false);

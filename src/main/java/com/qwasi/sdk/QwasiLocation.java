@@ -41,8 +41,8 @@ enum QwasiLocationState{
 public class QwasiLocation extends Location {
     private QwasiLocationType type;
     private QwasiLocationState state;
-    private int longitude;
-    private int latitude;
+    private double longitude;
+    private double latitude;
     public String id;
     private String name;
     private static Double DwellTime = 50.0;
@@ -59,9 +59,9 @@ public class QwasiLocation extends Location {
 
     public QwasiLocation(Location l) {
         super(l);
+        longitude = l.getLongitude();
+        latitude = l.getLatitude();
     }
-    //region
-    //beacon
 
     public QwasiLocation(String provider) {
         super(provider);
