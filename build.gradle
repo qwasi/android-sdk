@@ -84,7 +84,7 @@ task writeNewPom << {
             inceptionYear '2015'
             licenses {
                 license {
-                    name 'APACHE'
+                    name 'MIT'
                     distribution 'repo'
                 }
             }

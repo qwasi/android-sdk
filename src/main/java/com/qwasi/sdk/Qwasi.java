@@ -1,12 +1,9 @@
 package com.qwasi.sdk;
 
-//import org.gradle.api.*;
 import android.app.Application;
-import android.content.ComponentCallbacks;
 import android.content.Context;
 
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -15,10 +12,8 @@ import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
@@ -28,6 +23,8 @@ import java.util.Map;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 public class Qwasi{// implements Plugin{
     private Context context;
@@ -37,7 +34,7 @@ public class Qwasi{// implements Plugin{
     private QwasiLocation mlastLocation = null;
     private QwasiAppManager qwasiAppManager = null;
     private QwasiNotificationManager qwasiNotificationManager= null;
-    private String mapplicationName = null;
+    public String mapplicationName = null;
     private String mdeviceToken = null;
     private QwasiClient mclient = null;
     public NetworkInfo networkInfo;
@@ -100,7 +97,7 @@ public class Qwasi{// implements Plugin{
         if (preferences.contains("localNote")){
             museLocalNotifications = preferences.getBoolean("localNote", false);
         }
-        if (preferences.contains("gcm_token")){
+        if (preferences.contains("gcm_token")){ //todo: fill out if statement
 
         }
         qwasiNotificationManager.registerForRemoteNotification();
@@ -119,7 +116,7 @@ public class Qwasi{// implements Plugin{
         mregistered = false;
     }
 
-    public QwasiErrorCode setPushEnabled(){
+    public QwasiError setPushEnabled() throws QwasiError{
         if (mpushEnabled){
             return this.registerForNotifications();
         }
@@ -128,7 +125,8 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    private QwasiErrorCode mregisterDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success, boolean failure){
+    private QwasiError mregisterDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success, boolean failure)
+    throws QwasiError{
         if (deviceToken == null){  //if devicetoken is null set it empty so the server will gen one
             deviceToken = mdeviceToken;
         }
@@ -149,11 +147,11 @@ public class Qwasi{// implements Plugin{
         }
 
         Map<String, Object> deviceInfo = new HashMap<String, Object>();
-            if (BuildConfig.DEBUG == true) { //sets our debug value
-                deviceInfo.put("debug", Boolean.valueOf(true));
+            if (BuildConfig.DEBUG) { //sets our debug value
+                deviceInfo.put("debug", true);
             }
             else {
-                deviceInfo.put("debug", Boolean.valueOf(false));
+                deviceInfo.put("debug", false);
             }
             deviceInfo.put("version", String.valueOf(Build.VERSION.RELEASE));  //this is the numerical version
             deviceInfo.put("system", getVerboseVersionName()); //kitkat or w/e the codename is
@@ -190,21 +188,23 @@ public class Qwasi{// implements Plugin{
                 mlocationEnabled = (Boolean) info.get("location_enabled");
                 meventsEnabled = (Boolean) info.get("events_enabled");
                 Log.d("QwasiDebug", "Device Successfully Registered");
-                return QwasiErrorCode.QwasiErrorNone;
+                return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
             }
             else {
                 Log.e("QwasiError", "Device Failed to Register");
-                return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+                throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceRegistrationFailed,
+                        "Device Registration failed");
             }
         }
         catch (Throwable e){
 
             Log.d("Debug", e.getMessage());
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered; //todo handle 404/401?
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device Not Registered"); //todo handle 404/401?
         }
     }
 
-    public QwasiErrorCode setUserToken(String userToken){
+    public QwasiError setUserToken(String userToken)throws QwasiError{
         muserToken = userToken;
         if (mregistered){
             Map<String, Object> parms = new HashMap<String, Object>();
@@ -213,10 +213,10 @@ public class Qwasi{// implements Plugin{
             parms.put("user_token", muserToken);
             try {
                 if (mclient.invokeMethod("device.set_user_token", parms).indicatesSuccess()) {
-                    return QwasiErrorCode.QwasiErrorNone;
+                    return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
                 } else {
                     Log.e("QwasiError", "Set UserToken Failed");
-                    return QwasiErrorCode.QwasiErrorSetUserTokenFailed;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSetUserTokenFailed, "Set UserToken Failed");
                 }
             }
             catch (Throwable e){
@@ -225,30 +225,36 @@ public class Qwasi{// implements Plugin{
             }
         }
         Log.e("QwasiError", "Device Not Registered");
-        return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+        throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registred");
     }
 
-    public QwasiErrorCode registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success, boolean failure) {
+    public QwasiError registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success, boolean failure)
+    throws QwasiError{
         return this.mregisterDevice(deviceToken, name, userToken, userInfo, false, false);
     }
 
-    public QwasiErrorCode registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success){
+    public QwasiError registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, boolean success)
+    throws QwasiError{
         return this.registerDevice(deviceToken, name, userToken, userInfo, success, false);
     }
 
-    public QwasiErrorCode registerDevice(String deviceToken, String name, String userToken){
+    public QwasiError registerDevice(String deviceToken, String name, String userToken)
+    throws QwasiError{preferences.
         return this.registerDevice(deviceToken, name, userToken, null, false, false);
     }
 
-    public QwasiErrorCode registerDevice(String deviceToken, String userToken){
+    public QwasiError registerDevice(String deviceToken, String userToken)
+    throws  QwasiError{
         return this.registerDevice(deviceToken, null, userToken, null, false, false);
     }
 
-    public QwasiErrorCode registerDevice(String deviceToken, String userToken, HashMap<String, Object> userInfo ){ //hashmap for nsDictionary
+    public QwasiError registerDevice(String deviceToken, String userToken, HashMap<String, Object> userInfo )
+    throws QwasiError{ //hashmap for nsDictionary
         return this.registerDevice(deviceToken, null, userToken, userInfo, false, false);
     }
 
-    public QwasiErrorCode unregisterDevice(String deviceToken){
+    public QwasiError unregisterDevice(String deviceToken)
+    throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parm = new HashMap<String, Object>();
             if (deviceToken == null){
@@ -264,20 +270,21 @@ public class Qwasi{// implements Plugin{
                 mpushEnabled = false;
                 mlocationEnabled = false;
                 Log.d("QwasiDebug", "UnregisterDevice Success");
-                return QwasiErrorCode.QwasiErrorNone;
+                return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
             }
             catch (Throwable e){
                 Log.d("Debug", e.getMessage());
-                return QwasiErrorCode.QwasiErrorDeviceRegistrationFailed;
+                throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceUnregisterFailed,
+                        "Qwasi Device Unregister failed");
             }
         }
         else{
             Log.e("QwasiError", "Device Not Registred");
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device not registered");
         }
     }
 
-    private QwasiErrorCode registerForNotifications() {
+    private QwasiError registerForNotifications() throws  QwasiError{
         if(mregistered){
             while (qwasiNotificationManager.isRegistering()){}
             String pushGCM = qwasiNotificationManager.getPushToken();
@@ -288,24 +295,26 @@ public class Qwasi{// implements Plugin{
             try {
                 if (mclient.invokeMethod("device.set_push_token", parms).indicatesSuccess()) {
                     Log.d("QwasiDebug", "Set Push Token success");
-                    return QwasiErrorCode.QwasiErrorNone;
+                    return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
                 } else {
                     Log.e("QwasiError", "Set Push Token failed");
-                    return QwasiErrorCode.QwasiErrorPushRegistrationFailed;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed,
+                            "Push Registration failed");
                 }
             }
             catch (Throwable e){
                 Log.d("Debug", e.getMessage());
-                return null; //todo handle 401/404
+                throw new QwasiError().errorWithCode(null, e.getMessage()); //todo handle 401/404
             }
         }
         else {
             Log.e("QwasiError", "DeviceNotRegistered");
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device not Registered");
         }
     }
 
-    private QwasiErrorCode unregisterForNotifications(){
+    private QwasiError unregisterForNotifications() throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             parms.put("id", mdeviceToken);
@@ -315,29 +324,33 @@ public class Qwasi{// implements Plugin{
                 if (mclient.invokeMethod("device.set_push_token", parms).indicatesSuccess()) {
                     Log.d("QwasiDebug", "UnSet Push Token success");
                     mpushEnabled = false;
-                    return QwasiErrorCode.QwasiErrorNone;
+                    return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
                 } else {
                     Log.e("QwasiError", "Unregister for Note failed");
-                    return QwasiErrorCode.QwasiErrorPushUnregisterFailed;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushUnregisterFailed,
+                            "Push Unregister Failed");
                 }
             }
             catch (Throwable e){
                 Log.d("Debug", e.getMessage()); //todo handle 401/404
-                return QwasiErrorCode.QwasiErrorPushUnregisterFailed;
+                throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushNotEnabled,
+                        "Push not Enabled");
             }
 
         }
         else{
             Log.e("QwasiError", "DeviceNotRegistered");
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                "device not Registered");
         }
     }
 
-    public QwasiErrorCode fetchMessageForNotification(HashMap<String, Object> userInfo, boolean success, boolean failure){
+    public QwasiError fetchMessageForNotification(HashMap<String, Object> userInfo, boolean success, boolean failure)
+    throws QwasiError{
         if(mregistered){
             HashMap<String, Object> flags = new HashMap<String, Object>();
             //TODO Get the values from message fetch
-            flags.put("opened", Boolean.valueOf(qwasiAppManager.isApplicationInForeground()));
+            flags.put("opened", qwasiAppManager.isApplicationInForeground());
             HashMap<String, Object> qwasi = new HashMap<String, Object>();
             qwasi.put("qwasi", userInfo.get("qwasi"));
             qwasi.putAll(userInfo);
@@ -353,9 +366,11 @@ public class Qwasi{// implements Plugin{
                         parms.put("flags", flags);
                         try {
                             if (mclient.invokeMethod("message.fetch", parms).indicatesSuccess()) {
-                                return QwasiErrorCode.QwasiErrorNone;
+                                return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone,
+                                        "No Error");
                             } else {
-                                return QwasiErrorCode.QwasiErrorMessageFetchFailed;
+                                throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
+                                        "Message fetch failed");
                             }
                         }
                         catch (Throwable e){
@@ -364,27 +379,31 @@ public class Qwasi{// implements Plugin{
                         }
                     }
                     else{ //todo
-                        return QwasiErrorCode.QwasiErrorMessageNotFound;
+                        throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
+                                "No messages found");
                         //no messages to fetch
                         //QwasiMessage message = nskeyedUnarchiver unarchiver with cachedmessage
                     }
                 }
                 else{//TODO
-                    return QwasiErrorCode.QwasiErrorNone;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone,
+                            "AppId is incorrect");
                     //wrong appid
                     //if succesful, and there is a message
                 }
             }
             else { //todo MsgId is empty or Appid is empty
-                return QwasiErrorCode.QwasiErrorNone;
+                throw  new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorInvaildMessage,
+                        "Invalid Message");
             }
         }
         else {
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device Not Registered");
         }
     }
 
-    public QwasiErrorCode fetchUnreadMessage(/*func calls*/){
+    public QwasiErrorCode fetchUnreadMessage(/*func calls*/)throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> options = new HashMap<String, Object>();
@@ -400,7 +419,8 @@ public class Qwasi{// implements Plugin{
                 }
                 else{
                         Log.d("QwasiDebug", "Message Fetch Failed");
-                        return QwasiErrorCode.QwasiErrorMessageFetchFailed;
+                        throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
+                                "Message Fetch Failed");
                     }
                 }
 
@@ -408,7 +428,8 @@ public class Qwasi{// implements Plugin{
                 Exception cause = new Exception(e.getMessage(), e);
                 if (cause == new FileNotFoundException()) {
                     Log.d("Debug", "Nomessages to fetch");
-                    return QwasiErrorCode.QwasiErrorMessageNotFound;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
+                            "Message not found ");
                 } //todo Handle 401/404 error
                 else
                     return null;
@@ -416,7 +437,8 @@ public class Qwasi{// implements Plugin{
         }
         else{
             Log.e("QwasiError", "Device Not Registered");
-            return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
+            throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device Not Registered");
         }
 
     }
@@ -595,39 +617,40 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public QwasiErrorCode sendMessage(QwasiMessage message, String userToken, boolean success, boolean failure){
+    public QwasiErrorCode sendMessage(QwasiMessage message, String userToken, boolean success, boolean failure)
+    throws QwasiError{
         if(mregistered) {
             Object payload = message.mpayload;
             if (payload != null){
-            //todo: check if is a valid json object
-                //if (){}
+                if (payload instanceof JSONObject){
+
+                }
+                else{
+                    HashMap<String, Object> encrypted = new HashMap<String, Object>();
+                    encrypted.put("payload", Base64.encode(((String) payload).getBytes(), Base64.DEFAULT));
+                    //convert it to a jsonObject?
+                }
             //throw an error, get the data if the data is null, or the error isn't print error
             //set payload to the JSONData
             }
-            else if (payload instanceof String){
-                HashMap<String, Object> encrypted = new HashMap<String, Object>();
-                encrypted.put("payload", Base64.encode(((String) payload).getBytes(), Base64.DEFAULT));
-                //convert it to a jsonObject?
-            }
-            else{
-                payload = null;
-            }
+            else{}//payload == null?
             Map<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> audi = new HashMap<String, Object>();
             audi.put("user_tokens", userToken);
             parms.put("audience", audi); //can be devices, usertokens, channels w/e
             parms.put("payload_type", payload.getClass().toString());
-            //parms.put("notification", new HashMap<String, Object>().put("text", message.alert));
-            //parms.put("payload", payload);
-            //parms.put("tags", message.tags);
-            //parms.put("options", (new HashMap<String, Object>().put("encodedPayload", )))
+            parms.put("notification", new HashMap<String, Object>().put("text", message.malert));
+            parms.put("payload", payload);
+            parms.put("tags", message.mtags);
+            parms.put("options", (new HashMap<String, Object>().put("encodedPayload",true )));
             try {
                 if (mclient.invokeMethod("message.send", parms).indicatesSuccess()) {
                     Log.d("QwasiDebug", "Message Sent Successfully");
                     return QwasiErrorCode.QwasiErrorNone;
                 } else {
                     Log.e("QwasiError", "Message Send Failed");
-                    return QwasiErrorCode.QwasiErrorSendMessageFailed;
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSendMessageFailed,
+                            "Send message Failed");
                 }
             }
             catch (Throwable e){
@@ -641,7 +664,8 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public QwasiErrorCode sendMessage(QwasiMessage message, String userToken){
+    public QwasiErrorCode sendMessage(QwasiMessage message, String userToken)
+    throws QwasiError{
         return this.sendMessage(message, userToken, false, false);
     }
 }

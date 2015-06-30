@@ -31,14 +31,15 @@ enum QwasiErrorCode{
     QwasiErrorMessageNotFound
 }
 
-public class QwasiError extends Exception{
-    public QwasiErrorCode errorWithCode(QwasiErrorCode code, String message){
+public class QwasiError extends Throwable{
+
+    public QwasiError errorWithCode(QwasiErrorCode code, String message) throws QwasiError{
         return this.errorWithCode(code, message, null);
     }
 
-    public QwasiErrorCode errorWithCode(QwasiErrorCode code, String message, Error error){
+    public QwasiError errorWithCode(QwasiErrorCode code, String message, Error error) throws QwasiError{
         HashMap<String, Object> userInfo = new HashMap<String, Object>();
-
+        userInfo.put("code", code);
         if (error != null){
             userInfo.put(message + " reason= " + error.getMessage(), null);
             userInfo.put("innerError", error);
@@ -49,7 +50,5 @@ public class QwasiError extends Exception{
 
         return null;
     }
-
-    //todo handle error codes.
 }
 
