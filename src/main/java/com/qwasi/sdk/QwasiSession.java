@@ -10,8 +10,9 @@ import java.net.HttpURLConnection;
 
 /**
  * Created by ccoulton on 6/16/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  * This file uses examples from JSONRPC2 website on how to build custom headers
- * Was created for Qwasi Tech. using the Apache Software Licence.
  */
 
 public class QwasiSession implements ConnectionConfigurator{

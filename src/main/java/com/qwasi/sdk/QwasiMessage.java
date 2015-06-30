@@ -1,6 +1,6 @@
 package com.qwasi.sdk;
 
-import android.content.Context;
+
 import android.text.format.DateFormat;
 import android.util.Base64;
 
@@ -9,12 +9,12 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.Timer;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 public class QwasiMessage extends Object{
     public String malert;

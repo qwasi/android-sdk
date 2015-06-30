@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
-import android.webkit.URLUtil;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -15,12 +14,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.HashMap;
 
 /**
  * Created by ccoulton on 6/11/15.
- *
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 public class QwasiConfig extends HashMap<String, Object> {
     public URL murl = null;

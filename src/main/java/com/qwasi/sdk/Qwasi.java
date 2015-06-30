@@ -239,7 +239,7 @@ public class Qwasi{// implements Plugin{
     }
 
     public QwasiError registerDevice(String deviceToken, String name, String userToken)
-    throws QwasiError{preferences.
+    throws QwasiError{
         return this.registerDevice(deviceToken, name, userToken, null, false, false);
     }
 

@@ -4,6 +4,8 @@ import java.util.HashMap;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 enum QwasiErrorCode{
     QwasiErrorNone,

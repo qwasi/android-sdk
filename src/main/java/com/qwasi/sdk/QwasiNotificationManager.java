@@ -3,7 +3,6 @@ package com.qwasi.sdk;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.provider.SyncStateContract;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -14,6 +13,8 @@ import java.io.FileNotFoundException;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 public class QwasiNotificationManager extends Object{
     private String mpushToken;

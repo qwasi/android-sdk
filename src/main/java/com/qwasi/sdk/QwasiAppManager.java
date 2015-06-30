@@ -2,7 +2,6 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -10,6 +9,8 @@ import java.util.HashMap;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  * This handles the application's status on the phone allows for checks on if the application is in the fore or background.
  * this also handles when a status event happens.
  */

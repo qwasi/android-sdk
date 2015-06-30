@@ -2,26 +2,13 @@ package com.qwasi.sdk;
 
 import android.location.Location;
 import android.nfc.tech.NfcBarcode;
-import android.os.Looper;
-import android.support.v4.app.FragmentActivity;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.Api;
-import com.google.android.gms.common.api.BaseImplementation;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Result;
-import com.google.android.gms.common.api.Scope;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.api.d;
-
-import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Timer;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 enum QwasiLocationType{
     QwasiLocationTypeUnknown,

@@ -1,25 +1,20 @@
 package com.qwasi.sdk;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 
 //pulled from dzhuvinov's repos on maven
 import com.thetransactioncompany.jsonrpc2.*;
 import com.thetransactioncompany.jsonrpc2.client.*;
 import java.util.*;
-import net.minidev.json.*;
 
 import android.os.AsyncTask;
 import android.util.Log;
 
-import org.json.*;
-
 /**
  * Created by ccoulton on 6/11/15.
+ * For Qwasi Inc. for their Open source Android SDK example
+ * Released under the MIT Licence
  */
 public class QwasiClient extends AsyncTask{
     private URL server = null;

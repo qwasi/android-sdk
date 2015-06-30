@@ -44,8 +44,8 @@ version = '2.1.0'
 dependencies{
 	compile fileTree(dir: 'libs', include: ['*.jar'])
 	//compile 'com.android.support:appcompat-v7:20.+'
-	compile 'com.google.android.gms:play-services:6.1.71' //messaging
-	//compile 'com.google.android.gms:play-services-location:7.5.0' //location
+	compile 'com.google.android.gms:play-services-gcm:7.5.0' //messaging
+	compile 'com.google.android.gms:play-services-location:7.5.0' //location
 	compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
 	compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
 	compile 'net.minidev:json-smart:2.0'
@@ -94,8 +94,4 @@ task writeNewPom << {
 
 task sourceJar(type: Jar){
      from sourceSets.main.allJava
-}
-
-task tester(type: JavaExec){
-     main = 'org.qwasi.sdk.Test'
 }

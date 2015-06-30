@@ -25,7 +25,9 @@ repositories{
 	}
 }
 ```
+
 You must also include the sdk into the dependancies.
+
 ```groovy
 dependencies{
 	compile 'com.qwasi.sdk:QwasiSDK:2.1.0'
@@ -37,6 +39,7 @@ dependencies{
 Qwasi is available under the MIT license. See the LICENSE file for more info.
 
 ## Gradle Dependencies
+
 ```
  'Org.json'
  'JSONRPC2-base'
@@ -423,14 +426,15 @@ Example:
 ## Sending Message
 With the Qwasi API and SDK it is possible to send message to other users, this could facilitate a 2-way communication or chat application. Qwasi does not explictly support this functionality so much of the implementation is left to the developer. You will need to manage mapping your own userTokens to some useful data, which can be stored in the device record as described above.
 
-```objectivec
-- (void)sendMessage:(QwasiMessage*)message
-        toUserToken:(NSString*)userToken
-            success:(void(^)())success
-            failure:(void(^)(NSError* err))failure;
+```java
+public QwasiError sendMessage(QwasiMessage message, 
+       		  String userToken, 
+		  Boolean successful
+            	  Boolean failure);
 
-- (void)sendMessage:(QwasiMessage*)message
-        toUserToken:(NSString*)userToken;
+public QwasiError sendMessage(QwasiMessage message, 
+       		  String userToken)
+throws QwasiError;
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorSendMessageFailed`
@@ -438,7 +442,7 @@ With the Qwasi API and SDK it is possible to send message to other users, this c
 
 Example Receiver:
 
-```objectivec
+```java
 	// filter out our chat tags
 	[qwasi filterTag: @"chatMessage"];
 
@@ -451,11 +455,10 @@ Example Receiver:
 
 Example Sender:
 
-```objectivec
-	QwasiMessage* welcome = [[QwasiMessage alloc] initWithAlert: @"sup foo" 
-												   withPayload: @{ @"from": @"notbob98" }
-											   withPayloadType: nil 
-												        withTags: @[@"chatMessage"]];
-
-	[qwasi sendMessage: message toUserToken: @"scurry88"];
+```java
+	HashMap<String, Object> payload = new Hashmap<String, Object>;
+	payload.put("from", "notbob98");
+	QwasiMessage welcome = new QwasiMessage().initWithAlert("sup foo",
+		     payload, null, "chatMessage");
+	qwasi.sendMessage(welcome,  "scurry88");
 ```
