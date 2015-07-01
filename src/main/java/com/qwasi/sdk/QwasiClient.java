@@ -4,9 +4,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 //pulled from dzhuvinov's repos on maven
-import com.thetransactioncompany.jsonrpc2.*;
-import com.thetransactioncompany.jsonrpc2.client.*;
-import java.util.*;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Request;
+import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+import com.thetransactioncompany.jsonrpc2.client.JSONRPC2Session;
+import com.thetransactioncompany.jsonrpc2.client.JSONRPC2SessionException;
+import java.util.Map;
+import java.util.HashMap;
 
 import android.os.AsyncTask;
 import android.util.Log;

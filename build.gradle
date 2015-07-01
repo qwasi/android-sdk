@@ -48,7 +48,7 @@ dependencies{
 	compile 'com.google.android.gms:play-services-location:7.5.0' //location
 	compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
 	compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
-	compile 'net.minidev:json-smart:2.0'
+	//compile 'net.minidev:json-smart:2.0'
 }
 
 sourceSets{

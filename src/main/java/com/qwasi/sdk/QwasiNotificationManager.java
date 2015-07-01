@@ -1,6 +1,7 @@
 package com.qwasi.sdk;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
@@ -8,6 +9,7 @@ import android.util.Log;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.android.gms.iid.InstanceID;
 
 import java.io.FileNotFoundException;
 
@@ -32,8 +34,12 @@ public class QwasiNotificationManager extends Object{
         return mregistering;
     }
 
-    public  String getPushToken(){
+    public String getPushToken(){
         return mpushToken;
+    }
+
+    public void setPushToken(String pushToken){
+        mpushToken = pushToken;
     }
 
     private void load(){
@@ -47,29 +53,26 @@ public class QwasiNotificationManager extends Object{
         }
         else {
             try {
-                ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-
-                String token = (String) appinfo.metaData.get("gcm_token");
-
+                SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
+                String token;
+                token = sharedPreferences.getString("gcm_token", null);
                 // We don't have a token so get a new one
-                if ((token == null)||token.isEmpty()) {
+                if ((token == null) || token.isEmpty()) {
                     mregistering = true;
                     registerForPushInBackground();
                 } else {
                     // check the version of the token
-                /*int appVersion = Helpers.getVersionFromPackageInfo(mContext);
-                int registeredVersion = cm.getInt(ConfigurationManager.GCM_TOKEN_VER, Integer.MIN_VALUE);
+                    int appVersion = sharedPreferences.getInt("AppVersion", 0);
+                    int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
 
-                // Our version is outdated, get a new one
-                if (registeredVersion != appVersion) {
-                    registerForPushInBackground(listener);
-                } else {
-
-                }*/
+                    // Our version is outdated, get a new one
+                    if (registeredVersion != appVersion) {
+                        registerForPushInBackground(/*listener*/);
+                    }
                 }
                 mregistering = false;
             }
-            catch (PackageManager.NameNotFoundException e){
+            catch (Exception e){
                 Log.e("QwasiError", "Problem registering" + e.getMessage());
                 return QwasiErrorCode.QwasiErrorPushRegistrationFailed;
             }
@@ -85,19 +88,24 @@ public class QwasiNotificationManager extends Object{
 
                 try {
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
+                    SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
+                    SharedPreferences.Editor prefEditor = sharedPreferences.edit();
                     String senderId = appinfo.metaData.get("gcm_senderid").toString();
                     int appVersion = appinfo.metaData.getInt("AppVersion"); //probly null
-                    //InstanceID iId = InstanceID.getInstance(mContext);
-                    //token = iId.getToken(getString(senderId), GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                    token = GoogleCloudMessaging.getInstance(mContext).register(senderId);
+                    InstanceID iId = InstanceID.getInstance(mContext);
+                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+                    //token = GoogleCloudMessaging.getInstance(mContext).register(senderId); //depercated
                     if (!token.isEmpty()) {
                         mpushToken = token;
                     }
+                    if (appVersion == 0){
+                        appVersion = 210;
+                    }
                     // save this token
-                    appinfo.metaData.putString("gcm_token", token);
-                    appinfo.metaData.putInt("AppVersion", appVersion);
+                    prefEditor.putString("gcm_token", token);
+                    prefEditor.putInt("AppVersion", appVersion);
+                    prefEditor.commit();
                     //todo save to preferancs not to manifest....
-
                     //listener.onPushRegistrationSuccess(token);
 
                     Log.d("QwasiDebug", "New GCM token acquired: " + token);

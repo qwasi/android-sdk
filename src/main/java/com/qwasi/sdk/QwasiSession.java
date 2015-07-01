@@ -3,7 +3,6 @@ package com.qwasi.sdk;
 
 import com.thetransactioncompany.jsonrpc2.client.ConnectionConfigurator;
 
-
 import java.io.IOException;
 
 import java.net.HttpURLConnection;

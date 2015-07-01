@@ -30,6 +30,9 @@ public class Qwasi{// implements Plugin{
     private Context context;
     private Application sharedApplication;
     private SharedPreferences preferences;
+    private double locationSyncFilter;
+    private double locationUpdatefilter;
+    private double locationEventFilter;
     private boolean mregistered;
     private QwasiLocation mlastLocation = null;
     private QwasiAppManager qwasiAppManager = null;
@@ -83,28 +86,33 @@ public class Qwasi{// implements Plugin{
     }
 
     private Qwasi initWithConfig(QwasiConfig config){
-        mregistered = false;
-
         mconfig = config;
         this.setConfig(config);
-        /* todo fix location updates
-        locationUpdatefilter
-        locationEventFilter
-        locationSyncFilter
-        */
+
+        locationUpdatefilter=100.0;
+        locationEventFilter = 50.0;
+        locationSyncFilter = 200.0;
+
         mlocationManager.init(sharedApplication);
         preferences = context.getSharedPreferences("qwasi_sdk", Context.MODE_PRIVATE);
-        if (preferences.contains("localNote")){
-            museLocalNotifications = preferences.getBoolean("localNote", false);
-        }
-        if (preferences.contains("gcm_token")){ //todo: fill out if statement
+        mregistered = preferences.getBoolean("registered", false);
 
+        //are localNotifcations set
+        museLocalNotifications = preferences.getBoolean("localNote", false);
+
+        //if we have a device token saved already use it.
+        mdeviceToken = preferences.getString("qwasi_device_token", "");
+
+        //check if we have a gcm token already so we don't use too much data
+        qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
+
+        if (qwasiNotificationManager.getPushToken() == null){
+            qwasiNotificationManager.registerForRemoteNotification();
         }
-        qwasiNotificationManager.registerForRemoteNotification();
+
         mmessageCache = new HashMap<Object, Object>();
 
-
-        muserToken = "";
+        muserToken = preferences.getString("qwasi_user_token","DROIDTOKEN");
         this.sharedApplication.registerActivityLifecycleCallbacks(qwasiAppManager);
 
         return this;
@@ -136,7 +144,7 @@ public class Qwasi{// implements Plugin{
         }
 
         if (userToken == null){  //if we didn't get a usertoken set it to be the phone number
-            userToken = "DROIDTOKEN";
+            userToken = muserToken;
         }
         Map<String, Object> info = new HashMap<String, Object>();
 
@@ -170,10 +178,12 @@ public class Qwasi{// implements Plugin{
             response = mclient.invokeMethod("device.register", info);
             if (response.indicatesSuccess()) {
                 mregistered = true; //we've now registered
+                editor.putBoolean("registered", true);
 
                 Map<String, Object> result = new HashMap<String, Object>();  //holder object
                 result.put("result", response.getResult());  //unpack response object
                 result = (Map<String, Object>) result.get("result"); //further unpacking
+
                 //response.hashCode();
                 mdeviceToken = result.get("id").toString();  //set our device token from the server
                 editor.putString("qwasi_device_token",mdeviceToken);
@@ -181,12 +191,15 @@ public class Qwasi{// implements Plugin{
                 //grab the next key and unpack it.
                 info = (Map<String, Object>) result.get("application");
                 mapplicationName = info.get("name").toString();
+                editor.putString("qwasi_app_name", mapplicationName);
 
                 //get the settings out
                 info = (Map<String, Object>) info.get("settings");
                 mpushEnabled = (Boolean) info.get("push_enabled");
                 mlocationEnabled = (Boolean) info.get("location_enabled");
                 meventsEnabled = (Boolean) info.get("events_enabled");
+
+                editor.apply();
                 Log.d("QwasiDebug", "Device Successfully Registered");
                 return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error");
             }
@@ -403,7 +416,7 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public QwasiErrorCode fetchUnreadMessage(/*func calls*/)throws QwasiError{
+    public HashMap<String, Object> fetchUnreadMessage(/*func calls*/)throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> options = new HashMap<String, Object>();
@@ -414,8 +427,8 @@ public class Qwasi{// implements Plugin{
             try {
                 JSONRPC2Response response = mclient.invokeMethod("message.poll", parms);
                 if (response.indicatesSuccess()) {
-                    //todo get messages out and push them to screen/notifications
-                    return QwasiErrorCode.QwasiErrorNone;
+                    Log.d("QwasiDebug", response.getResult().toString());
+                    return (HashMap<String, Object>) response.getResult(); //todo decode to toss back to main function
                 }
                 else{
                         Log.d("QwasiDebug", "Message Fetch Failed");
@@ -476,13 +489,14 @@ public class Qwasi{// implements Plugin{
             ArrayList<String> options = new ArrayList<String>();
             near.put("lng", mlastLocation.getLongitude());
             near.put("lat", mlastLocation.getLatitude());
-            //near.put("radius",Double.valueOf(LocationSyncFilter*10));
+            near.put("radius", Double.valueOf(locationSyncFilter*10));
             options.add("schema");
             options.add("2.0");
             parms.put("near", near);
             parms.put("options", options);
             try {
                 JSONRPC2Response response = mclient.invokeMethod("location.fetch", parms);
+                //todo need to do somthing with the locations
                 return QwasiErrorCode.QwasiErrorNone;
             }
             catch (Throwable e){
@@ -623,7 +637,7 @@ public class Qwasi{// implements Plugin{
             Object payload = message.mpayload;
             if (payload != null){
                 if (payload instanceof JSONObject){
-
+                    //todo fix this issue
                 }
                 else{
                     HashMap<String, Object> encrypted = new HashMap<String, Object>();
@@ -633,7 +647,10 @@ public class Qwasi{// implements Plugin{
             //throw an error, get the data if the data is null, or the error isn't print error
             //set payload to the JSONData
             }
-            else{}//payload == null?
+            else{
+                throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorInvaildMessage,
+                        "Invalid Message");
+            }//payload == null?
             Map<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> audi = new HashMap<String, Object>();
             audi.put("user_tokens", userToken);
@@ -658,7 +675,7 @@ public class Qwasi{// implements Plugin{
                 return null; //fixme  400/401
             }
         }
-        else{//todo handle sendmessge error
+        else{
             Log.e("QwasiError", "Device not Registered");
             return QwasiErrorCode.QwasiErrorDeviceNotRegistered;
         }
