@@ -25,7 +25,7 @@ enum QwasiLocationState{
     QwasiLocationStateInside
 }
 
-public class QwasiLocation extends Location {
+public class QwasiLocation{
     private QwasiLocationType type;
     private QwasiLocationState state;
     private double longitude;
@@ -45,13 +45,19 @@ public class QwasiLocation extends Location {
     private NfcBarcode NFCUUID;
 
     public QwasiLocation(Location l) {
-        super(l);
-        longitude = l.getLongitude();
-        latitude = l.getLatitude();
+        //super(l);
+        if (l != null) {
+            longitude = l.getLongitude();
+            latitude = l.getLatitude();
+        }
     }
 
-    public QwasiLocation(String provider) {
-        super(provider);
+    public double getLongitude(){
+        return longitude;
+    }
+
+    public  double getLatitude(){
+        return latitude;
     }
 
     public QwasiLocation initWithLocation(Location location){

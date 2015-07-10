@@ -9,17 +9,22 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 
+import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 
+import com.google.android.gms.location.Geofence;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
 import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -58,11 +63,15 @@ public class Qwasi{// implements Plugin{
         this.mclient = new QwasiClient();
         this.networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         qwasiNotificationManager = new QwasiNotificationManager(context);
-        mlocationManager = new QwasiLocationManager();
+        mlocationManager = new QwasiLocationManager(context);
     }
 
     public Qwasi qwasiWithConfig(QwasiConfig config) {
         return(this.initWithConfig(config));
+    }
+
+    public boolean getRegistrationStatus() {
+        return mregistered;
     }
 
     public String getMdeviceToken(){
@@ -93,7 +102,7 @@ public class Qwasi{// implements Plugin{
         locationEventFilter = 50.0;
         locationSyncFilter = 200.0;
 
-        mlocationManager.init(sharedApplication);
+        mlocationManager.init();
         preferences = context.getSharedPreferences("qwasi_sdk", Context.MODE_PRIVATE);
         mregistered = preferences.getBoolean("registered", false);
 
@@ -102,7 +111,6 @@ public class Qwasi{// implements Plugin{
 
         //if we have a device token saved already use it.
         mdeviceToken = preferences.getString("qwasi_device_token", "");
-
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 
@@ -191,7 +199,7 @@ public class Qwasi{// implements Plugin{
                 //grab the next key and unpack it.
                 info = (Map<String, Object>) result.get("application");
                 mapplicationName = info.get("name").toString();
-                editor.putString("qwasi_app_name", mapplicationName);
+                editor.putString("qwasi_app_id", info.get("id").toString());
 
                 //get the settings out
                 info = (Map<String, Object>) info.get("settings");
@@ -358,35 +366,37 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public QwasiError fetchMessageForNotification(HashMap<String, Object> userInfo, boolean success, boolean failure)
+    public QwasiMessage fetchMessageForNotification(Bundle userInfo, boolean success, boolean failure)
     throws QwasiError{
         if(mregistered){
             HashMap<String, Object> flags = new HashMap<String, Object>();
-            //TODO Get the values from message fetch
             flags.put("opened", qwasiAppManager.isApplicationInForeground());
-            HashMap<String, Object> qwasi = new HashMap<String, Object>();
-            qwasi.put("qwasi", userInfo.get("qwasi"));
-            qwasi.putAll(userInfo);
-            String msgId = String.valueOf(qwasi.get("m"));
-            String appId = String.valueOf(qwasi.get("a"));
+            String qwasi =(String) userInfo.get("qwasi");
+            String[] results = qwasi.split(Pattern.quote("\""));
+            String msgId = results[7];
+            String appId = results[11];
             if (!(msgId.isEmpty()) && !(appId.isEmpty())){
-                if (appId.equals(mconfig.mapplication)){
+                if (appId.equals(preferences.getString("qwasi_app_id", ""))){
                     //TODO: get cached messages
                     if (mmessageCache != null){
                         HashMap<String, Object> parms = new HashMap<String, Object>();
                         parms.put("device", mdeviceToken);
                         parms.put("id", msgId);
                         parms.put("flags", flags);
+                        JSONRPC2Response response;
                         try {
-                            if (mclient.invokeMethod("message.fetch", parms).indicatesSuccess()) {
-                                return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone,
-                                        "No Error");
+                            response = mclient.invokeMethod("message.fetch", parms);
+                            if (response.indicatesSuccess()) {
+                                QwasiMessage temp = new QwasiMessage().
+                                        messageWithData((HashMap<String, Object>)response.getResult());
+                                return temp;
                             } else {
                                 throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
                                         "Message fetch failed");
                             }
                         }
                         catch (Throwable e){
+                            e.printStackTrace();
                             Log.d("Debug", e.getMessage());
                             return null; //fixme handle 401/404
                         }
@@ -416,7 +426,7 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public HashMap<String, Object> fetchUnreadMessage(/*func calls*/)throws QwasiError{
+    public QwasiMessage fetchUnreadMessage(/*func calls*/)throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> options = new HashMap<String, Object>();
@@ -428,17 +438,20 @@ public class Qwasi{// implements Plugin{
                 JSONRPC2Response response = mclient.invokeMethod("message.poll", parms);
                 if (response.indicatesSuccess()) {
                     Log.d("QwasiDebug", response.getResult().toString());
-                    return (HashMap<String, Object>) response.getResult(); //todo decode to toss back to main function
+                    QwasiMessage message = new QwasiMessage();
+                    message.messageWithData((HashMap < String, Object >) response.getResult());
+                    return message;
                 }
                 else{
-                        Log.d("QwasiDebug", "Message Fetch Failed");
-                        throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
+                    Log.d("QwasiDebug", "Message Fetch Failed");
+                    throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
                                 "Message Fetch Failed");
                     }
                 }
 
             catch (Throwable e) {
                 Exception cause = new Exception(e.getMessage(), e);
+                Log.d("QwasiDebug", cause.getMessage()+ " "+e.getCause());
                 if (cause == new FileNotFoundException()) {
                     Log.d("Debug", "Nomessages to fetch");
                     throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
@@ -482,13 +495,15 @@ public class Qwasi{// implements Plugin{
         return this.postEvent(type, data, false, false);
     }
 
-    public QwasiErrorCode fetchLocationsNear(Location place, boolean success, boolean failure) {
+    public QwasiErrorCode fetchLocationsNear(QwasiLocation place, boolean success, boolean failure) {
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> near = new HashMap<String, Object>();
             ArrayList<String> options = new ArrayList<String>();
-            near.put("lng", mlastLocation.getLongitude());
-            near.put("lat", mlastLocation.getLatitude());
+            mlastLocation = mlocationManager.getLastLocation();
+            Log.d("QwasiDebug",  (String.format("%.2f, %.2f", mlastLocation.getLatitude(), mlastLocation.getLongitude())));
+            near.put("lng", place.getLongitude());
+            near.put("lat", place.getLatitude());
             near.put("radius", Double.valueOf(locationSyncFilter*10));
             options.add("schema");
             options.add("2.0");
@@ -496,7 +511,28 @@ public class Qwasi{// implements Plugin{
             parms.put("options", options);
             try {
                 JSONRPC2Response response = mclient.invokeMethod("location.fetch", parms);
-                //todo need to do somthing with the locations
+                near = (HashMap<String, Object>) response.getResult();
+                HashMap<String, Object>[] positions = (HashMap<String, Object>[]) near.get("positions");
+                for (int index = 0; index < positions.length; index++) {
+                    //todo need to do somthing with the locations
+                    //for locations in response figure out what type they are i.e. beacons/geofence/
+                    if (positions[index].containsKey("beacon")) {
+                        //deal with beacons?  NYI because beacons are primarily apple
+                    } else if (positions[index].containsKey("geofence")) {
+                        parms = (HashMap<String, Object>) positions[index].get("properties");
+                        HashMap<String, Object> geo = (HashMap<String, Object>)positions[index].get("geometry");
+                        Double[] latlong = (Double[])geo.get("coordinates");
+                        Geofence temp = new Geofence.Builder()
+                                .setRequestId((String)parms.get("id"))
+                                .setCircularRegion(latlong[0], latlong[1], (Integer) parms.get("radius"))
+                                .setExpirationDuration((Integer) parms.get("enter_interval"))
+                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT)
+                                .build();
+                        mlocationManager.mregionMap.put((String)parms.get("id"), temp);
+                    } else {//rfid?
+
+                    }
+                }
                 return QwasiErrorCode.QwasiErrorNone;
             }
             catch (Throwable e){

@@ -4,10 +4,13 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.gcm.GcmListenerService;
+import com.google.android.gms.gcm.GcmReceiver;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
@@ -22,7 +25,7 @@ public class QwasiNotificationManager extends Object{
     private String mpushToken;
     private Boolean mregistering;
     private Context mContext;
-
+    final String TAG = "QwasiNotificationMngr";
     public QwasiNotificationManager(Context app){
         super();
         mregistering = false;
@@ -42,13 +45,10 @@ public class QwasiNotificationManager extends Object{
         mpushToken = pushToken;
     }
 
-    private void load(){
-        return;
-    }
-
     public QwasiErrorCode registerForRemoteNotification(){
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
-            // If we can find google play services, fail.
+            // If we can find google play services, have the user download it?
+            //GooglePlayServicesUtil.getErrorDialog();
             return QwasiErrorCode.QwasiErrorPushNotEnabled;
         }
         else {
@@ -67,7 +67,7 @@ public class QwasiNotificationManager extends Object{
 
                     // Our version is outdated, get a new one
                     if (registeredVersion != appVersion) {
-                        registerForPushInBackground(/*listener*/);
+                        registerForPushInBackground();
                     }
                 }
                 mregistering = false;
@@ -90,11 +90,12 @@ public class QwasiNotificationManager extends Object{
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
                     SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                     SharedPreferences.Editor prefEditor = sharedPreferences.edit();
-                    String senderId = appinfo.metaData.get("gcm_senderid").toString();
+                    Log.d(TAG, "attempting token");
+                    //String senderId = appinfo.metaData.get("gcm_senderid").toString();
+                    //Log.d(TAG, senderId);
                     int appVersion = appinfo.metaData.getInt("AppVersion"); //probly null
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                    //token = GoogleCloudMessaging.getInstance(mContext).register(senderId); //depercated
+                    token = iId.getToken("335413682000", GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
                     if (!token.isEmpty()) {
                         mpushToken = token;
                     }
@@ -107,12 +108,13 @@ public class QwasiNotificationManager extends Object{
                     prefEditor.commit();
                     //todo save to preferancs not to manifest....
                     //listener.onPushRegistrationSuccess(token);
-
-                    Log.d("QwasiDebug", "New GCM token acquired: " + token);
+                    //Log.d("Qwasi", "Register4push");
+                    Log.d(TAG, "New GCM token acquired: " + token);
 
 
                 } catch (Exception e) {
-                    Log.d("QwasiDebug", e.getMessage());
+                    Log.d(TAG, "Catch");
+                    //Log.e(TAG, e.getMessage());
                     //listener.onPushRegistrationError(e);
                 }
             }

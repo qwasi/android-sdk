@@ -55,7 +55,7 @@ public class QwasiClient extends AsyncTask{
         }
         catch (JSONRPC2SessionException e){
             if(e.getCauseType() == JSONRPC2SessionException.NETWORK_EXCEPTION){
-                Log.d("debug", e.toString());
+                e.printStackTrace();
                 throw e.getCause();
             }
             else if (e.getCauseType() == JSONRPC2SessionException.BAD_RESPONSE){

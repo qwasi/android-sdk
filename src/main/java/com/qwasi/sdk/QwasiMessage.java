@@ -23,7 +23,7 @@ public class QwasiMessage extends Object{
     public String application;
     public String mpayloadType;
     public Object mpayload;
-    public ArrayList<String> mtags;
+    public ArrayList<Object> mtags;
     public Boolean silent;
     public Boolean selected;
     public Boolean fetched;
@@ -31,11 +31,12 @@ public class QwasiMessage extends Object{
 
     public QwasiMessage(){
         super();
+        mtags = new ArrayList<Object>();
     }
 
     private QwasiMessage initWithData(HashMap<String, Object> data){
         messageId = data.get("id").toString();
-        application = data.get("application.id").toString();
+        application = ((HashMap<String, Object>)data.get("application")).get("id").toString();
         malert = data.get("text").toString();
         //todo check appmanager for ap status
         //dateformater = date
@@ -43,10 +44,13 @@ public class QwasiMessage extends Object{
 
         Date timestamp = new Date();
 
-        mpayloadType = data.get("payload_type").getClass().toString();
-        mtags.add(data.get("context.tags").toString());
-        fetched = Boolean.getBoolean(data.get("flags.fetched").toString());
-
+        mpayloadType = data.get("payload_type").toString();
+        if (((HashMap<String, Object>) data.get("context")).containsKey("tags")) {
+            mtags.add(((HashMap<String, Object>) data.get("context")).get("tags"));
+        }
+        if (((HashMap<String, Object>) data.get("flags")).containsKey("fetched")) {
+            fetched = Boolean.getBoolean(((HashMap<String, Object>) data.get("flags")).get("fetched").toString());
+        }
         mencodedPayload = data.get("payload");
 
         if (mpayloadType.equalsIgnoreCase("application/json")){
@@ -55,7 +59,12 @@ public class QwasiMessage extends Object{
         }
 
         else if (mpayloadType.contains("text")){
-
+            byte [] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
+            try{
+            mpayload = new String(temp, "UTF-8");
+            }
+            catch (Exception e){
+            }
         }
 
         return this;
@@ -69,7 +78,7 @@ public class QwasiMessage extends Object{
         return this;
     }
 
-    public Object initWithAlert(String alert, JSONObject payload, String payloadtype, ArrayList<String> tags){
+    public Object initWithAlert(String alert, JSONObject payload, String payloadtype, ArrayList<Object> tags){
         malert = alert;
         mpayload = payload;
         mpayloadType = payloadtype;
@@ -95,6 +104,6 @@ public class QwasiMessage extends Object{
     }
 
     public String description(){
-        return mpayload.getClass().toString();
+        return mpayload.toString();
     }
 }
