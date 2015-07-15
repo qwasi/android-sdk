@@ -106,12 +106,12 @@ Example:
 ```java
 	URL url = new URL("https://sandbox.qwasi.com/v1");
 	QwasiConfig config = new QwasiConfig.configWithURL(url, "AppID srting", "API String");
-	qwasi.setConfig(config);
+	qwasi.qwasiWithConfig(config);
 ```
 ## Event Emitters
 The Qwasi libary uses nodejs like emitters to emit events. You can listen for these events by registering a listener using one of the registation methods.
 
-```objectivec
+```java
 - (void)on:(id)event listener:(id)listener;
 - (void)once:(id)event listener:(id)listener;
 - (void)on:(id)event selector:(SEL)selector target:(__weak id)target;
@@ -128,14 +128,16 @@ try{
 	qwasi.registerDevice(String, String);
 }
 catch(QwasiError e){
-	handle the code from e
+	//handle the code from e
+	e.PrintStackTrace();
 }
 ```
 
 
 ## Device Registration
 ### Device Tokens
-Every device that engages with Qwasi requires a unique device token. This token is returned upon calling device register. It should be stored for future calls to device register to ensure you can properly track events for that device. registerDevice only needs to be called once per application start, unless you change the configuration.
+Every device that engages with Qwasi SDK requires a unique device token.  This token will be stored by the Qwasi object when it is instaniated, and passed to
+the server when a device is registered or push is enabled.
 
 There are many `registerDevice` overloads defined in `Qwasi.java`, the simplest and most useful is:
 
@@ -155,6 +157,8 @@ Example:
     editor.putString("key" qwasi.getMDeviceToken);
     editor.commit();
 ```
+Note other 'registerDevice functions exist for when you have more or less information about the user, or device.
+
 ###### SDK Event - "register"
 ##### SDK Error - `QwasiErrorDeviceRegistrationFailed`
 ###### API Method - `device.register`
@@ -177,31 +181,36 @@ If the device has not been registered the user token will be updated when regist
 ###### API Method - `device.set_user_token`
 
 ### Unregistration
-If necessary a device can be unregistered using:
+If a device is unnecessary, it can be unregistered using:
 
-```objectivec
-- (void)unregisterDevice:(NSString*)deviceToke success:(void(^)())success failure:(void(^)(NSError* err))failure;
+```java
+	qwasi.unregisterDevice(String);
 ```
+Example:
+
+```java
+	qwasi.unregisterDevice(qwasi.getMdeviceToken());
+```
+
+As a general rule there is very little reason to do so, however if a user chooses to cancel their account or somthing like that would be the only reason.
+
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorDeviceUnregisterFailed`
 ###### API Method - `device.unregister`
 
 ## Push Notifications
-Qwasi supports a simplified registration for push notifications. Once the device is registered you can either set `pushEnabled` on the instance or call the method:
+Qwasi supports a simplified registration for push notifications. Once the device is registered, if mpushEnabled wasn't
+ true set it and then, simply call the method:
 
-```objectivec
-- (void)registerForNotifications:(void(^)())success failure:(void(^)(NSError* err))failure;
+```java
+ public QwasiError setPushEnabled() throws QwasiError
 ```
 
 Example:
 
-```objectivec
-	qwasi.pushEnabled = YES;
-
-	// if you want notification and the pushToken for youself
-	[qwasi once: @"pushToken" listener: ^(NSString* pushToken) {
-		// do with the token as you will...	
-	}];
+```java
+	qwasi.mpushEnabled = true;
+	qwasi.setPushEnabled();
 ```
 
 ###### SDK Event - "pushToken"
@@ -209,79 +218,63 @@ Example:
 ###### API Method - `device.set_push_token`
 
 ### Background Fetch
-If the user does not permit push notifications, or if the device does not have network access some notification could be missed. If your app has the backgroud fetch permission, you will still continue to get notification periodically, even if push is disabled. The library will simluate a push by fetching an unread message and creating a UILocalNotification.
+If the user does not permit push notifications, or if the device does not have network access some notification could be missed.
+If your app has the backgroud fetch permission, you will still continue to get notification periodically, even if push is disabled.
+ The SDK will simluate a push by fetching an unread message, which could be passed to a Notification builder.
 
 ### Message Polling
 If your app does not support background fetch, you can periodically call:
 
-```objectivec
-- (void)fetchUnreadMessage:(void(^)(QwasiMessage* message))success failure:(void(^)(NSError* err))failure;
+```java
+public QwasiMessage fetchUnreadMessage() throws QwasiError
 ```
-A good place to put this method is in your UIApplicationDelegate.
+Calling this in the UIThread so that you can check for messages.
 
 Example:
 
-```objectivec
-- (void)applicationDidBecomeActive:(UIApplication *)application {
+```java
+protected void onStart(){
 	...
-    [qwasi fetchUnreadMessage:^(QwasiMessage *message) {
-
-	// If you want to pass the message to your default message handler, do this 
-    	[qwasi emit: @"message", message];
-
-    } failure:^(NSError *err) {
-        // You can set this block to nil if you want the error do go to your default error listener
-    }];
+    qwasi.fetchUnreadMessage();
 }
 ```
-This method will not generate a notification.
+This method will not generate a notification.  But if one is desired an example of how to create a notification can be seen at
+at the MyGcmListener included as examples.
 
 ###### SDK Event - "message" (optional)
 ###### SDK Error - `QwasiErrorMessageFetchFailed`
 ###### API Method - `message.poll`
 
 ### Handling Incoming Messages
-You receive message via the `message` event for your qwasi instance.
+You receive message via the GCMListener registered in the AndroidManifest.xml
 
 Example:
 
-```objectivec
-	[qwasi on: @"message" listener: ^(QwasiMessage* message) {
-			// Do as you will with the message
-	}];	
+```java
+	@Override
+	public void onMessageReceived(String from, final Bundle data){
+		qwasi.fetchMessageForNotification(data, null, null);
+	}
 ```
+
+While this effective again without a sendNotification method that builds the notification to send to the UIThread it simply returns it.
 ###### SDK Event - "message"
 ###### SDK Error - `QwasiErrorMessageFetchFailed`
 ###### API Method - N/A
-
-### Tag based callbacks
-The `qwasi` instance will emit special events for tags contained in a message, these can be used to filter callbacks based on special tags.
-
-Example:
-
-```objectivec
-	// call this so messages with this tag won't get emitter to the default message
-    // hander as well
-	[qwasi filterTag: @"myCustomTag"];
-
-	[qwasi on: @"tag#myCustomTag listener: ^(QwasiMessage* message) {
-		// handle the message with the tag
-	}];
-```
 
 ## Message Channels
 `Qwasi` AIM supports arbitraty message groups via channels. The API is simple.
 
 ### Subscribe to a Channel
 
-```objectivec
-- (void)subscribeToChannel:(NSString*)channel;
+```java
+public QwasiErrorCode subscribeToChannel(String) throws QwasiErrror;
 ```
 
 Example:
 
-```objectivec
-	[qwasi subscribeToChannel:@"baseball"];
+```java
+	qwasi.subscribeToChannel("baseball");
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorChannelSubscribeFailed`
@@ -289,14 +282,14 @@ Example:
 
 ### Unsubscribe from Channel
 
-```objectivec
-- (void)unsubscribeFromChannel:(NSString*)channel;
+```java
+public QwasiErrorCode unsubscribeFromChannel(String) QwasiErrror
 ```
 
 Example:
 
-```objectivec
-	[qwasi unsubscribeFromChannel:@"baseball"];
+```java
+	qwasi.unsubscribeFromChannel("baseball);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorChannelUnsubscribeFailed`
@@ -304,79 +297,51 @@ Example:
 
 
 ## Application Events
-The `Qwasi` platform supports triggers on application events, but the events have to be provided. By default the library will send application state events (open, foreground, background). You can send custom events and configure your AIM to act on those as you see fit
+The `Qwasi` platform supports triggers on application events, but the events have to be provided. By default the library will send application state events (open, foreground, background, location).
+You can send custom events and configure your AIM to act on those as you see fit
 
-```objectivec
-- (void)postEvent:(NSString*)event withData:(id)data;
+```java
+public QwasiErrorCode postEvent:(String, HashMap<String, Object>)
 ```
 
 Example:
 
-```objectivec
-	[qwasi postEvent: @"login" withData: @{ @"username": "bobvila" }];
+```java
+	qwasi.postEvent("login", HashMap<String, Object>("username", "bobvila"));
 ```
 
 ## Location
-The `Qwasi` SDK can provide device location and track geofence and iBeacon events. The geofences and iBeacon must be preconfigured via the AIM or API interfaces.
-
+The `Qwasi` SDK can provide device location and track geofence events. The geofences  must be preconfigured via the AIM or API interfaces.
+(Geofences are still experimental)
 ### Enabling Location
 Location is enabled or disabled via the qwasi instance, once the device has been registered:
 
-```objectivec
-	qwasi.locationEnabled = YES;
+```java
+	qwasi.mlocationEnabled = true;
 ```
 
 ### Location Manager
-There can only be one active `QwasiLocationManager`, you must set this before you enable location, the default is the foregroundManager.
+In order to use the LocationManager you will nee to instancate it, either with a GoogleApiClient, or use the default googleApiClient.
 
-```objectivec
-	// Default foreground manager
-	qwasi.locationManager = [QwasiLocationManager foreground];
-
-	// Or the background manager
-	qwasi.locationManager = [QwasiLocationManager background];
+```java
+	qwasi.mlocationManager.init();
+	//or
+	qwasi.mlocationManager.initWithGoogleApiClient(GoogleApiClient);
 ```
 
-**Note: once you set a location manager for your app on the initial run, you can change it, but will require the user to access the applications Settings page. You can go from Background (permissive) to Foreground (restrictive) without changing the settings.***
+**Note: The connection to the GoogleApiClient will need to be connnected and disconnected as the Application opens and closes. ***
 
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorLocationSyncFailed`
 ###### API Method - `location.fetch`
 
 ### Handling Location Events
-Like messages locations events are delivered via an emitter on your instance.
+Like messages locations are delivered by listeners.
 
 Example:
 
-```objectivec
-	[qwasi on: @"location" listener: ^(QwasiLocation* location, QwasiLocationState state) {
-		switch (location.type) {
-            case QwasiLocationTypeCoordinate:
-                // This is a normal GPS update
-                break;
-                
-            case QwasiLocationTypeGeofence:
-                if (state == QwasiLocationStateInside) {
-                   // inside a geofence
-                }
-                else {
-                   // now outside the geofence
-                }
-                break;
-                
-            case QwasiLocationTypeBeacon:
-                if (state == QwasiLocationStateInside) {
-                    // hit a beacon
-                }
-                else {
-                    // left the beacon proximty
-                }
-                break;
-                
-            default:
-                break;
-        }
-	}];	
+```java
+	public void onLocationChanged(Location location)
 ```
 ###### SDK Event - "location"
 ###### SDK Error - N/A
@@ -387,12 +352,10 @@ Qwasi supports a key value based cloud data storage system. This data stored dev
 
 ### Set Device Data
 
-```objectivec
-- (void)setDeviceValue:(id)value forKey:(NSString*)key
-               success:(void(^)(void))success
-               failure:(void(^)(NSError* err))failure;
+```java
+public QwasiErrorCode setDeviceValue(Object value, String key, Boolean success, Boolean failure);
 
-- (void)setDeviceValue:(id)value forKey:(NSString*)key;
+public QwasiErrorCode setDeviceValue(Object value, String key);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorSetDeviceDataFailed`
@@ -400,10 +363,8 @@ Qwasi supports a key value based cloud data storage system. This data stored dev
 
 ### Get Device Data
 
-```objectivec
-- (void)deviceValueForKey:(NSString*)key
-                  success:(void(^)(id value))success
-                  failure:(void(^)(NSError* err))failure;
+```java
+public QwasiErrorCode deviceValueForKey(String key);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorGetDeviceDataFailed`
@@ -412,25 +373,15 @@ Qwasi supports a key value based cloud data storage system. This data stored dev
 Example:
 
 ```objectivec
-[qwasi setDeviceValue: @"hotrod99"
-			    forKey: @"user.displayname"];
+qwasi.setDeviceValue("hotrod99", "user.displayname");
 
-[qwasi deviceValueForKey: @"user.displayname" 
-		              success:^(id value) {
-                
-				NSLog(@"%@", value);
-            } 
-			       failure:^(NSError *err) {
-            }];				
+qwasi.deviceValueForKey("user.displayname");
 ```
 ## Sending Message
 With the Qwasi API and SDK it is possible to send message to other users, this could facilitate a 2-way communication or chat application. Qwasi does not explictly support this functionality so much of the implementation is left to the developer. You will need to manage mapping your own userTokens to some useful data, which can be stored in the device record as described above.
 
 ```java
-public QwasiError sendMessage(QwasiMessage message, 
-       		  String userToken, 
-		  Boolean successful
-            	  Boolean failure);
+public QwasiErrorCode sendMessage(QwasiMessage message, String userToken, Boolean successful, Boolean failure);  //Boolean may change to Methods or Threads
 
 public QwasiError sendMessage(QwasiMessage message, 
        		  String userToken)
@@ -439,19 +390,6 @@ throws QwasiError;
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorSendMessageFailed`
 ###### API Method - `message.send`
-
-Example Receiver:
-
-```java
-	// filter out our chat tags
-	[qwasi filterTag: @"chatMessage"];
-
-	[qwasi on: @"tag#chatMessage listener: ^(QwasiMessage* message) {
-		// handle the message with the tag
-		NSString* displayName [message.payload: @"from"];
-		NSLog(@"Got a message from %@", displayName);
-	}];
-```
 
 Example Sender:
 

@@ -495,7 +495,7 @@ public class Qwasi{// implements Plugin{
     }
 
     public QwasiErrorCode fetchLocationsNear(QwasiLocation place, boolean success, boolean failure) {
-        if(mregistered){
+        if((mregistered)&&(mlocationEnabled)){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> near = new HashMap<String, Object>();
             ArrayList<String> options = new ArrayList<String>();
