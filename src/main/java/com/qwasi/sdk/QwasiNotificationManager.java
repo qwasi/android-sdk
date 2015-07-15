@@ -1,10 +1,17 @@
 package com.qwasi.sdk;
 
+import android.app.ActivityManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.media.RingtoneManager;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -15,22 +22,26 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiNotificationManager extends Object{
+public class QwasiNotificationManager{
     private String mpushToken;
     private Boolean mregistering;
     private Context mContext;
+    private Qwasi qwasi;
     final String TAG = "QwasiNotificationMngr";
-    public QwasiNotificationManager(Context app){
+
+    public QwasiNotificationManager(Context app, Qwasi main){
         super();
         mregistering = false;
         mpushToken = "";
         mContext = app;
+        qwasi = main;
     }
 
     public Boolean isRegistering(){

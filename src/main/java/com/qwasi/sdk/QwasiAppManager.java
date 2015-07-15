@@ -2,6 +2,8 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.IntentService;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -23,9 +25,12 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     final private Qwasi sharedApplication;
     private String event;
     private HashMap<String, Object> data;
+
+
     public QwasiAppManager(Qwasi application){
         this.sharedApplication = application;
     }
+
     private Thread postEvent = new Thread(new Runnable() {
         @Override
         public void run() {

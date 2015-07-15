@@ -3,6 +3,7 @@ package com.qwasi.sdk;
 
 import android.text.format.DateFormat;
 import android.util.Base64;
+import android.util.Log;
 
 import org.json.JSONObject;
 
@@ -52,21 +53,21 @@ public class QwasiMessage extends Object{
             fetched = Boolean.getBoolean(((HashMap<String, Object>) data.get("flags")).get("fetched").toString());
         }
         mencodedPayload = data.get("payload");
-
-        if (mpayloadType.equalsIgnoreCase("application/json")){
-            //error?
-            //JSONObject payload = new JSONObject(new HashMap<String, Object>().put());
-        }
-
-        else if (mpayloadType.contains("text")){
-            byte [] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
-            try{
-            mpayload = new String(temp, "UTF-8");
+        byte [] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
+        try{
+            if (mpayloadType.equalsIgnoreCase("application/json")){
+                //error?
+                mpayload = new JSONObject(new String(temp, "UTF-8"));
             }
-            catch (Exception e){
+
+            else if (mpayloadType.contains("text")){
+                mpayload = new String(temp, "UTF-8");
             }
         }
-
+        catch (Exception e){
+            e.printStackTrace();
+        }
+        Log.d("QwasiDebug", mpayload.toString());
         return this;
     }
 

@@ -1,6 +1,7 @@
 package com.qwasi.sdk;
 
 import android.app.Activity;
+
 import android.content.Context;
 import android.location.Location;
 import android.os.Bundle;
@@ -8,11 +9,8 @@ import android.os.Bundle;
 import com.google.android.gms.common.ConnectionResult;
 
 import com.google.android.gms.common.ErrorDialogFragment;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 
-import com.google.android.gms.location.FusedLocationProviderApi;
-import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -32,32 +30,50 @@ public class QwasiLocationManager implements
         LocationListener{
     boolean mdeferred;
     private Context sharedApplication;
+    final private Qwasi shared;
     boolean mstarted = false;
     private long mupdateDistance = 100; //100 meter
     private long mupdateInterval =1800000; //30 minutes in milliseconds;
     public GoogleApiClient mmanager = null;
-    //public Geofence[] mregionMap;
     public HashMap<String, Object> mregionMap = null;
     private QwasiLocation mLastLocation = null;
     protected LocationRequest mactiveManager = new LocationRequest().create();
-    private LocationListener mlocationListener;
+    private static String eventTag = "com.qwasi.event.location.update";
 
-    public QwasiLocationManager(Context application){
+    public QwasiLocationManager(Context application, Qwasi main){
+        shared = main;
         sharedApplication = application;
-        //SharedPreferences pref = sharedApplication.getSharedPreferences(sharedApplication.getPackageName(), Context.MODE_PRIVATE);
         mactiveManager.setSmallestDisplacement(mupdateDistance);
         mactiveManager.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         mactiveManager.setFastestInterval(3000);
         mactiveManager.setInterval(mupdateInterval);
+        mactiveManager.setNumUpdates(1000);
+    }
+
+    private void postToServer() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HashMap<String, Object> data = new HashMap<String, Object>();
+                data.put("lat", mLastLocation.getLatitude());
+                data.put("lng", mLastLocation.getLongitude());
+                data.put("timestamp", System.currentTimeMillis() / 1000L);
+                shared.postEvent(eventTag, data);
+                shared.fetchLocationsNear(mLastLocation, false, false);
+            }
+        }).start();
     }
 
     public QwasiLocation getLastLocation(){
         if (mLastLocation != null) {
             return mLastLocation;
         }
-        else {
+        else if(LocationServices.FusedLocationApi.getLastLocation(mmanager)!=null){
             mLastLocation = new QwasiLocation(LocationServices.FusedLocationApi.getLastLocation(mmanager));
             return mLastLocation;
+        }
+        else{
+            return null;
         }
     }
 
@@ -96,15 +112,19 @@ public class QwasiLocationManager implements
             Bundle arguments = new Bundle();
             arguments.putInt("dialog_error", connectionResult.getErrorCode());
             diagFrag.setArguments(arguments);
-            //diagFrag.show(getSupportFragmentManager(), "errordialog");
         }
 
     }
 
     @Override
     public void onConnected(Bundle bundle){
-        startLocationUpdates();
-        mstarted = true;
+        if (mmanager.isConnected()) {
+            this.startLocationUpdates();
+            this.mstarted = true;
+        }
+        else{
+            mmanager.reconnect();
+        }
     }
 
     @Override
@@ -116,6 +136,7 @@ public class QwasiLocationManager implements
         else {
             mLastLocation.initWithLocation(location);
         }
+        postToServer();
     }
 
     private QwasiLocationManager backgroundManager(){
@@ -138,9 +159,7 @@ public class QwasiLocationManager implements
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-        if (mmanager != null) {
-            mmanager.connect();
-        }
+        mregionMap = new HashMap<String, Object>();
         return this;
     }
 
@@ -148,23 +167,17 @@ public class QwasiLocationManager implements
         mmanager = manager;
         mmanager.registerConnectionCallbacks(this);
         mmanager.registerConnectionFailedListener(this);
-        //if(this = super()){
-        //mrequiredStatus = status;
-        //mauthStatus = LocationManager.;
         mregionMap = new HashMap<String, Object>();
-        LocationRequest request = new LocationRequest();
-
         return this;
     }
 
     public void startLocationUpdates(){
-        LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this);
-
+        LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+        //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
     }
 
     public void stopLocationUpdates(){
         LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
-        //for mregionMap
         this.stopMonitoringLocation(mLastLocation);
         mstarted = false;
     }

@@ -4,7 +4,6 @@ import android.app.Application;
 import android.content.Context;
 
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -16,12 +15,11 @@ import android.util.Log;
 import com.google.android.gms.location.Geofence;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -62,8 +60,8 @@ public class Qwasi{// implements Plugin{
         this.qwasiAppManager = new QwasiAppManager(this);
         this.mclient = new QwasiClient();
         this.networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        qwasiNotificationManager = new QwasiNotificationManager(context);
-        mlocationManager = new QwasiLocationManager(context);
+        qwasiNotificationManager = new QwasiNotificationManager(context, this);
+        mlocationManager = new QwasiLocationManager(context, this);
     }
 
     public Qwasi qwasiWithConfig(QwasiConfig config) {
@@ -389,6 +387,7 @@ public class Qwasi{// implements Plugin{
                             if (response.indicatesSuccess()) {
                                 QwasiMessage temp = new QwasiMessage().
                                         messageWithData((HashMap<String, Object>)response.getResult());
+                                mmessageCache.put(temp.messageId, temp);
                                 return temp;
                             } else {
                                 throw new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
@@ -426,7 +425,7 @@ public class Qwasi{// implements Plugin{
         }
     }
 
-    public QwasiMessage fetchUnreadMessage(/*func calls*/)throws QwasiError{
+    public QwasiMessage fetchUnreadMessage()throws QwasiError{
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> options = new HashMap<String, Object>();
@@ -500,8 +499,6 @@ public class Qwasi{// implements Plugin{
             HashMap<String, Object> parms = new HashMap<String, Object>();
             HashMap<String, Object> near = new HashMap<String, Object>();
             ArrayList<String> options = new ArrayList<String>();
-            mlastLocation = mlocationManager.getLastLocation();
-            Log.d("QwasiDebug",  (String.format("%.2f, %.2f", mlastLocation.getLatitude(), mlastLocation.getLongitude())));
             near.put("lng", place.getLongitude());
             near.put("lat", place.getLatitude());
             near.put("radius", Double.valueOf(locationSyncFilter*10));
@@ -511,32 +508,33 @@ public class Qwasi{// implements Plugin{
             parms.put("options", options);
             try {
                 JSONRPC2Response response = mclient.invokeMethod("location.fetch", parms);
-                near = (HashMap<String, Object>) response.getResult();
-                HashMap<String, Object>[] positions = (HashMap<String, Object>[]) near.get("positions");
-                for (int index = 0; index < positions.length; index++) {
-                    //todo need to do somthing with the locations
-                    //for locations in response figure out what type they are i.e. beacons/geofence/
-                    if (positions[index].containsKey("beacon")) {
-                        //deal with beacons?  NYI because beacons are primarily apple
-                    } else if (positions[index].containsKey("geofence")) {
-                        parms = (HashMap<String, Object>) positions[index].get("properties");
-                        HashMap<String, Object> geo = (HashMap<String, Object>)positions[index].get("geometry");
-                        Double[] latlong = (Double[])geo.get("coordinates");
-                        Geofence temp = new Geofence.Builder()
-                                .setRequestId((String)parms.get("id"))
-                                .setCircularRegion(latlong[0], latlong[1], (Integer) parms.get("radius"))
-                                .setExpirationDuration((Integer) parms.get("enter_interval"))
-                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT)
-                                .build();
-                        mlocationManager.mregionMap.put((String)parms.get("id"), temp);
-                    } else {//rfid?
+                near.put("response", response.getResult());
+                JSONArray positions = (JSONArray) near.get("response");
+                for (int index = 0; index < positions.length(); index++) {
+                    near.put("thing" + String.valueOf(index), positions.get(index));
+                        //for locations in response figure out what type they are i.e. beacons/geofence/
+                        if (false) {//deal with beacons?  NYI because beacons are primarily apple
+                        } else if (true) {
+                            parms = (HashMap<String, Object>) near.get("properties");
+                            HashMap<String, Object> geo = (HashMap<String, Object>) near.get("geometry");
+                            Double[] latlong = (Double[]) geo.get("coordinates");
+                            Geofence temp = new Geofence.Builder()
+                                    .setRequestId((String) parms.get("id"))
+                                    .setCircularRegion(latlong[0], latlong[1], (Integer) parms.get("radius"))
+                                    .setExpirationDuration((Integer) parms.get("enter_interval"))
+                                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT)
+                                    .build();
+                            mlocationManager.mregionMap.put((String) parms.get("id"), temp);
+                        } else {//rfid?
+
 
                     }
+                    near.remove("thing");
                 }
                 return QwasiErrorCode.QwasiErrorNone;
             }
             catch (Throwable e){
-                Log.d("Debug", e.getMessage());
+                e.printStackTrace();
                 return QwasiErrorCode.QwasiErrorLocationFetchFailed; //fixme 401/404
             }
         }
