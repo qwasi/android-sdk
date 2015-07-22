@@ -34,6 +34,9 @@ enum QwasiErrorCode{
 }
 
 public class QwasiError extends Throwable{
+    String message;
+    Error error;
+    QwasiErrorCode code;
 
     public QwasiError errorWithCode(QwasiErrorCode code, String message) throws QwasiError{
         return this.errorWithCode(code, message, null);
@@ -49,8 +52,16 @@ public class QwasiError extends Throwable{
         else{
             userInfo.put(message, null);
         }
-
-        return null;
+        this.message = message;
+        this.code = code;
+        return this;
     }
+
+    @Override
+    public String getMessage(){
+        return this.message;
+    }
+
+
 }
 

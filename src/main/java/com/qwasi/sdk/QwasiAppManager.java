@@ -35,6 +35,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         @Override
         public void run() {
             sharedApplication.postEvent(event, data);
+            this.notify();
         }
     });
 
@@ -50,7 +51,8 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<String, Object>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
-        postEvent.start();
+        if (postEvent.getState() == Thread.State.TERMINATED)
+            postEvent.start();
         ++resumed;
     }
 
@@ -78,7 +80,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<String, Object>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
-        postEvent.start();
+        if (postEvent.getState() == Thread.State.TERMINATED) {
+            postEvent.start();
+        }
     }
 
     public boolean isApplicationStopped(){

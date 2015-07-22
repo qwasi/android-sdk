@@ -6,11 +6,16 @@ import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.support.annotation.DrawableRes;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -23,46 +28,58 @@ import com.google.android.gms.iid.InstanceID;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Observer;
+import java.util.regex.Pattern;
 
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiNotificationManager{
+public class QwasiNotificationManager extends GcmListenerService{
     private String mpushToken;
     private Boolean mregistering;
     private Context mContext;
-    private Qwasi qwasi;
+    final private Qwasi qwasi;
     final String TAG = "QwasiNotificationMngr";
+    GcmReceiver receiver = new GcmReceiver();
 
-    public QwasiNotificationManager(Context app, Qwasi main){
+    public QwasiNotificationManager() {
         super();
-        mregistering = false;
-        mpushToken = "";
-        mContext = app;
-        qwasi = main;
+        qwasi = Qwasi.getInstance();
+        mContext = qwasi.getContext();
     }
 
-    public Boolean isRegistering(){
+    public QwasiNotificationManager(Context app, Qwasi main) {
+        synchronized (this) {
+            mregistering = false;
+            mpushToken = "";
+            mContext = app;
+            qwasi = main;
+            //receiver.
+            // Intent intent = new Intent(this, mContext.getClass());
+            //mContext.startService(intent);
+        }
+    }
+
+    public Boolean isRegistering() {
         return mregistering;
     }
 
-    public String getPushToken(){
+    public String getPushToken() {
         return mpushToken;
     }
 
-    public void setPushToken(String pushToken){
+    public void setPushToken(String pushToken) {
         mpushToken = pushToken;
     }
 
-    public QwasiErrorCode registerForRemoteNotification(){
+    public QwasiErrorCode registerForRemoteNotification() {
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
             // If we can find google play services, have the user download it?
             //GooglePlayServicesUtil.getErrorDialog();
             return QwasiErrorCode.QwasiErrorPushNotEnabled;
-        }
-        else {
+        } else {
             try {
                 SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                 String token;
@@ -82,8 +99,7 @@ public class QwasiNotificationManager{
                     }
                 }
                 mregistering = false;
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 Log.e("QwasiError", "Problem registering" + e.getMessage());
                 return QwasiErrorCode.QwasiErrorPushRegistrationFailed;
             }
@@ -110,26 +126,61 @@ public class QwasiNotificationManager{
                     if (!token.isEmpty()) {
                         mpushToken = token;
                     }
-                    if (appVersion == 0){
+                    if (appVersion == 0) {
                         appVersion = 210;
                     }
                     // save this token
                     prefEditor.putString("gcm_token", token);
                     prefEditor.putInt("AppVersion", appVersion);
                     prefEditor.commit();
-                    //todo save to preferancs not to manifest....
-                    //listener.onPushRegistrationSuccess(token);
-                    //Log.d("Qwasi", "Register4push");
                     Log.d(TAG, "New GCM token acquired: " + token);
 
 
                 } catch (Exception e) {
                     Log.d(TAG, "Catch");
-                    //Log.e(TAG, e.getMessage());
-                    //listener.onPushRegistrationError(e);
                 }
             }
         }).start();
+    }
+
+    public void onMessageReceived(String from, final Bundle data) {
+        //synchronized (this) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String qwasidata = (String) data.get("qwasi");
+                        String[] results = qwasidata.split(Pattern.quote("\""));
+                        Log.d(TAG, "From: " + results[11]);
+                        Log.d(TAG, "Noteifcation: " + results[7]);
+                        sendNotification(qwasi.fetchMessageForNotification(data, false, false));
+                    } catch (QwasiError e) {
+                        e.printStackTrace();
+                    } catch (Exception e) {
+                        Log.d(TAG, "bundle issue");
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        //}
+    }
+
+    private void sendNotification(QwasiMessage message) {
+        Intent intent = new Intent(this, mContext.getClass());
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+
+        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.common_ic_googleplayservices)
+                .setContentTitle(qwasi.mapplicationName)
+                .setContentText(message.malert)
+                .setAutoCancel(true)
+                .setSound(defaultSoundUri)
+                .setContentIntent(pendingIntent);
+        NotificationManager noteMng = (NotificationManager) getSystemService(mContext.NOTIFICATION_SERVICE);
+        noteMng.notify(0, noteBuilder.build());
+
     }
 
 }

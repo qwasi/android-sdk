@@ -48,19 +48,17 @@ public class QwasiClient extends AsyncTask{
     }
 
     public JSONRPC2Response invokeMethod(String method, Map<String, Object> parms) throws Throwable {
-        Log.d("Debug", "invoking API "+method+", with params"+parms.toString());
+        Log.d("QwasiDebug", "invoking API "+method+", with params"+parms.toString());
         mrequest = new JSONRPC2Request(method, parms, "");
         try {
             mresponse = msession.send(mrequest);
         }
         catch (JSONRPC2SessionException e){
             if(e.getCauseType() == JSONRPC2SessionException.NETWORK_EXCEPTION){
-                e.printStackTrace();
                 throw e.getCause();
             }
             else if (e.getCauseType() == JSONRPC2SessionException.BAD_RESPONSE){
             }
-            Log.d("WTF", "SessionException");
             throw mresponse.getError();
         }
         return mresponse;

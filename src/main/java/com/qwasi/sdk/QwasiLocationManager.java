@@ -2,35 +2,47 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 
+import android.app.IntentService;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 
 import com.google.android.gms.common.ErrorDialogFragment;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingEvent;
+import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
- * todo actually handle locations
  */
 
-public class QwasiLocationManager implements
+public class QwasiLocationManager extends IntentService
+        implements
+        ResultCallback<Status>,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener{
+        LocationListener {
     boolean mdeferred;
     private Context sharedApplication;
-    final private Qwasi shared;
+    private Qwasi shared;
     boolean mstarted = false;
     private long mupdateDistance = 100; //100 meter
     private long mupdateInterval =1800000; //30 minutes in milliseconds;
@@ -38,14 +50,22 @@ public class QwasiLocationManager implements
     public HashMap<String, Object> mregionMap = null;
     private QwasiLocation mLastLocation = null;
     protected LocationRequest mactiveManager = new LocationRequest().create();
+    protected GeofencingRequest mgeoRequest;
+    private static String TAG = "QwasiLocationManager";
     private static String eventTag = "com.qwasi.event.location.update";
+    private PendingIntent mgeoPendIntent = null;
+
+    public QwasiLocationManager(){
+        super(TAG);
+    }
 
     public QwasiLocationManager(Context application, Qwasi main){
+        super(TAG);
         shared = main;
         sharedApplication = application;
         mactiveManager.setSmallestDisplacement(mupdateDistance);
         mactiveManager.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-        mactiveManager.setFastestInterval(3000);
+        mactiveManager.setFastestInterval(30000);
         mactiveManager.setInterval(mupdateInterval);
         mactiveManager.setNumUpdates(1000);
     }
@@ -94,7 +114,8 @@ public class QwasiLocationManager implements
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        mmanager.reconnect();
+        mstarted = false;
     }
 
     @Override
@@ -113,7 +134,7 @@ public class QwasiLocationManager implements
             arguments.putInt("dialog_error", connectionResult.getErrorCode());
             diagFrag.setArguments(arguments);
         }
-
+        mstarted = false;
     }
 
     @Override
@@ -124,6 +145,7 @@ public class QwasiLocationManager implements
         }
         else{
             mmanager.reconnect();
+            mstarted = false;
         }
     }
 
@@ -172,7 +194,7 @@ public class QwasiLocationManager implements
     }
 
     public void startLocationUpdates(){
-        LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+        LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this).setResultCallback(this); //foreground
         //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
     }
 
@@ -182,17 +204,68 @@ public class QwasiLocationManager implements
         mstarted = false;
     }
 
-    public void startMoitoringLocation(QwasiLocation location){
+    public void startMoitoringLocation(Geofence input){
         synchronized (this){
-            if(mregionMap.containsKey(location.id)){
-                mregionMap.put(location.id, location);
-
+            mregionMap.put("id", input);
+            if (mregionMap != null){
+                GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
+                builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_DWELL);
+                builder.addGeofence(input);
+                if (mmanager.isConnected()) {
+                    LocationServices.GeofencingApi.addGeofences(mmanager, builder.build(), getGeoPendingIntent()).setResultCallback(this);
+                }
+                else{
+                    mmanager.connect();
+                }
             }
         }
     }
 
     public void stopMonitoringLocation(QwasiLocation location){
+        LocationServices.GeofencingApi.removeGeofences(mmanager, getGeoPendingIntent());
+        mregionMap = new HashMap<String, Object>();
+    }
 
-        //todo: clear location data?
+    private PendingIntent getGeoPendingIntent(){
+        Intent intent = new Intent(sharedApplication, this.getClass());
+        return PendingIntent.getService(sharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+
+    @Override
+    public void onHandleIntent(Intent input){
+        GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(input);
+        if (geofencingEvent.hasError()) {
+            //String errorMessage = GeofenceErrorMessages.getErrorString(this,
+              //      geofencingEvent.getErrorCode());
+            Log.e("QwasiGeofence", String.valueOf(geofencingEvent.getErrorCode()));
+            return;
+        }
+        // Get the transition type.
+        int geofenceTransition = geofencingEvent.getGeofenceTransition();
+        // Test that the reported transition was of interest.
+        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL){
+            List triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+
+            // Send notification and log the transition details.
+            Log.d("QwasiDebug", "Geo Dwell");
+            //shared.postEvent("location enter", null); //todo call events
+        }
+        else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT){
+            //shared.postEvent("location exit", null); //todo call events
+            Log.d("QwasiDebug", "Geo Exit");
+        }
+        else {
+            // Log the error.
+            Log.e("QwasiError", "invalid transition type");
+        }
+    }
+    @Override
+    public void onResult(Status status){
+        if (status.isSuccess()){
+            Log.d(TAG, "Geofence Success");
+        }
+        else{
+            Log.e(TAG, "Geofence failed status code: "+getString(status.getStatusCode()));
+        }
     }
 }
