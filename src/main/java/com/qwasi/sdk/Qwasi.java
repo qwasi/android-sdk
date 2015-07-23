@@ -23,12 +23,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import io.hearty.witness.Reporter;
+import io.hearty.witness.Witness;
+
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class Qwasi{// implements Plugin{
+public class Qwasi {// implements Plugin{
     private Context context;
     private Application sharedApplication;
     private SharedPreferences preferences;
@@ -36,7 +39,6 @@ public class Qwasi{// implements Plugin{
     private double locationUpdatefilter;
     private double locationEventFilter;
     private boolean mregistered;
-    //private QwasiLocation mlastLocation = null;
     private QwasiAppManager qwasiAppManager = null;
     private QwasiNotificationManager qwasiNotificationManager= null;
     public String mapplicationName = null;
@@ -125,7 +127,6 @@ public class Qwasi{// implements Plugin{
 
         muserToken = preferences.getString("qwasi_user_token","DROIDTOKEN");
         this.sharedApplication.registerActivityLifecycleCallbacks(qwasiAppManager);
-
         return this;
     }
 
