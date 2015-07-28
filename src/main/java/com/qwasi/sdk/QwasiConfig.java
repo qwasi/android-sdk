@@ -77,7 +77,6 @@ public class QwasiConfig extends HashMap<String, Object> {
                         url = new URL((String) applicationInfo.metaData.get("apiUrl"));
                     }
                 }
-                //todo else handle if meta data is empty
             }
         }
         catch (FileNotFoundException e){

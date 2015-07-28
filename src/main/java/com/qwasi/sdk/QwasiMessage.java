@@ -19,31 +19,32 @@ import java.util.Timer;
  */
 public class QwasiMessage extends Object{
     public String malert;
-    public Timer mtimestamp;
+    public Date mtimestamp;
     public String messageId;
     public String application;
     public String mpayloadType;
     public Object mpayload;
     public ArrayList<Object> mtags;
-    public Boolean silent;
     public Boolean selected;
     public Boolean fetched;
     private Object mencodedPayload;
 
     public QwasiMessage(){
         super();
-        mtags = new ArrayList<Object>();
+        mtags = new ArrayList<>();
     }
 
     private QwasiMessage initWithData(HashMap<String, Object> data){
         messageId = data.get("id").toString();
         application = ((HashMap<String, Object>)data.get("application")).get("id").toString();
         malert = data.get("text").toString();
-        //todo check appmanager for ap status
+        if (Qwasi.getInstance().qwasiAppManager.isApplicationInForeground()){
+            selected = true;
+        }
         //dateformater = date
         DateFormat dateFormatter = new DateFormat();
 
-        Date timestamp = new Date();
+        mtimestamp = new Date();
 
         mpayloadType = data.get("payload_type").toString();
         if (((HashMap<String, Object>) data.get("context")).containsKey("tags")) {
@@ -84,7 +85,7 @@ public class QwasiMessage extends Object{
         mpayload = payload;
         mpayloadType = payloadtype;
         mtags = tags;
-        mtimestamp = new Timer();
+        mtimestamp = new Date();
         if (mpayloadType == null) {
             if (mpayload instanceof JSONObject){
                 mpayloadType = "application/json";
@@ -96,12 +97,8 @@ public class QwasiMessage extends Object{
         return this;
     }
 
-    public void encodeWithCoder(){
-
-    }
-
     public Boolean silent(){
-        return (malert == null);
+        return (malert == null)||(malert == "");
     }
 
     public String description(){

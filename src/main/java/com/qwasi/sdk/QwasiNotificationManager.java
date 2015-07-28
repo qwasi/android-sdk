@@ -162,7 +162,11 @@ public class QwasiNotificationManager extends GcmListenerService{
         Intent intent = new Intent(this, mContext.getClass());
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Uri defaultSoundUri;
+        if (!message.silent()) {
+            defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        }
+        else defaultSoundUri = null;
         String appName = mContext.getPackageManager().getApplicationLabel(mContext.getApplicationInfo()).toString();
         NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(mContext.getApplicationInfo().icon)

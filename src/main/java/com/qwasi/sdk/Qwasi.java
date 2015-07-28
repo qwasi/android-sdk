@@ -2,12 +2,10 @@ package com.qwasi.sdk;
 
 import android.app.Application;
 import android.content.Context;
-
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
-
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
@@ -36,7 +34,7 @@ public class Qwasi {
     private double locationUpdatefilter;
     private double locationEventFilter;
     private boolean mregistered;
-    private QwasiAppManager qwasiAppManager = null;
+    QwasiAppManager qwasiAppManager = null; //package accessable
     private QwasiNotificationManager qwasiNotificationManager= null;
     public String mapplicationName = null;
     private String mdeviceToken = null;
@@ -62,8 +60,8 @@ public class Qwasi {
 
         @Override
         public void onFailure(QwasiError e) {
-            e.printStackTrace();
-            Log.e("QwasiError", e.message); //todo make default fail interface?
+            //e.printStackTrace();
+            Log.e("QwasiError", e.message);
         }
     };
 
@@ -187,7 +185,7 @@ public class Qwasi {
         }
     }
 
-    private void mregisterDevice(String deviceToken,
+    private synchronized void mregisterDevice(String deviceToken,
                                        String name,
                                        String userToken,
                                        HashMap<String, Object> userInfo,
@@ -297,11 +295,12 @@ public class Qwasi {
                 }
             });
         }
-        //else pass though
-        Log.e("QwasiError", "Device Not Registered");
-        callbacks.onFailure(new QwasiError()
-                .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
-                        "Device Not Registred"));
+        else {
+            Log.e("QwasiError", "Device Not Registered");
+            callbacks.onFailure(new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                            "Device Not Registred"));
+        }
     }
 
     public void registerDevice(String deviceToken, String name, String userToken, QwasiInterface qwasiInterface){
@@ -395,7 +394,7 @@ public class Qwasi {
             });
         }
         else {
-            Log.e("QwasiError", "DeviceNotRegistered");
+            Log.e("QwasiError", "Device Not Registered");
             callback.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                     "Device not Registered"));
         }
@@ -424,7 +423,7 @@ public class Qwasi {
             });
         }
         else{
-            Log.e("QwasiError", "DeviceNotRegistered");
+            Log.e("QwasiError", "Device Not Registered");
             callback.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                 "device not Registered"));
         }
@@ -434,7 +433,7 @@ public class Qwasi {
         this.fetchMessageForNotification(userInfo, defaultCallback);
     }
 
-    public void fetchMessageForNotification(Bundle userInfo, final QwasiInterface qwasiInterface) {
+    public synchronized void fetchMessageForNotification(Bundle userInfo, final QwasiInterface qwasiInterface) {
         if(mregistered){
             HashMap<String, Object> flags = new HashMap<>();
             HashMap<String, Object> results = new HashMap<>();
@@ -495,7 +494,7 @@ public class Qwasi {
     public void fetchUnreadMessage(){
         this.fetchUnreadMessage(defaultCallback);}
 
-    public void fetchUnreadMessage(final QwasiInterface qwasiInterface){
+    public synchronized void fetchUnreadMessage(final QwasiInterface qwasiInterface){
         if(mregistered) {
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> options = new HashMap<>();
@@ -527,12 +526,14 @@ public class Qwasi {
 
             });
         }
-        Log.e("QwasiError", "Device Not Registered");
-        qwasiInterface.onFailure(new QwasiError()
-                .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registered"));
+        else {
+            Log.e("QwasiError", "Device Not Registered");
+            qwasiInterface.onFailure(new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registered"));
+        }
     }
 
-    public void postEvent(String type, HashMap<String, Object> data, final QwasiInterface qwasiInterface){
+    public synchronized void postEvent(String type, HashMap<String, Object> data, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
@@ -555,12 +556,14 @@ public class Qwasi {
                 }
             });
         }
-        Log.e("QwasiError", "Device NotRegistered");
-        qwasiInterface.onFailure(new QwasiError()
-                .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registered"));
+        else {
+            Log.e("QwasiError", "Device NotRegistered");
+            qwasiInterface.onFailure(new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registered"));
+        }
     }
 
-    public void  postEvent(String type, HashMap<String, Object> data){
+    public void postEvent(String type, HashMap<String, Object> data){
         this.postEvent(type, data, defaultCallback);
     }
 
@@ -568,7 +571,7 @@ public class Qwasi {
        this.fetchLocationsNear(place, defaultCallback);
     }
 
-    public void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
+    public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> near = new HashMap<>();
@@ -632,16 +635,18 @@ public class Qwasi {
                 }
             });
         }
-        Log.e("QwasiError", "Device Not Registered");
-        qwasiInterface.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
-                "Device not registered"));
+        else {
+            Log.e("QwasiError", "Device Not Registered");
+            qwasiInterface.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device not registered"));
+        }
     }
 
     public void subscribeToChannel(String channel){
         this.subscribeToChannel(channel, defaultCallback);
     }
 
-    public void subscribeToChannel(String channel, final QwasiInterface qwasiInterface){
+    public synchronized void subscribeToChannel(String channel, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
@@ -666,16 +671,18 @@ public class Qwasi {
 
 
         }
-        Log.e("QwasiError", "Device NotRegistered");
-        qwasiInterface.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
-                "Device Not Registered"));
+        else {
+            Log.e("QwasiError", "Device NotRegistered");
+            qwasiInterface.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
+                    "Device Not Registered"));
+        }
     }
 
     public void unsubscribeFromChannel(String channel){
         this.unsubscribeFromChannel(channel, defaultCallback);
     }
 
-    public void unsubscribeFromChannel(String channel, final QwasiInterface qwasiInterface){
+    public synchronized void unsubscribeFromChannel(String channel, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
@@ -699,12 +706,14 @@ public class Qwasi {
 
 
         }
-        Log.e("QwasiError", "Device NotRegistered");
-        qwasiInterface.onFailure(new QwasiError()
-                .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device not Registered"));
+        else {
+            Log.e("QwasiError", "Device NotRegistered");
+            qwasiInterface.onFailure(new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device not Registered"));
+        }
     }
 
-    public void setDeviceValue(Object value, String key, final QwasiInterface qwasiInterface){
+    public synchronized void setDeviceValue(Object value, String key, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("id", mdeviceToken);
@@ -744,7 +753,7 @@ public class Qwasi {
         this.deviceValueForKey(key, defaultCallback); //default
     }
 
-    public void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
+    public synchronized void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
         if (mregistered){
             final Map<String, Object> parms = new HashMap<>();
             parms.put("id", mdeviceToken);
@@ -752,12 +761,7 @@ public class Qwasi {
             mclient.invokeMethod("device.get_data", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    parms.put("result", o);
-                    //todo push data to screen?
-                    Log.d("Debug", (String) parms.get("result"));
-                    Log.d("QwasiDebug", "Get data Success");
-                    qwasiInterface.onSuccess(new QwasiError()
-                            .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
+                    qwasiInterface.onSuccess(o);
                 }
 
                 @Override
@@ -777,7 +781,7 @@ public class Qwasi {
         }
     }
 
-    public void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface) {
+    public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface) {
         if(mregistered) {
             Object payload = message.mpayload;
             if (payload != null){
