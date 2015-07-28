@@ -2,8 +2,6 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
-import android.app.IntentService;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -27,8 +25,8 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     private HashMap<String, Object> data;
 
 
-    public QwasiAppManager(Qwasi application){
-        this.sharedApplication = application;
+    public QwasiAppManager(){
+        this.sharedApplication = Qwasi.getInstance();
     }
 
     private Thread postEvent = new Thread(new Runnable() {
@@ -48,7 +46,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityResumed(Activity activity){
-        data = new HashMap<String, Object>();
+        data = new HashMap<>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
         if (postEvent.getState() == Thread.State.TERMINATED)
@@ -77,7 +75,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     @Override
     public void onActivityStopped(Activity activity){
         ++stopped;
-        data = new HashMap<String, Object>();
+        data = new HashMap<>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
         if (postEvent.getState() == Thread.State.TERMINATED) {

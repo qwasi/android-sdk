@@ -1,34 +1,25 @@
 package com.qwasi.sdk;
 
-import android.app.ActivityManager;
+
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.support.annotation.DrawableRes;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GcmListenerService;
-import com.google.android.gms.gcm.GcmReceiver;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
-import java.io.FileNotFoundException;
-import java.util.List;
-import java.util.Observer;
 import java.util.regex.Pattern;
 
 /**
@@ -42,7 +33,6 @@ public class QwasiNotificationManager extends GcmListenerService{
     private Context mContext;
     final private Qwasi qwasi;
     final String TAG = "QwasiNotificationMngr";
-    GcmReceiver receiver = new GcmReceiver();
 
     public QwasiNotificationManager() {
         super();
@@ -70,7 +60,7 @@ public class QwasiNotificationManager extends GcmListenerService{
         return mpushToken;
     }
 
-    public void setPushToken(String pushToken) {
+    void setPushToken(String pushToken) {
         mpushToken = pushToken;
     }
 
@@ -132,7 +122,7 @@ public class QwasiNotificationManager extends GcmListenerService{
                     // save this token
                     prefEditor.putString("gcm_token", token);
                     prefEditor.putInt("AppVersion", appVersion);
-                    prefEditor.commit();
+                    prefEditor.apply();
                     Log.d(TAG, "New GCM token acquired: " + token);
 
 
@@ -144,43 +134,46 @@ public class QwasiNotificationManager extends GcmListenerService{
     }
 
     public void onMessageReceived(String from, final Bundle data) {
-        //synchronized (this) {
+        synchronized (this) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        String qwasidata = (String) data.get("qwasi");
-                        String[] results = qwasidata.split(Pattern.quote("\""));
-                        Log.d(TAG, "From: " + results[11]);
-                        Log.d(TAG, "Noteifcation: " + results[7]);
-                        sendNotification(qwasi.fetchMessageForNotification(data, false, false));
-                    } catch (QwasiError e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        Log.d(TAG, "bundle issue");
-                        e.printStackTrace();
-                    }
+                    String qwasidata = (String) data.get("qwasi");
+                    String[] results = qwasidata.split(Pattern.quote("\""));
+                    Log.d(TAG, "From: " + results[11]);
+                    Log.d(TAG, "Noteifcation: " + results[7]);
+                    qwasi.fetchMessageForNotification(data, new Qwasi.QwasiInterface() {
+                        @Override
+                        public void onSuccess(Object o) {
+                            sendNotification((QwasiMessage) o);
+                        }
+
+                        @Override
+                        public void onFailure(QwasiError e) {
+                            e.printStackTrace();
+                        }
+                    });
                 }
             }).start();
-        //}
+        }
     }
 
     private void sendNotification(QwasiMessage message) {
         Intent intent = new Intent(this, mContext.getClass());
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        String appName = mContext.getPackageManager().getApplicationLabel(mContext.getApplicationInfo()).toString();
         NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
-                .setSmallIcon(R.drawable.common_ic_googleplayservices)
-                .setContentTitle(qwasi.mapplicationName)
+                .setSmallIcon(mContext.getApplicationInfo().icon)
+                .setContentTitle(appName)
                 .setContentText(message.malert)
+                .setTicker(message.description())
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(pendingIntent);
-        NotificationManager noteMng = (NotificationManager) getSystemService(mContext.NOTIFICATION_SERVICE);
+        NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         noteMng.notify(0, noteBuilder.build());
 
     }
-
 }

@@ -48,17 +48,18 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ```
 
 ## Library initialization `Qwasi`
-
 ### Allocate a new Qwasi
-Because of the syntextual differances of iOS, and Android new Qwasi instances will need to be created and passed differant things to build it correctly
+The Qwasi object is created as a Singleton object; in order to access it and the constructor simply call the static function getInstance anywhere in the program.
+If the object hasn't been initialized that will need to be done afterwords with the application Context.
 
 ```java
-	Qwasi qwasi = new Qwasi(Context);
-	qwasi.qwasiWithConfig(QwasiConfig);
+	Qwasi qwasi = new Qwasi.getInstance();
+	qwasi.initQwasi(this);
 ```
 
 ## Library Configuration `QwasiConfig`
-By default the qwasi config will attempt to init with basic values or pull information from the androidmanifest.xml <meta-data> tags.  If a custom file is desired, or pulling from the manifest is desired this needs to be followed.
+By default the Qwasi config will attempt to initialized with basic values or pull information from the androidmanifest.xml <meta-data> tags.  If a custom file is desired, or pulling from the manifest is desired this needs to be followed.
+The Qwasi Object attempts this by default when it is initialized.
 
 ```java
 	QwasiConfig config = new QwasiConfig(Context);
@@ -108,7 +109,7 @@ Example:
 	QwasiConfig config = new QwasiConfig.configWithURL(url, "AppID srting", "API String");
 	qwasi.qwasiWithConfig(config);
 ```
-## Event Emitters
+## Event Emitters NYI
 The Qwasi libary uses nodejs like emitters to emit events. You can listen for these events by registering a listener using one of the registation methods.
 
 ```java
@@ -151,7 +152,6 @@ Example:
     // Get our device token from the defaults
     SharedPreferences preferences =  this.getSharedPreferences("app preferances", Context.MODE_PRIVATE);
     String deviceToken = preferences.getString("key value", default value);
-
     qwasi.registerDevice(deviceToken, USER_TOKEN);
     SharedPreferences.Editor editor = preferences.edit();
     editor.putString("key" qwasi.getMDeviceToken);

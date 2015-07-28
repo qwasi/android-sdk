@@ -25,7 +25,7 @@ enum QwasiLocationState{
     QwasiLocationStateInside
 }
 
-public class QwasiLocation extends Location{
+public class QwasiLocation extends Location {
     private QwasiLocationType type;
     private QwasiLocationState state;
     private double longitude;
@@ -60,7 +60,7 @@ public class QwasiLocation extends Location{
         return latitude;
     }
 
-    public QwasiLocation initWithLocation(Location location){
+    public QwasiLocation initWithLocation(Location location){ //fixme
         if (super.equals(this)){
             type = QwasiLocationType.QwasiLocationTypeCoordinate;
             //region
@@ -69,7 +69,7 @@ public class QwasiLocation extends Location{
         return this;
     }
 
-    public QwasiLocation initWithLocationData(HashMap<String, Object> data){
+    public QwasiLocation initWithLocationData(HashMap<String, Object> data){ //fixme
         Object coord = data.get("geofence.geometry.coordinates");
 
         return this;
@@ -81,10 +81,6 @@ public class QwasiLocation extends Location{
             return state;
         }
 
-        /*else if (dwellTime < DwellTime){
-            return QwasiLocationState.QwasiLocationStatePending;
-        }*/
-
         else if (type == QwasiLocationType.QwasiLocationTypeBeacon){
             return QwasiLocationState.QwasiLocationStateOutside;
         }
@@ -95,10 +91,10 @@ public class QwasiLocation extends Location{
     }
 
     public void enter(){
-
+       //todo emit enter events
     }
 
     public void exit(){
-
+        //todo emit exit event
     }
 }

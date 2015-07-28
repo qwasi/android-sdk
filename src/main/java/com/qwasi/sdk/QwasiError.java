@@ -3,7 +3,7 @@ package com.qwasi.sdk;
 import java.util.HashMap;
 
 /**
- * Created by ccoulton on 6/11/15.
+ * Created by Ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
@@ -35,15 +35,15 @@ enum QwasiErrorCode{
 
 public class QwasiError extends Throwable{
     String message;
-    Error error;
+    Exception error;
     QwasiErrorCode code;
 
-    public QwasiError errorWithCode(QwasiErrorCode code, String message) throws QwasiError{
+    public QwasiError errorWithCode(QwasiErrorCode code, String message){
         return this.errorWithCode(code, message, null);
     }
 
-    public QwasiError errorWithCode(QwasiErrorCode code, String message, Error error) throws QwasiError{
-        HashMap<String, Object> userInfo = new HashMap<String, Object>();
+    public QwasiError errorWithCode(QwasiErrorCode code, String message, Error error){
+        HashMap<String, Object> userInfo = new HashMap<>();
         userInfo.put("code", code);
         if (error != null){
             userInfo.put(message + " reason= " + error.getMessage(), null);
@@ -57,11 +57,13 @@ public class QwasiError extends Throwable{
         return this;
     }
 
+    void setError(Exception e) {
+        this.error = e;
+    }
+
     @Override
     public String getMessage(){
         return this.message;
     }
-
-
 }
 

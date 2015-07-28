@@ -36,7 +36,6 @@ public class QwasiConfig extends HashMap<String, Object> {
     }
 
     public QwasiConfig configWithFile(String path){
-        String senderID = "";
         String apiKey = "";
         String appID  = "";
         URL url = null;
@@ -78,9 +77,7 @@ public class QwasiConfig extends HashMap<String, Object> {
                         url = new URL((String) applicationInfo.metaData.get("apiUrl"));
                     }
                 }
-                else{
-                    //handle if meta data is null or empty
-                }
+                //todo else handle if meta data is empty
             }
         }
         catch (FileNotFoundException e){
@@ -138,19 +135,14 @@ public class QwasiConfig extends HashMap<String, Object> {
 
     public boolean isValid(){
 
-        if(murl == null) {
+        if((murl == null)|| //if url is null
+                ((mapplication == null) || //or if application is null, or (it's empty or invalid)
+                        (mapplication.equalsIgnoreCase("")|| mapplication.equalsIgnoreCase("INVAILD_APP_ID")))||
+                ((mkey == null) || //or if key is null, or it's empty or invalid
+                        (mkey.equalsIgnoreCase("")|| mkey.equalsIgnoreCase("INVAILD_API_KEY")))
+                ){
             return false;
         }
-
-        if((mapplication == null)|| (mapplication.equalsIgnoreCase("")||
-                        (mapplication.equalsIgnoreCase("INVAILD_APP_ID")))){
-            return false;
-        }
-
-        if ((mkey == null)||(mkey.equalsIgnoreCase("")||(mkey.equalsIgnoreCase("INVAILD_API_KEY")))){
-            return false;
-        }
-
         return true;
     }
 }

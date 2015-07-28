@@ -15,7 +15,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.ErrorDialogFragment;
 import com.google.android.gms.common.api.GoogleApiClient;
 
-import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
@@ -27,6 +26,8 @@ import com.google.android.gms.location.LocationServices;
 
 import java.util.HashMap;
 import java.util.List;
+
+import io.hearty.witness.Witness;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -40,7 +41,6 @@ public class QwasiLocationManager extends IntentService
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
-    boolean mdeferred;
     private Context sharedApplication;
     private Qwasi shared;
     boolean mstarted = false;
@@ -50,19 +50,13 @@ public class QwasiLocationManager extends IntentService
     public HashMap<String, Object> mregionMap = null;
     private QwasiLocation mLastLocation = null;
     protected LocationRequest mactiveManager = new LocationRequest().create();
-    protected GeofencingRequest mgeoRequest;
     private static String TAG = "QwasiLocationManager";
     private static String eventTag = "com.qwasi.event.location.update";
-    private PendingIntent mgeoPendIntent = null;
 
-    public QwasiLocationManager(){
+    protected QwasiLocationManager(){
         super(TAG);
-    }
-
-    public QwasiLocationManager(Context application, Qwasi main){
-        super(TAG);
-        shared = main;
-        sharedApplication = application;
+        shared = Qwasi.getInstance();
+        sharedApplication = shared.getContext();
         mactiveManager.setSmallestDisplacement(mupdateDistance);
         mactiveManager.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         mactiveManager.setFastestInterval(30000);
@@ -74,12 +68,12 @@ public class QwasiLocationManager extends IntentService
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HashMap<String, Object> data = new HashMap<String, Object>();
+                HashMap<String, Object> data = new HashMap<>();
                 data.put("lat", mLastLocation.getLatitude());
                 data.put("lng", mLastLocation.getLongitude());
                 data.put("timestamp", System.currentTimeMillis() / 1000L);
                 shared.postEvent(eventTag, data);
-                shared.fetchLocationsNear(mLastLocation, false, false);
+                shared.fetchLocationsNear(mLastLocation);
             }
         }).start();
     }
@@ -159,6 +153,7 @@ public class QwasiLocationManager extends IntentService
             mLastLocation.initWithLocation(location);
         }
         postToServer();
+        Witness.notify("Location");
     }
 
     private QwasiLocationManager backgroundManager(){
@@ -181,15 +176,15 @@ public class QwasiLocationManager extends IntentService
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-        mregionMap = new HashMap<String, Object>();
+        mregionMap = new HashMap<>();
         return this;
     }
 
-    public Object initWithGoogleApi(GoogleApiClient manager, Context sharedApplication){
+    public Object initWithGoogleApi(GoogleApiClient manager){
         mmanager = manager;
         mmanager.registerConnectionCallbacks(this);
         mmanager.registerConnectionFailedListener(this);
-        mregionMap = new HashMap<String, Object>();
+        mregionMap = new HashMap<>();
         return this;
     }
 
@@ -221,9 +216,9 @@ public class QwasiLocationManager extends IntentService
         }
     }
 
-    public void stopMonitoringLocation(QwasiLocation location){
+    public void stopMonitoringLocation(QwasiLocation location){ //fixme?
         LocationServices.GeofencingApi.removeGeofences(mmanager, getGeoPendingIntent());
-        mregionMap = new HashMap<String, Object>();
+        mregionMap.remove(location.id);
     }
 
     private PendingIntent getGeoPendingIntent(){
@@ -240,19 +235,22 @@ public class QwasiLocationManager extends IntentService
             Log.e("QwasiGeofence", String.valueOf(geofencingEvent.getErrorCode()));
             return;
         }
+        HashMap<String, Object> data = new HashMap<>();
         // Get the transition type.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
+        List triggeringGeofences = geofencingEvent.getTriggeringGeofences();
         // Test that the reported transition was of interest.
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL){
-            List triggeringGeofences = geofencingEvent.getTriggeringGeofences();
-
+            //data.put("", );
             // Send notification and log the transition details.
-            Log.d("QwasiDebug", "Geo Dwell");
-            //shared.postEvent("location enter", null); //todo call events
+            Witness.notify("Geofence.enter");
+            shared.postEvent("com.qwasi.event.location.enter", data); //todo call events
         }
         else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT){
-            //shared.postEvent("location exit", null); //todo call events
-            Log.d("QwasiDebug", "Geo Exit");
+            Witness.notify("Geofence.exit");
+            //data.put("", );
+            shared.postEvent("com.qwasi.event.location.exit", data); //todo call events
+
         }
         else {
             // Log the error.
