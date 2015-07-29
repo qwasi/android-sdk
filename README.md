@@ -1,7 +1,5 @@
 # Qwasi
 
-[![Build Status](android repo)](https://travis-ci.org/qwasi/ios-library)
-
 The Qwasi `Android SDK` provides a convenient method for accessing the Qwasi JSON-RPC API.
 
 ## Usage
@@ -15,12 +13,12 @@ To run the example project, clone the repo, and run 'gradle build' to make sure 
 
 ## Installation
 
-Qwasi is available as a gradle repo as either an ivy or maven repo. To install
+Qwasi is available as a gradle repo as mavenCentral repo. To install
 it, simply add the following lines to your build.gradle file:
 
 ```groovy
 repositories{
-	maven(or ivy){
+	mavenCentral(){
 		url 'repo url'
 	}
 }
@@ -40,7 +38,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 
 ## Gradle Dependencies
 
-```
+```groovy
  'Org.json'
  'JSONRPC2-base'
  'JSONRPC2-client'
@@ -81,6 +79,28 @@ The default configuration file is part of the `AndroidManifest.xml`. You create 
 </manifest>
 ```
 
+Also if you wish to use the default QwasiNotificationManager, QwasiLocationManager, to handle Location and Notifications these will needed to be added to the AndroidManifest as well
+
+```xml
+	<application....>
+		<!-- [Start Geofence Listener] -->
+        <service
+            android:name="com.qwasi.sdk.QwasiLocationManager"
+            android:exported="false">
+        </service>
+        <!-- [End Geofence Listener]-->
+        <!-- [START gcm_listener] -->
+		<service
+			android:name="com.qwasi.sdk.QwasiNotificationManager"
+			android:exported="false" >
+			<intent-filter>
+				<action android:name="com.google.android.c2dm.intent.RECEIVE" />
+			</intent-filter>
+		</service>
+		<!-- [END gcm_listener] -->
+	</application>
+```
+
 ### Custom Configuration File
 You can load a configuration from another property list by using: 
 
@@ -91,7 +111,8 @@ You can load a configuration from another property list by using:
 Example:
 
 ```java
-	QwasiConfig config = new QwasiConfig().configWithFile("path to text file here");
+	QwasiConfig config = new QwasiConfig();
+	config.configWithFile("path to text file here");
 ```
 
 **Note:  you should include the file extention type when passing it to this method**
@@ -109,29 +130,50 @@ Example:
 	QwasiConfig config = new QwasiConfig.configWithURL(url, "AppID srting", "API String");
 	qwasi.qwasiWithConfig(config);
 ```
-## Event Emitters NYI
-The Qwasi libary uses nodejs like emitters to emit events. You can listen for these events by registering a listener using one of the registation methods.
 
+**Note: You should always check to make sure that the config that you have is valid with the .isValid() function**
+
+## Event Emitters NYI
+The Qwasi library uses Witness library to create node like Emitter events.  These events will be caught by the Reporter interface, to register for these events
+simply use syntax below:
+
+Event emitter registering:
 ```java
-- (void)on:(id)event listener:(id)listener;
-- (void)once:(id)event listener:(id)listener;
-- (void)on:(id)event selector:(SEL)selector target:(__weak id)target;
-- (void)once:(id)event selector:(SEL)selector target:(__weak id)target;
+Witness.register(QwasiNotificationManager.class, this); //messaging events
+Witness.register(QwasiLocationManager.class, this); //location events
+Witness.register(Qwasi.class, this);  //general purpose events
 ```
 
+Interface implementation:
+```java
+@Override
+public void notifyEvent(Object o){
+	//handle threading events based on what you'd like to do.
+}
+```
+
+
+## Interface  `QwasiInterface`
+All of the methods in the Qwasi Library use a simple interface to handle success and failure callbacks to create a smooth threading experience.
+While all of the methods can accept a custom QwasiInterface object, a default one is offered in the Library as an example and for convenience.
+It should be Overloaded in order to handle your needs at any given time.
+
 ## Error Handling `QwasiError`
-Methods will throw QwasiErrors if the logic fails at any point. You will need to catch these errors and handle them as they come up.
+These will be created and passed to the QwasiInterface onFailed(QwasiError Error) method that is passed or the default.
 
 Example:
 
 ```java
-try{
-	qwasi.registerDevice(String, String);
-}
-catch(QwasiError e){
-	//handle the code from e
-	e.PrintStackTrace();
-}
+qwasi.registerDevice("UserToken", new QwasiInterface({
+	@Override
+	public void onSuccess(Object o){
+		//do success conditions here
+	}
+	@Override
+	public void onFailure(QwasiError e){
+		//handle error here
+	}
+});
 ```
 
 
@@ -143,7 +185,7 @@ the server when a device is registered or push is enabled.
 There are many `registerDevice` overloads defined in `Qwasi.java`, the simplest and most useful is:
 
 ```java
-public QwasiError registerDevice(String deviceToken, String userToken) 
+public void registerDevice(String deviceToken, String userToken)
 ```
 
 Example:
@@ -155,7 +197,7 @@ Example:
     qwasi.registerDevice(deviceToken, USER_TOKEN);
     SharedPreferences.Editor editor = preferences.edit();
     editor.putString("key" qwasi.getMDeviceToken);
-    editor.commit();
+    editor.apply();
 ```
 Note other 'registerDevice functions exist for when you have more or less information about the user, or device.
 
@@ -203,7 +245,7 @@ Qwasi supports a simplified registration for push notifications. Once the device
  true set it and then, simply call the method:
 
 ```java
- public QwasiError setPushEnabled() throws QwasiError
+ public void setPushEnabled(QwasiInterface)
 ```
 
 Example:
@@ -226,7 +268,7 @@ If your app has the backgroud fetch permission, you will still continue to get n
 If your app does not support background fetch, you can periodically call:
 
 ```java
-public QwasiMessage fetchUnreadMessage() throws QwasiError
+public void fetchUnreadMessage(QwasiInterface)
 ```
 Calling this in the UIThread so that you can check for messages.
 
@@ -235,29 +277,38 @@ Example:
 ```java
 protected void onStart(){
 	...
-    qwasi.fetchUnreadMessage();
+    qwasi.fetchUnreadMessage(new QwasiInterface(){
+    @Override
+    public void onSuccess(Object QwasiMessage){
+    	//push message to screen
+    	}
+    public void onFailure(QwasiError Error){
+    	//error handling
+    	}
+    });
 }
 ```
 This method will not generate a notification.  But if one is desired an example of how to create a notification can be seen at
-at the MyGcmListener included as examples.
+at the QwasiNotificationManager onRecieve for an example.
 
 ###### SDK Event - "message" (optional)
 ###### SDK Error - `QwasiErrorMessageFetchFailed`
 ###### API Method - `message.poll`
 
 ### Handling Incoming Messages
-You receive message via the GCMListener registered in the AndroidManifest.xml
+You receive message via the GCMListener registered in the AndroidManifest.xml, which can be .QwasiNotificationManager or some other class that you've defined.
 
 Example:
 
 ```java
 	@Override
 	public void onMessageReceived(String from, final Bundle data){
-		qwasi.fetchMessageForNotification(data, null, null);
+		qwasi.fetchMessageForNotification(data, QwasiInterface);
+		//or Qwasi.fetchMessageForNotification(data);
 	}
 ```
 
-While this effective again without a sendNotification method that builds the notification to send to the UIThread it simply returns it.
+While this effective again without a sendNotification method that builds the notification to send to the UIThread, post it to the onSuccess defined or the default if none is defined.
 ###### SDK Event - "message"
 ###### SDK Error - `QwasiErrorMessageFetchFailed`
 ###### API Method - N/A
@@ -268,7 +319,7 @@ While this effective again without a sendNotification method that builds the not
 ### Subscribe to a Channel
 
 ```java
-public QwasiErrorCode subscribeToChannel(String) throws QwasiErrror;
+public void subscribeToChannel(String, QwasiInterface)
 ```
 
 Example:
@@ -283,13 +334,13 @@ Example:
 ### Unsubscribe from Channel
 
 ```java
-public QwasiErrorCode unsubscribeFromChannel(String) QwasiErrror
+public void unsubscribeFromChannel(String, QwasiInterface)
 ```
 
 Example:
 
 ```java
-	qwasi.unsubscribeFromChannel("baseball);
+	qwasi.unsubscribeFromChannel("baseball");
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorChannelUnsubscribeFailed`
@@ -301,7 +352,7 @@ The `Qwasi` platform supports triggers on application events, but the events hav
 You can send custom events and configure your AIM to act on those as you see fit
 
 ```java
-public QwasiErrorCode postEvent:(String, HashMap<String, Object>)
+public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
 ```
 
 Example:
@@ -353,9 +404,8 @@ Qwasi supports a key value based cloud data storage system. This data stored dev
 ### Set Device Data
 
 ```java
-public QwasiErrorCode setDeviceValue(Object value, String key, Boolean success, Boolean failure);
-
-public QwasiErrorCode setDeviceValue(Object value, String key);
+public void setDeviceValue(Object value, String key, QwasiInterface);
+public void setDeviceValue(Object value, String key);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorSetDeviceDataFailed`
@@ -364,7 +414,7 @@ public QwasiErrorCode setDeviceValue(Object value, String key);
 ### Get Device Data
 
 ```java
-public QwasiErrorCode deviceValueForKey(String key);
+public void deviceValueForKey(String key);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorGetDeviceDataFailed`
@@ -372,20 +422,16 @@ public QwasiErrorCode deviceValueForKey(String key);
 
 Example:
 
-```objectivec
+```java
 qwasi.setDeviceValue("hotrod99", "user.displayname");
-
 qwasi.deviceValueForKey("user.displayname");
 ```
 ## Sending Message
 With the Qwasi API and SDK it is possible to send message to other users, this could facilitate a 2-way communication or chat application. Qwasi does not explictly support this functionality so much of the implementation is left to the developer. You will need to manage mapping your own userTokens to some useful data, which can be stored in the device record as described above.
 
 ```java
-public QwasiErrorCode sendMessage(QwasiMessage message, String userToken, Boolean successful, Boolean failure);  //Boolean may change to Methods or Threads
-
-public QwasiError sendMessage(QwasiMessage message, 
-       		  String userToken)
-throws QwasiError;
+public void  sendMessage(QwasiMessage message, String userToken, QwasiInterface);  //Boolean may change to Methods or Threads
+public void sendMessage(QwasiMessage message, String userToken);
 ```
 ###### SDK Event - N/A
 ###### SDK Error - `QwasiErrorSendMessageFailed`

@@ -69,17 +69,16 @@ sourceSets{
 
 uploadArchives{
 	repositories{
-		mavenDeployer{
-			//beforeDeployment{
-				//MavenDeployment deployment -> signign.singPom(deployment)
-			//}
+		mavenDeployer {
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
 			repository(url: "file:///Users/ccoulton/QwasiSDK/")
 
-			//repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-			//		{ authentication(username: ossrhUsername, password:ossrhPassword) }
+			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+					{ authentication(userName: ossrhUsername, password:ossrhPassword) }
 
-			//snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
-			//		{ authentication(username:ossrhUsername , password: ossrhPassword ) }
+			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
+					{ authentication(userName:ossrhUsername , password: ossrhPassword ) }
 
 			pom.project{
 				name 'QwasiSDK'
