@@ -65,17 +65,13 @@ public class QwasiLocationManager extends IntentService
     }
 
     private void postToServer() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                HashMap<String, Object> data = new HashMap<>();
-                data.put("lat", mLastLocation.getLatitude());
-                data.put("lng", mLastLocation.getLongitude());
-                data.put("timestamp", System.currentTimeMillis() / 1000L);
-                shared.postEvent(eventTag, data);
-                shared.fetchLocationsNear(mLastLocation);
-            }
-        }).start();
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("lat", mLastLocation.getLatitude());
+        data.put("lng", mLastLocation.getLongitude());
+        data.put("timestamp", System.currentTimeMillis() / 1000L);
+        shared.postEvent(eventTag, data);
+        shared.fetchLocationsNear(mLastLocation);
+
     }
 
     public QwasiLocation getLastLocation(){
