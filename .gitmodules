@@ -1,0 +1,3 @@
+[submodule "Witness"]
+	path = Witness
+	url = https://github.com/emil10001/Witness.git

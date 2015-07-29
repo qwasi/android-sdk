@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	  package="com.qwasi.sdk" >
+   
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+    <uses-permission android:name="com.google.android.c2dm.permission.SEND" />
+    <uses-permission android:name="com.google.android.c2dm.intent.REGISTRATION" />
+    <!-- need your application package name here  -->
+    <!--uses-permission android:name="com.qwasi.sdk.permission.C2D_MESSAGE" /-->
+    <uses-permission android:name="android.permission.GET_TASKS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!--<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
+    <uses-permission android:name="ANDROID.PERMISSION.ACCESS_LOCATION_EXTRA_COMMANDS"/>
+
+    <meta-data android:name="appID" android:value="55a93a58d666874b6e1109ce" />
+    <meta-data android:name="apiKey" android:value="4734601123be56bcdf4494907b2aaa9e"/>
+    <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
+    <meta-data android:name="gcm_senderid" android:value="335413682000" />
+    <meta-data android:name="sdk_version" android:value="2.1.0"/>
+
+</manifest>
