@@ -1,8 +1,8 @@
 //apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'signing'
 //apply plugin: 'ivy'
 apply plugin: 'maven-publish'
-apply plugin: 'ivy-publish'
 
 //android support
 buildscript {
@@ -41,7 +41,7 @@ repositories{
 }
 
 group = 'com.qwasi.sdk'
-
+archivesBaseName = "QwasiSDK"
 version = '2.1.0'
 
 dependencies {
@@ -70,7 +70,38 @@ sourceSets{
 uploadArchives{
 	repositories{
 		mavenDeployer{
-			repository(url: "file:///Users/ccoulton/QwasiSDK/")
+			beforeDeployment{
+				MavenDeployment deployment -> signign.singPom(deployment)
+			}
+			repository(url: "file:///Users/ccoulton/QwasiSDK/")//{ authentication(username:, password:) }
+
+			//snapshotRepository(url: "")//{ authentication(username:, password: ) }
+			pom.project{
+				name 'QwasiSDK'
+				packaging 'jar'
+				scm{
+
+				}
+				licenses{
+					license{
+						name 'MIT'
+						distribution 'repo'
+					}
+				}
+
+				developers{
+					developer{
+						id 'ccoulton'
+						name 'Charles Coulton'
+						email 'charles.coulton@qwasi.com'
+					}
+					developer {
+						name 'Rob Rodriguez'
+						email 'rob.rodriguez@qwasi.com'
+					}
+				}
+			}
+
 		}
 		ivy{
 			url "file:///Users/ccoulton/QwasiSDK"
@@ -98,5 +129,14 @@ task writeNewPom << {
 }
 
 task sourceJar(type: Jar){
-     from sourceSets.main.allJava
+	classifier = 'sources'
+	from sourceSets.main.allJava
+}
+
+artifacts{
+	archives sourceJar
+}
+
+signing{
+	sign configurations.archives
 }
