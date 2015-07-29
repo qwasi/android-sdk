@@ -14,6 +14,12 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>me.tatarka</groupId>
+      <artifactId>gradle-retrolambda</artifactId>
+      <version>3.2.0</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>com.google.android.gms</groupId>
       <artifactId>play-services-location</artifactId>
       <version>7.5.0</version>

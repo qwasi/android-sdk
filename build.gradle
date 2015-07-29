@@ -40,7 +40,7 @@ repositories{
     	}
 }
 
-group = 'com.qwasi.sdk'
+group = 'com.qwasi'
 archivesBaseName = "QwasiSDK"
 version = '2.1.0'
 
@@ -69,18 +69,26 @@ sourceSets{
 
 uploadArchives{
 	repositories{
-		mavenDeployer{
-			beforeDeployment{
-				MavenDeployment deployment -> signign.singPom(deployment)
-			}
-			repository(url: "file:///Users/ccoulton/QwasiSDK/")//{ authentication(username:, password:) }
+		mavenDeployer {
+			repository(url: "file:///Users/ccoulton/QwasiSDK/") //local
 
-			//snapshotRepository(url: "")//{ authentication(username:, password: ) }
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+					{ authentication(userName: ossrhUsername, password:ossrhPassword) }
+
+			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
+					{ authentication(userName:ossrhUsername , password: ossrhPassword ) }
+
 			pom.project{
 				name 'QwasiSDK'
 				packaging 'jar'
+				description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
+				url "https://github.com/Qwasi"
 				scm{
-
+					connection 'scm:git:git@github.com:qwasi/android-sdk.git'
+					developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
+					url 'https://github.com/qwasi/android-sdk'
 				}
 				licenses{
 					license{
@@ -113,7 +121,7 @@ uploadArchives{
 task writeNewPom << {
     pom {
         project {
-            groupId 'com.qwasi.sdk'
+            groupId 'com.qwasi'
             artifactId 'osSdk'
             version '2.1.0'
 
@@ -121,6 +129,7 @@ task writeNewPom << {
             licenses {
                 license {
                     name 'MIT'
+					url 'http://www.opensource.org/licenses/mit-license.php'
                     distribution 'repo'
                 }
             }
@@ -128,13 +137,24 @@ task writeNewPom << {
     }.writeTo("$buildDir/2.1.0.pom.xml")
 }
 
-task sourceJar(type: Jar){
+task sourcesJar(type: Jar) {
+	from android.sourceSets.main.java.srcDirs
 	classifier = 'sources'
-	from sourceSets.main.allJava
 }
 
-artifacts{
-	archives sourceJar
+task javadoc(type: Javadoc) {
+	source = android.sourceSets.main.java.srcDirs
+	classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives javadocJar
+	archives sourcesJar
 }
 
 signing{
