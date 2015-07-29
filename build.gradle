@@ -40,7 +40,7 @@ repositories{
     	}
 }
 
-group = 'com.qwasi.sdk'
+group = 'com.qwasi'
 archivesBaseName = "QwasiSDK"
 version = '2.1.0'
 
@@ -70,17 +70,23 @@ sourceSets{
 uploadArchives{
 	repositories{
 		mavenDeployer{
-			beforeDeployment{
-				MavenDeployment deployment -> signign.singPom(deployment)
-			}
-			repository(url: "file:///Users/ccoulton/QwasiSDK/")//{ authentication(username:, password:) }
+			//beforeDeployment{
+				//MavenDeployment deployment -> signign.singPom(deployment)
+			//}
+			repository(url: "file:///Users/ccoulton/QwasiSDK/")
 
-			//snapshotRepository(url: "")//{ authentication(username:, password: ) }
+			//repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+			//		{ authentication(username: ossrhUsername, password:ossrhPassword) }
+
+			//snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
+			//		{ authentication(username:ossrhUsername , password: ossrhPassword ) }
+
 			pom.project{
 				name 'QwasiSDK'
 				packaging 'jar'
+				description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
 				scm{
-
+					url 'https://code.qwasi.com/projects/SDK/repos/android-sdk/'
 				}
 				licenses{
 					license{
@@ -113,7 +119,7 @@ uploadArchives{
 task writeNewPom << {
     pom {
         project {
-            groupId 'com.qwasi.sdk'
+            groupId 'com.qwasi'
             artifactId 'osSdk'
             version '2.1.0'
 
@@ -121,6 +127,7 @@ task writeNewPom << {
             licenses {
                 license {
                     name 'MIT'
+					url 'http://www.opensource.org/licenses/mit-license.php'
                     distribution 'repo'
                 }
             }
