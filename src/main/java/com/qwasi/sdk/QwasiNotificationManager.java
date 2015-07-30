@@ -172,7 +172,8 @@ public class QwasiNotificationManager extends GcmListenerService{
                 .setSmallIcon(mContext.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
-                .setTicker(message.description())
+                //.setTicker(message.description())
+                //.setStyle()  //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
                 .setAutoCancel(true)
                 .setSound(defaultSoundUri)
                 .setContentIntent(pendingIntent);
