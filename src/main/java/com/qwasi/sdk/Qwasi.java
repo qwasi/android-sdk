@@ -251,7 +251,7 @@ public class Qwasi {
                 //get the settings out
                 info = (Map<String, Object>) info.get("settings");
                 mpushEnabled = (Boolean) info.get("push_enabled");
-                mlocationEnabled = (Boolean) info.get("location_enabled");
+                mlocationEnabled = (boolean) info.get("location_enabled");
                 if (mlocationEnabled) mlocationManager.mmanager.connect();
                 meventsEnabled = (Boolean) info.get("events_enabled");
 
@@ -573,7 +573,7 @@ public class Qwasi {
     }
 
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
-        if((mregistered)&&(mlocationEnabled)){
+        if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> near = new HashMap<>();
             near.put("lng", place.getLongitude());
