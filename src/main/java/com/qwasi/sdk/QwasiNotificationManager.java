@@ -195,6 +195,6 @@ public class QwasiNotificationManager extends GcmListenerService{
 
         NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         noteMng.notify(message.messageId.hashCode(), noteBuilder.build());
-        Witness.notify(message);
+        //Witness.notify(message);
     }
 }

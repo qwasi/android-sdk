@@ -127,14 +127,14 @@ Example:
 ```
 **Note: You should always check to make sure that the config that you have is valid with the .isValid() function**
 
-## Event Emitters NYI
+## Event Emitters
 
 The Qwasi library uses Witness library to create node like Emitter events. These events will be caught by the Reporter interface, to register for these events simply use syntax below:
 Event emitter registering:
 ```java
-Witness.register(QwasiNotificationManager.class, this); //messaging events
-Witness.register(QwasiLocationManager.class, this); //location events
-Witness.register(Qwasi.class, this);  //general purpose events
+Witness.register(QwasiMessage.class, this); //messaging events
+Witness.register(QwasiLocation.class, this); //location events
+Witness.register(String.class, this);  //general purpose events
 ```
 Interface implementation:
 ```java
@@ -143,6 +143,7 @@ public void notifyEvent(Object o){
     //handle threading events based on what you'd like to do.
 }
 ```
+**Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
 
 ## Interface `QwasiInterface`
 
