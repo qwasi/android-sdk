@@ -26,8 +26,8 @@ enum QwasiLocationState{
 }
 
 public class QwasiLocation extends Location {
-    private QwasiLocationType type;
-    private QwasiLocationState state;
+    QwasiLocationType type; //package private
+    QwasiLocationState state; //package private
     private double longitude;
     private double latitude;
     public String id;
@@ -76,18 +76,7 @@ public class QwasiLocation extends Location {
     }
 
     public QwasiLocationState stateCheck(){
-
-        if(state == QwasiLocationState.QwasiLocationStateInside){
-            return state;
-        }
-
-        else if (type == QwasiLocationType.QwasiLocationTypeBeacon){
-            return QwasiLocationState.QwasiLocationStateOutside;
-        }
-
-        else {
-            return QwasiLocationState.QwasiLocationStateUnknown;
-        }
+        return state;
     }
 
     public void enter(){

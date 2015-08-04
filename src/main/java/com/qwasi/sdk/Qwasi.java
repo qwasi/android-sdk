@@ -80,7 +80,7 @@ public class Qwasi {
         sharedApplication = (Application) context.getApplicationContext();
         this.qwasiAppManager = new QwasiAppManager();
         this.networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        qwasiNotificationManager= new QwasiNotificationManager(context, this);
+        qwasiNotificationManager= new QwasiNotificationManager(context);
         mconfig = new QwasiConfig(application);
         mlocationManager = new QwasiLocationManager();
         mconfig.configWithFile(); //default
@@ -143,7 +143,7 @@ public class Qwasi {
         locationSyncFilter = 200.0;
 
         mlocationManager.init();
-        preferences = context.getSharedPreferences("qwasi_sdk", Context.MODE_PRIVATE);
+        preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
         mregistered = preferences.getBoolean("registered", false);
 
         //are localNotifcations set
@@ -630,7 +630,7 @@ public class Qwasi {
                             //if this location doesn't already exist in the mregionMap add it
                             if (Qwasi.getInstance().mlocationManager.mregionMap.containsKey(obj.getString("id"))) {
                                 //for locations in response figure out what type they are i.e. beacons/geofence/
-                                if (obj.has("beacon")) {//deal with beacons using altBeacons
+                                if (obj.has("beacon")) {//deal with beacons using altBeaconsgt
                                     Log.d("QwasiDebug", "beacon");
                                 }
                                 else if (obj.has("geofence")) {

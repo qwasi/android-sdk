@@ -239,7 +239,10 @@ public class QwasiLocationManager extends IntentService
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL){
             //data.put("", );
             // Send notification and log the transition details.
-            Witness.notify(new QwasiLocation(geofencingEvent.getTriggeringLocation()));
+            QwasiLocation temp = new QwasiLocation(geofencingEvent.getTriggeringLocation());
+            temp.state = QwasiLocationState.QwasiLocationStateInside;
+            temp.type = QwasiLocationType.QwasiLocationTypeGeofence;
+            Witness.notify(temp);
             shared.postEvent("com.qwasi.event.location.enter", data);
         }
         else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT){

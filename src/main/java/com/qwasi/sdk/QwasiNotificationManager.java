@@ -35,6 +35,7 @@ public class QwasiNotificationManager extends GcmListenerService{
     private Boolean mregistering;
     private Context mContext;
     final private Qwasi qwasi;
+    private String senderId;
     final String TAG = "QwasiNotificationMngr";
 
     public QwasiNotificationManager() {
@@ -43,15 +44,13 @@ public class QwasiNotificationManager extends GcmListenerService{
         mContext = qwasi.getContext();
     }
 
-    public QwasiNotificationManager(Context app, Qwasi main) {
+    public QwasiNotificationManager(Context app) {
         synchronized (this) {
             mregistering = false;
             mpushToken = "";
             mContext = app;
-            qwasi = main;
-            //receiver.
-            // Intent intent = new Intent(this, mContext.getClass());
-            //mContext.startService(intent);
+            qwasi = Qwasi.getInstance();
+            senderId = "335413682000"; //default
         }
     }
 
@@ -111,11 +110,14 @@ public class QwasiNotificationManager extends GcmListenerService{
                     SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                     SharedPreferences.Editor prefEditor = sharedPreferences.edit();
                     Log.d(TAG, "attempting token");
-                    //String senderId = appinfo.metaData.get("gcm_senderid").toString();
-                    //Log.d(TAG, senderId);
+                    if (appinfo.metaData.containsKey("gcm_senderid")) {
+                        senderId = appinfo.metaData.get("gcm_senderid").toString();
+
+                    }
+                    Log.d(TAG, senderId);
                     int appVersion = appinfo.metaData.getInt("AppVersion"); //most likely null
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken("335413682000", GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
                     if (!token.isEmpty()) {
                         mpushToken = token;
                     }
@@ -125,10 +127,8 @@ public class QwasiNotificationManager extends GcmListenerService{
                     // save this token
                     prefEditor.putString("gcm_token", token);
                     prefEditor.putInt("AppVersion", appVersion);
-                    prefEditor.apply();
+                    prefEditor.commit();
                     Log.d(TAG, "New GCM token acquired: " + token);
-
-
                 } catch (Exception e) {
                     Log.d(TAG, "Catch");
                 }
