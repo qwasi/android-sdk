@@ -1,6 +1,7 @@
 package com.qwasi.sdk;
 
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -22,6 +23,8 @@ import com.google.android.gms.iid.InstanceID;
 
 import java.util.regex.Pattern;
 
+import io.hearty.witness.Witness;
+
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
@@ -32,6 +35,7 @@ public class QwasiNotificationManager extends GcmListenerService{
     private Boolean mregistering;
     private Context mContext;
     final private Qwasi qwasi;
+    private String senderId;
     final String TAG = "QwasiNotificationMngr";
 
     public QwasiNotificationManager() {
@@ -40,15 +44,13 @@ public class QwasiNotificationManager extends GcmListenerService{
         mContext = qwasi.getContext();
     }
 
-    public QwasiNotificationManager(Context app, Qwasi main) {
+    public QwasiNotificationManager(Context app) {
         synchronized (this) {
             mregistering = false;
             mpushToken = "";
             mContext = app;
-            qwasi = main;
-            //receiver.
-            // Intent intent = new Intent(this, mContext.getClass());
-            //mContext.startService(intent);
+            qwasi = Qwasi.getInstance();
+            senderId = "335413682000"; //default
         }
     }
 
@@ -108,11 +110,14 @@ public class QwasiNotificationManager extends GcmListenerService{
                     SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                     SharedPreferences.Editor prefEditor = sharedPreferences.edit();
                     Log.d(TAG, "attempting token");
-                    //String senderId = appinfo.metaData.get("gcm_senderid").toString();
-                    //Log.d(TAG, senderId);
-                    int appVersion = appinfo.metaData.getInt("AppVersion"); //probly null
+                    if (appinfo.metaData.containsKey("gcm_senderid")) {
+                        senderId = appinfo.metaData.get("gcm_senderid").toString();
+
+                    }
+                    Log.d(TAG, senderId);
+                    int appVersion = appinfo.metaData.getInt("AppVersion"); //most likely null
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken("335413682000", GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
                     if (!token.isEmpty()) {
                         mpushToken = token;
                     }
@@ -122,10 +127,8 @@ public class QwasiNotificationManager extends GcmListenerService{
                     // save this token
                     prefEditor.putString("gcm_token", token);
                     prefEditor.putInt("AppVersion", appVersion);
-                    prefEditor.apply();
+                    prefEditor.commit();
                     Log.d(TAG, "New GCM token acquired: " + token);
-
-
                 } catch (Exception e) {
                     Log.d(TAG, "Catch");
                 }
@@ -141,7 +144,7 @@ public class QwasiNotificationManager extends GcmListenerService{
                     String qwasidata = (String) data.get("qwasi");
                     String[] results = qwasidata.split(Pattern.quote("\""));
                     Log.d(TAG, "From: " + results[11]);
-                    Log.d(TAG, "Noteifcation: " + results[7]);
+                    Log.d(TAG, "Notification: " + results[7]);
                     qwasi.fetchMessageForNotification(data, new Qwasi.QwasiInterface() {
                         @Override
                         public void onSuccess(Object o) {
@@ -160,7 +163,7 @@ public class QwasiNotificationManager extends GcmListenerService{
 
     private void sendNotification(QwasiMessage message) {
         Intent intent = new Intent(this, mContext.getClass());
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
         Uri defaultSoundUri;
         if (!message.silent()) {
@@ -172,13 +175,26 @@ public class QwasiNotificationManager extends GcmListenerService{
                 .setSmallIcon(mContext.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
-                //.setTicker(message.description())
-                //.setStyle()  //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
                 .setAutoCancel(true)
-                .setSound(defaultSoundUri)
+                .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
+                .setSound(defaultSoundUri) //default sound
                 .setContentIntent(pendingIntent);
-        NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        noteMng.notify(0, noteBuilder.build());
 
+        //configure expanded action
+        if (message.mpayloadType.contains("text")){ //text
+            noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
+        }
+        else if(message.mpayloadType.contains("image")){ //image
+            Log.d(TAG, "Image");
+            //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
+        }
+        else if(message.mpayloadType.contains("json")){//application
+            Log.d(TAG, "App context");
+        }
+
+        NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        noteMng.notify(message.messageId.hashCode(), noteBuilder.build());
+        //Witness.notify(message);
     }
 }

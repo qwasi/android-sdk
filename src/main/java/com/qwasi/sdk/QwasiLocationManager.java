@@ -149,7 +149,7 @@ public class QwasiLocationManager extends IntentService
             mLastLocation.initWithLocation(location);
         }
         postToServer();
-        Witness.notify("Location");
+        Witness.notify(mLastLocation);
     }
 
     private QwasiLocationManager backgroundManager(){
@@ -239,13 +239,17 @@ public class QwasiLocationManager extends IntentService
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL){
             //data.put("", );
             // Send notification and log the transition details.
-            Witness.notify("Geofence.enter");
-            shared.postEvent("com.qwasi.event.location.enter", data); //todo call events
+            QwasiLocation temp = new QwasiLocation(geofencingEvent.getTriggeringLocation());
+            temp.state = QwasiLocationState.QwasiLocationStateInside;
+            temp.type = QwasiLocationType.QwasiLocationTypeGeofence;
+            Witness.notify(temp);
+            shared.postEvent("com.qwasi.event.location.enter", data);
         }
         else if(geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT){
             Witness.notify("Geofence.exit");
             //data.put("", );
-            shared.postEvent("com.qwasi.event.location.exit", data); //todo call events
+            Witness.notify(new QwasiLocation(geofencingEvent.getTriggeringLocation()));
+            shared.postEvent("com.qwasi.event.location.exit", data);
 
         }
         else {
