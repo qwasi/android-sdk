@@ -628,7 +628,7 @@ public class Qwasi {
                         for (int index=0; index < positions.length(); index++) {
                             obj = positions.getJSONObject(index);
                             //if this location doesn't already exist in the mregionMap add it
-                            if (Qwasi.getInstance().mlocationManager.mregionMap.containsKey(obj.getString("id"))) {
+                            if (!Qwasi.getInstance().mlocationManager.mregionMap.containsKey(obj.getString("id"))) {
                                 //for locations in response figure out what type they are i.e. beacons/geofence/
                                 if (obj.has("beacon")) {//deal with beacons using altBeaconsgt
                                     Log.d("QwasiDebug", "beacon");
@@ -657,7 +657,8 @@ public class Qwasi {
                             //else the id is contained in array
                         }
                     }catch (JSONException e){ //todo handle jsonExeceptions?
-
+                        Log.d("QwasiDebug", "JsonExecption");
+                        e.printStackTrace();
                     }
                     qwasiInterface.onSuccess(mlocationManager.mregionMap);
                 }

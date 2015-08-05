@@ -67,12 +67,36 @@ group = 'com.qwasi'
 archivesBaseName = "QwasiSDK"
 version = '2.1.2'
 
+task sourcesJar(type: Jar) {
+	from android.sourceSets.main.java.srcDirs
+	classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+	source = android.sourceSets.main.java.srcDirs
+	classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives javadocJar
+	archives sourcesJar
+}
+
+signing{
+	sign configurations.archives
+}
+
 uploadArchives{
 	repositories{
 		mavenDeployer {
 			repository(url: "file:///Users/ccoulton/QwasiSDK") //local
 
-			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			//beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 			//repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
 					//{ authentication(userName: ossrhUsername, password:ossrhPassword) }
@@ -113,28 +137,4 @@ uploadArchives{
 		}
 		//ivy{ url "file:///Users/ccoulton/QwasiSDK" }
 	}
-}
-
-task sourcesJar(type: Jar) {
-	from android.sourceSets.main.java.srcDirs
-	classifier = 'sources'
-}
-
-task javadoc(type: Javadoc) {
-	source = android.sourceSets.main.java.srcDirs
-	classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-	classifier = 'javadoc'
-	from javadoc.destinationDir
-}
-
-artifacts {
-	archives javadocJar
-	archives sourcesJar
-}
-
-signing{
-	sign configurations.archives
 }

@@ -5,6 +5,9 @@ import android.app.Application;
 import android.os.Bundle;
 import android.util.Log;
 
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.BeaconParser;
+
 import java.util.HashMap;
 
 /**
@@ -52,13 +55,21 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
         ++resumed;
+        if (!sharedApplication.mlocationManager.mmanager.isConnected())
+            sharedApplication.mlocationManager.mmanager.connect();
+        sharedApplication.mlocationManager.beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getContext());
+        sharedApplication.mlocationManager.beaconManager.getBeaconParsers().add(new BeaconParser()
+                .setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"));
+        //sharedApplication.mlocationManager.beaconManager.bind(sharedApplication.mlocationManager);
     }
 
     @Override
     public void onActivityPaused(Activity activity){
         Log.d("QwasiDebug", "ActivityPaused");
         ++paused;
+        sharedApplication.mlocationManager.mmanager.disconnect();
         android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
+        //sharedApplication.mlocationManager.beaconManager.unbind(sharedApplication.mlocationManager);
     }
 
     @Override

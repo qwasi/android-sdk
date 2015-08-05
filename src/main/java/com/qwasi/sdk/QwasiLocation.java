@@ -49,6 +49,8 @@ public class QwasiLocation extends Location {
         if (l != null) {
             longitude = l.getLongitude();
             latitude = l.getLatitude();
+            type = QwasiLocationType.QwasiLocationTypeCoordinate;
+            state = QwasiLocationState.QwasiLocationStateUnknown;
         }
     }
 
@@ -73,6 +75,10 @@ public class QwasiLocation extends Location {
         Object coord = data.get("geofence.geometry.coordinates");
 
         return this;
+    }
+
+    public QwasiLocationType typeCheck(){
+        return type;
     }
 
     public QwasiLocationState stateCheck(){
