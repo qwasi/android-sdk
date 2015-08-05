@@ -229,7 +229,7 @@ public class QwasiLocationManager extends IntentService
         }
     }
 
-    public void stopMonitoringLocation(QwasiLocation location){ //fixme?
+    public void stopMonitoringLocation(QwasiLocation location){
         LocationServices.GeofencingApi.removeGeofences(mmanager, getGeoPendingIntent());
         mregionMap.remove(location.id);
     }
@@ -275,7 +275,7 @@ public class QwasiLocationManager extends IntentService
     }
 
 
-    public void onBeaconServiceConnect() {
+    public void onBeaconServiceConnect() {    //Issue #1
         //uuid, id1, id2, id3
         Region region = new Region("all-beacons-region", null, null, null);
         try {
@@ -287,7 +287,7 @@ public class QwasiLocationManager extends IntentService
     }
 
     @Override
-    public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+    public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {  //issue #1
         for (Beacon beacon : beacons) {
             if (beacon.getServiceUuid() == 0xfeaa && beacon.getBeaconTypeCode() == 0x00) {
                 //Eddystone-UID frame
@@ -303,7 +303,7 @@ public class QwasiLocationManager extends IntentService
         }
     }
 
-    public Context getApplicationContext(){
+    public Context getApplicationContext(){       //#issue 1
         return sharedApplication.getApplicationContext();
     }
 

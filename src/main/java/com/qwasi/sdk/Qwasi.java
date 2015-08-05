@@ -626,35 +626,7 @@ public class Qwasi {
                         positions = new JSONArray(o.toString());
                         JSONObject obj;
                         for (int index=0; index < positions.length(); index++) {
-                            obj = positions.getJSONObject(index);
-                            //if this location doesn't already exist in the mregionMap add it
-                            if (!Qwasi.getInstance().mlocationManager.mregionMap.containsKey(obj.getString("id"))) {
-                                //for locations in response figure out what type they are i.e. beacons/geofence/
-                                if (obj.has("beacon")) {//deal with beacons using altBeaconsgt
-                                    Log.d("QwasiDebug", "beacon");
-                                }
-                                else if (obj.has("geofence")) {
-                                    JSONArray latlng = obj.getJSONObject("geofence").
-                                            getJSONObject("geometry").
-                                            getJSONArray("coordinates");
-                                    Integer rad = obj.getJSONObject("geofence").
-                                            getJSONObject("properties").
-                                            getInt("radius");
-                                    Geofence temp = new Geofence.Builder()
-                                            .setRequestId(obj.getString("id"))
-                                            .setCircularRegion(latlng.getDouble(1), latlng.getDouble(0), rad)
-                                            .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                                            .setLoiteringDelay(obj.getJSONObject("properties").getInt("dwell_interval") * 1000)
-                                                    //.setNotificationResponsiveness(obj.getJSONObject("properties").getInt("enter_interval")*1000)
-                                            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT)
-                                            .build();
-                                    mlocationManager.startMoitoringLocation(temp);
-                                }
-                                else {//rfid?
-                                    Log.d("QwasiDebug", "rfid");
-                                }
-                            }
-                            //else the id is contained in array
+                            QwasiLocation.initWithLocationData(positions.getJSONObject(index));
                         }
                     }catch (JSONException e){ //todo handle jsonExeceptions?
                         Log.d("QwasiDebug", "JsonExecption");
@@ -834,11 +806,11 @@ public class Qwasi {
                 if (payload instanceof JSONObject){
                     //todo fix this issue
                 }
-                else if (payload instanceof String){
+                else if (payload instanceof String){  //payload is plaintext
                     HashMap<String, Object> encrypted = new HashMap<>();
                     encrypted.put("payload", Base64.encode(((String) payload).getBytes(), Base64.DEFAULT));
                 }
-                else{
+                else{  //message is silent
                     payload = null;
                 }
             //throw an error, get the data if the data is null, or the error isn't print error

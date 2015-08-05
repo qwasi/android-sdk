@@ -2,6 +2,7 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -45,7 +46,10 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     }
 
     @Override
-    public void onActivityDestroyed(Activity activity){}
+    public void onActivityDestroyed(Activity activity){
+        sharedApplication.mlocationManager.stopLocationUpdates();
+
+    }
 
     @Override
     public void onActivityResumed(Activity activity){
@@ -57,10 +61,11 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         ++resumed;
         if (!sharedApplication.mlocationManager.mmanager.isConnected())
             sharedApplication.mlocationManager.mmanager.connect();
+        Context temp = sharedApplication.getContext();
         sharedApplication.mlocationManager.beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getContext());
         sharedApplication.mlocationManager.beaconManager.getBeaconParsers().add(new BeaconParser()
                 .setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"));
-        //sharedApplication.mlocationManager.beaconManager.bind(sharedApplication.mlocationManager);
+        sharedApplication.mlocationManager.beaconManager.bind(sharedApplication.mlocationManager);  //#issue 1
     }
 
     @Override
@@ -69,7 +74,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         ++paused;
         sharedApplication.mlocationManager.mmanager.disconnect();
         android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
-        //sharedApplication.mlocationManager.beaconManager.unbind(sharedApplication.mlocationManager);
+        sharedApplication.mlocationManager.beaconManager.unbind(sharedApplication.mlocationManager); //issue #1
     }
 
     @Override
@@ -89,6 +94,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
+        sharedApplication.mlocationManager.mmanager.disconnect();
         if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
         }
