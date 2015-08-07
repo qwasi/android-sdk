@@ -7,6 +7,7 @@
     <!--Beacons-->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!--GCM-->
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -27,5 +28,27 @@
     <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
     <meta-data android:name="gcm_senderid" android:value="335413682000" />
     <meta-data android:name="sdk_version" android:value="2.1.0"/>
+
+    <application>
+        <receiver android:name="org.altbeacon.beacon.startup.StartupBroadcastReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:enabled="true"
+            android:exported="false"
+            android:label="beacon"
+            android:name="org.altbeacon.beacon.service.BeaconService"
+            />
+
+        <service android:name="org.altbeacon.beacon.BeaconIntentProcessor"
+            android:enabled="true"
+            android:exported="false"
+            />
+
+    </application>
 
 </manifest>

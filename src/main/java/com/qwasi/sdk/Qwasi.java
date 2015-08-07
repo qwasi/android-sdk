@@ -7,6 +7,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -33,9 +34,8 @@ public class Qwasi {
     private Application sharedApplication;
     private SharedPreferences preferences;
     private double locationSyncFilter;
-    private double locationUpdatefilter;
-    private double locationEventFilter;
     private boolean mregistered;
+    long locationUpdatefilter;
     QwasiAppManager qwasiAppManager = null; //package accessable
     private QwasiNotificationManager qwasiNotificationManager= null;
     public String mapplicationName = null;
@@ -138,8 +138,8 @@ public class Qwasi {
             mconfig = config;
             this.setConfig(config);
         }
-        locationUpdatefilter=100.0;
-        locationEventFilter = 50.0;
+        locationUpdatefilter= 100;
+        //locationEventFilter = 50.0;
         locationSyncFilter = 200.0;
 
         mlocationManager.init();
@@ -210,7 +210,8 @@ public class Qwasi {
         }
 
         if (userToken == null){  //if we didn't get a usertoken set it to be the phone number
-            userToken = muserToken;
+            userToken = ((TelephonyManager) context
+                    .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number();
         }
         Map<String, Object> info = new HashMap<>();
 
@@ -566,7 +567,7 @@ public class Qwasi {
     }
 
     public synchronized void postEvent(String type, HashMap<String, Object> data, final QwasiInterface qwasiInterface){
-        if(mregistered){
+        if((mregistered)&&(meventsEnabled)){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
             parms.put("type", type);
@@ -608,43 +609,54 @@ public class Qwasi {
     }
 
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
-        if(mregistered){
-            HashMap<String, Object> parms = new HashMap<>();
-            HashMap<String, Object> near = new HashMap<>();
-            near.put("lng", place.getLongitude());
-            near.put("lat", place.getLatitude());
-            near.put("radius", locationSyncFilter*10);
-            parms.put("near", near);
-            near = new HashMap<>();
-            near.put("schema", "2.0");
-            parms.put("options", near);
-            mclient.invokeMethod("location.fetch", parms, new QwasiInterface(){
-                @Override
-                public void onSuccess(Object o){
-                    JSONArray positions;
-                    try {
-                        positions = new JSONArray(o.toString());
-                        JSONObject obj;
-                        for (int index=0; index < positions.length(); index++) {
-                            QwasiLocation.initWithLocationData(positions.getJSONObject(index));
+        if(mregistered) {
+            if (mlocationEnabled) {
+                HashMap<String, Object> parms = new HashMap<>();
+                HashMap<String, Object> near = new HashMap<>();
+                near.put("lng", place.getLongitude());
+                near.put("lat", place.getLatitude());
+                near.put("radius", locationSyncFilter * 10);
+                parms.put("near", near);
+                near = new HashMap<>();
+                near.put("schema", "2.0");
+                parms.put("options", near);
+                mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
+                    @Override
+                    public void onSuccess(Object o) {
+                        JSONArray positions;
+                        try {
+                            positions = new JSONArray(o.toString());
+                            for (int index = 0; index < positions.length(); index++) {
+                                mlocationManager.startMoitoringLocation(
+                                        QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
+                            }
+                        } catch (JSONException e) { //todo handle jsonExeceptions?
+                            Log.d("QwasiDebug", "JsonExecption");
+                            e.printStackTrace();
                         }
-                    }catch (JSONException e){ //todo handle jsonExeceptions?
-                        Log.d("QwasiDebug", "JsonExecption");
-                        e.printStackTrace();
+                        qwasiInterface.onSuccess(mlocationManager.mregionMap);
                     }
-                    qwasiInterface.onSuccess(mlocationManager.mregionMap);
-                }
 
-                @Override
-                public void onFailure(QwasiError e){
-                    e.printStackTrace();
-                    QwasiError error = new QwasiError()
-                            .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
-                                    "Location Fetch Failed");
-                    Witness.notify(error);
-                    qwasiInterface.onFailure(error); //fixme 401/404
-                }
-            });
+                    @Override
+                    public void onFailure(QwasiError e) {
+                        e.printStackTrace();
+                        QwasiError error = new QwasiError()
+                                .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
+                                        "Location Fetch Failed");
+                        Witness.notify(error);
+                        qwasiInterface.onFailure(error); //fixme 401/404
+                    }
+                });
+            }
+            //todo for M: Handle location permissions
+            else{
+                Log.e("QwasiError", "Locations not enabled");
+                QwasiError error = new QwasiError()
+                        .errorWithCode(QwasiErrorCode.QwasiErrorLocationAccessDenied,
+                                "Location Access is Disabled");
+                Witness.notify(error);
+                qwasiInterface.onFailure(error);
+            }
         }
         else {
             Log.e("QwasiError", "Device Not Registered");

@@ -72,14 +72,18 @@ task sourcesJar(type: Jar) {
 	classifier = 'sources'
 }
 
-task javadoc(type: Javadoc) {
+task androidJavadoc(type: Javadoc) {
+	include 'org.altbeacon:android-beacon-library:2.3.5'
+	include 'com.transactioncompany:*'
+	include 'com.google.android.gms:play-services-gcm:7.5.0'
+	include 'com.google.android.gms:play-services-location:7.50'
 	source = android.sourceSets.main.java.srcDirs
 	classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
+task javadocJar(type: Jar, dependsOn: androidJavadoc) {
 	classifier = 'javadoc'
-	from javadoc.destinationDir
+	from androidJavadoc.destinationDir
 }
 
 artifacts {
@@ -91,18 +95,26 @@ signing{
 	sign configurations.archives
 }
 
+task updateLocal{
+	uploadArchives {
+		repositories {
+			mavenDeployer {
+				repository(url: 'file://Users/ccoulton/QwasiSDK')
+			}
+		}
+	}
+}
+
 uploadArchives{
 	repositories{
 		mavenDeployer {
-			repository(url: "file:///Users/ccoulton/QwasiSDK") //local
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-			//beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+					{ authentication(userName: ossrhUsername, password:ossrhPassword) }
 
-			//repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-					//{ authentication(userName: ossrhUsername, password:ossrhPassword) }
-
-			//snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
-				//	{ authentication(userName:ossrhUsername , password: ossrhPassword ) }
+			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
+					{ authentication(userName:ossrhUsername , password: ossrhPassword ) }
 
 			pom.project{
 				name 'QwasiSDK'

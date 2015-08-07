@@ -127,7 +127,7 @@ public class QwasiNotificationManager extends GcmListenerService{
                     // save this token
                     prefEditor.putString("gcm_token", token);
                     prefEditor.putInt("AppVersion", appVersion);
-                    prefEditor.commit();
+                    prefEditor.apply();
                     Log.d(TAG, "New GCM token acquired: " + token);
                 } catch (Exception e) {
                     Log.d(TAG, "Catch");

@@ -8,13 +8,19 @@ import com.google.android.gms.location.Geofence;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Identifier;
+import org.altbeacon.beacon.Region;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Timer;
+import java.util.TimerTask;
+
+import io.hearty.witness.Witness;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -43,31 +49,38 @@ public class QwasiLocation extends Location {
     private double latitude;
     public String id;
     private String name;
-    private static Double DwellTime = 50.0;
     private long geofenceRadius = 0;
     private JSONObject geometry;
-    //private distance;
+    private long distance;
+    private static long DwellTime; //in seconds
     private Timer dwellTime;
     private int mdwellInterval;
-    private Timer mdwellStart;
+    private Date mdwellStart;
     private long mexitDelay;
+    public static Geofence region;
+    public static Region beacon;
     boolean mdwell;
     boolean minside;
+    boolean mexit;
+
     private NfcBarcode NFCUUID;
 
     public QwasiLocation(){
         super(Qwasi.getInstance().mlocationManager.getLastLocation());
     }
 
-    public QwasiLocation(Location l) {
-        super(l);
-        if (l != null) {
-            longitude = l.getLongitude();
-            latitude = l.getLatitude();
-            type = QwasiLocationType.QwasiLocationTypeCoordinate;
-            state = QwasiLocationState.QwasiLocationStateUnknown;
-        }
+    public  QwasiLocation(Location location){
+        super(location);
+        this.latitude = location.getLatitude();
+        this.longitude = location.getLongitude();
+        this.name = location.getProvider();
+        this.mexit = false;
+        type = QwasiLocationType.QwasiLocationTypeCoordinate;
+        state = QwasiLocationState.QwasiLocationStateUnknown;
+        return;
     }
+
+    public String getName(){return name;}
 
     public double getLongitude(){
         return longitude;
@@ -77,18 +90,14 @@ public class QwasiLocation extends Location {
         return latitude;
     }
 
-    public QwasiLocation initWithLocation(Location location){
-        this.latitude = location.getLatitude();
-        this.longitude = location.getLongitude();
-        this.name = location.getProvider();
-        type = QwasiLocationType.QwasiLocationTypeCoordinate;
-        state = QwasiLocationState.QwasiLocationStateUnknown;
-        return this;
+    static public QwasiLocation initWithLocation(Location location){
+        QwasiLocation temp = new QwasiLocation(location);
+        return temp;
     }
 
     static public QwasiLocation initWithLocationData(JSONObject input) throws JSONException{
         //if this location doesn't already exist in the mregionMap add it
-        QwasiLocation location = new QwasiLocation(null);
+        QwasiLocation location = new QwasiLocation();
         location.id = input.getString("id");
         location.name = input.getString("name");
         location.state = QwasiLocationState.QwasiLocationStateUnknown;
@@ -100,22 +109,11 @@ public class QwasiLocation extends Location {
             //for locations in response figure out what type they are i.e. beacons/geofence/rfid
             if (input.has("beacon")) {//deal with beacons using altBeacons
                 location.type = QwasiLocationType.QwasiLocationTypeBeacon;
-                int manf = 0x004c; //apple
-                String layout = "m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"; //iBeacon layout
                 JSONObject props = input.getJSONObject("properties").getJSONObject("beacon");
-                Beacon temp = new Beacon.Builder()
-                        //id1 iBeacon uuid 16 byte Eddystone 10 byte Altbeacon 16
-                        .setId1(props.getString("id"))
-                        //id2 iBeacon from 1 to 255 Eddystone 6 byte
-                        .setId2(props.getString("maj_ver"))
-                        //id3 iBeacon from 1 to 255 Eddystone leave blank
-                        .setId3(props.getString("min_ver"))
-                        .setManufacturer(manf)
-                        //.setTxPower()
-                        // .setDataFields(Arrays.asList(new Long[] {0l}))
-                        .build();
-                Qwasi.getInstance().mlocationManager.beaconManager.getBeaconParsers().add(new BeaconParser()
-                        .setBeaconLayout(layout)); //string for UUID etc
+                location.beacon = new Region(location.id,
+                        Identifier.parse(props.getString("id")),
+                        Identifier.parse(props.getString("maj_ver")),
+                        Identifier.parse(props.getString("min_ver")));
             }
 
             else if (input.has("geofence")) {  //geofence builder
@@ -125,13 +123,15 @@ public class QwasiLocation extends Location {
                 location.longitude = location.geometry.getJSONArray("coordinates").getDouble(0);
                 location.geofenceRadius = input.getJSONObject("geofence").getJSONObject("properties")
                         .getInt("radius");
-                Qwasi.getInstance().mlocationManager.startMoitoringLocation(new Geofence.Builder()
+                location.region = new Geofence.Builder()
                         .setRequestId(location.id)
                         .setCircularRegion(location.latitude, location.longitude, location.geofenceRadius)
                         .setExpirationDuration(Geofence.NEVER_EXPIRE)
                         .setLoiteringDelay(location.mdwellInterval)
-                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT)
-                        .build());
+                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
+                                |Geofence.GEOFENCE_TRANSITION_DWELL
+                                | Geofence.GEOFENCE_TRANSITION_EXIT) //all the events
+                        .build();
             }
 
             else if (input.has("rfid")){
@@ -140,8 +140,14 @@ public class QwasiLocation extends Location {
             else{
                 location.type = QwasiLocationType.QwasiLocationTypeUnknown;
             }
+            return location;
         }
-        return location;
+        return null;
+    }
+
+    public boolean isTypeCoordinate(){
+        if (this.type == QwasiLocationType.QwasiLocationTypeCoordinate) return true;
+        return false;
     }
 
     public QwasiLocationType typeCheck(){
@@ -153,10 +159,60 @@ public class QwasiLocation extends Location {
     }
 
     public void enter(){
-       //todo emit enter events
+       synchronized (this) {
+           if (!minside) {
+               minside = true;
+               if (!mdwell) {
+                   mdwellStart = new Date();
+                   DwellTime = 0;
+                   Witness.notify(this);
+               }
+               this.dwell();
+           }
+           mexit = false;
+       }
+    }
+
+    void dwell(){
+        synchronized (this){
+            if (minside && dwellTime != null){
+                DwellTime = 0;
+                dwellTime = new Timer(this.id+"timer", true);
+                dwellTime.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        synchronized (this){
+                            if (minside) {
+                                if (mexit) {
+                                    minside = false;
+                                } else {
+                                    mdwell = true;
+                                    state = QwasiLocationState.QwasiLocationStatePending;
+                                    mexitDelay = 0;
+                                    Witness.notify(this);
+                                }
+                            }
+                            else{
+                                this.cancel();
+                                mdwell = false;
+                                dwellTime = null;
+                                state = QwasiLocationState.QwasiLocationStateOutside;
+                                Witness.notify(this);
+                            }
+                        }
+                    } //time to start, and period in milliseconds
+                }, new Date(), mdwellInterval*1000);
+            }
+        }
     }
 
     public void exit(){
+        synchronized (this){
+            if (minside){
+                mexitDelay = new Date().compareTo(mdwellStart);
+                mexit = true;
+            }
+        }
         //todo emit exit event
     }
 }
