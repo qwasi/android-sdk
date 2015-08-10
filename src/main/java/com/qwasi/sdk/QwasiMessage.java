@@ -1,6 +1,5 @@
 package com.qwasi.sdk;
 
-
 import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
@@ -10,7 +9,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Timer;
+import java.util.Locale;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -28,6 +27,7 @@ public class QwasiMessage extends Object{
     public Boolean selected;
     public Boolean fetched;
     private Object mencodedPayload;
+    String TAG = "QwasiMessage";
 
     public QwasiMessage(){
         super();
@@ -42,7 +42,7 @@ public class QwasiMessage extends Object{
             selected = true;
         }
         //dateformater = date
-        DateFormat dateFormatter = new DateFormat();
+        //DateFormat dateFormatter = new DateFormat();
 
         mtimestamp = new Date();
 
@@ -68,7 +68,7 @@ public class QwasiMessage extends Object{
         catch (Exception e){
             e.printStackTrace();
         }
-        Log.d("QwasiDebug", mpayload.toString());
+        Log.d(TAG, mpayload.toString());
         return this;
     }
 
@@ -98,7 +98,7 @@ public class QwasiMessage extends Object{
     }
 
     public Boolean silent(){
-        return (malert == null)||(malert == "");
+        return (malert == null)||(malert.isEmpty());
     }
 
     public String description(){

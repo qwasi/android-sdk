@@ -22,6 +22,7 @@ public class QwasiClient {
     private JSONRPC2Session msession = null;
     private JSONRPC2Request mrequest;
     private JSONRPC2Response mresponse;
+    String TAG = "QwasiClient";
 
     public QwasiClient(){
         super();
@@ -49,7 +50,7 @@ public class QwasiClient {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d("QwasiDebug", "invoking API "+method+", with params"+parms.toString());
+                Log.d(TAG, "invoking API "+method+", with params: "+parms.toString());
                 mrequest = new JSONRPC2Request(method, parms, "");
                 try {
                     mresponse = msession.send(mrequest);
@@ -64,22 +65,5 @@ public class QwasiClient {
             }
         }).start();
 
-    }
-
-    public JSONRPC2Response invokeMethod(String method, Map<String, Object> parms) throws Throwable {
-        Log.d("QwasiDebug", "invoking API "+method+", with params"+parms.toString());
-        mrequest = new JSONRPC2Request(method, parms, "");
-        try {
-            mresponse = msession.send(mrequest);
-        }
-        catch (JSONRPC2SessionException e){
-            if(e.getCauseType() == JSONRPC2SessionException.NETWORK_EXCEPTION){
-                throw e.getCause();
-            }
-            else if (e.getCauseType() == JSONRPC2SessionException.BAD_RESPONSE){
-            }
-            throw mresponse.getError();
-        }
-        return mresponse;
     }
 }

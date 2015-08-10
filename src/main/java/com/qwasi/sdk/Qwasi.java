@@ -36,6 +36,7 @@ public class Qwasi {
     private double locationSyncFilter;
     private boolean mregistered;
     long locationUpdatefilter;
+    long locationEventFilter;
     QwasiAppManager qwasiAppManager = null; //package accessable
     private QwasiNotificationManager qwasiNotificationManager= null;
     public String mapplicationName = null;
@@ -46,24 +47,25 @@ public class Qwasi {
     public QwasiLocationManager mlocationManager;
     public QwasiConfig mconfig;
     public String muserToken;
-    public Boolean mpushEnabled;
-    public Boolean mlocationEnabled;
-    public Boolean meventsEnabled;
+    public Boolean mpushEnabled = false;
+    public Boolean mlocationEnabled = false;
+    public Boolean meventsEnabled = false;
     public Boolean museLocalNotifications; //apple only?
     private static Qwasi instance;
+    String TAG = "Qwasi";
 
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
         public void onSuccess(Object o) { //should recieve QwasiMessage, or QwasiError
             if(o instanceof QwasiMessage){
-                Log.d("QwasiDebug", ((QwasiMessage) o).description());
+                Log.i("DefaultCallback", ((QwasiMessage) o).description());
             } //ignore QwasiError since it's only NoError
         }
 
         @Override
         public void onFailure(QwasiError e) {
             //e.printStackTrace();
-            Log.e("QwasiError", e.message);
+            Log.e("DefaultCallback", e.message);
         }
     };
 
@@ -72,7 +74,7 @@ public class Qwasi {
         instance = this;
     }
 
-    public void initQwasi(Context application){
+    public synchronized void initQwasi(Context application){
         if (context != null){
             return;
         }
@@ -88,7 +90,7 @@ public class Qwasi {
             instance.initWithConfig(mconfig);
         }
         else{
-            Log.d("QwasiDebug", "Config in Manifest not valid; Please init with valid config.");
+            Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
         }
     }
 
@@ -133,13 +135,13 @@ public class Qwasi {
         }
     }
 
-    private Qwasi initWithConfig(QwasiConfig config){
+    private synchronized Qwasi initWithConfig(QwasiConfig config){
         if ((config != null)&&(config.isValid())) {
             mconfig = config;
             this.setConfig(config);
         }
         locationUpdatefilter= 100;
-        //locationEventFilter = 50.0;
+        locationEventFilter = 50;
         locationSyncFilter = 200.0;
 
         mlocationManager.init();
@@ -172,10 +174,7 @@ public class Qwasi {
     }
 
     public void setPushEnabled(){
-        if(mpushEnabled)
-            this.setPushEnabled(defaultCallback);
-        else
-            this.setPushEnabled(defaultCallback);
+        this.setPushEnabled(defaultCallback);
     }
 
     public void setPushEnabled(QwasiInterface callback){
@@ -262,12 +261,12 @@ public class Qwasi {
                 //get the settings out
                 info = (Map<String, Object>) info.get("settings");
                 mpushEnabled = (Boolean) info.get("push_enabled");
-                mlocationEnabled = (boolean) info.get("location_enabled");
+                mlocationEnabled = (Boolean) info.get("location_enabled");
                 if (mlocationEnabled) mlocationManager.mmanager.connect();
                 meventsEnabled = (Boolean) info.get("events_enabled");
 
                 editor.apply();
-                Log.d("QwasiDebug", "Device Successfully Registered");
+                Log.i(TAG, "Device Successfully Registered");
                 Witness.notify(mdeviceToken);
                 qwasiInterface.onSuccess(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
             }
@@ -358,14 +357,14 @@ public class Qwasi {
                     mregistered = false;
                     mpushEnabled = false;
                     mlocationEnabled = false;
-                    Log.d("QwasiDebug", "UnregisterDevice Success");
+                    Log.i(TAG, "UnregisterDevice Success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.d("Debug", e.getMessage());
+                    Log.e("Debug", e.getMessage());
                     qwasiInterface.onFailure(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorDeviceUnregisterFailed,
                                     "Qwasi Device Unregister failed"));
@@ -393,7 +392,8 @@ public class Qwasi {
             mclient.invokeMethod("device.set_push_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", "Set Push Token success");
+                    Log.i(TAG, "Set Push Token success");
+                    Witness.notify(qwasiNotificationManager.getPushToken());
                     callback.onSuccess(
                             new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No error"));
                 }
@@ -401,8 +401,11 @@ public class Qwasi {
                 @Override
                 public void onFailure(QwasiError e) { //todo handle why network failed
                     Log.e("QwasiError", "Set Push Token failed");
-                    callback.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed,
-                            "Push Registration failed"));
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed,
+                                    "Push Registration failed");
+                    Witness.notify(error);
+                    callback.onFailure(error);
                 }
             });
             //todo check if remote notes are allowed
@@ -530,7 +533,7 @@ public class Qwasi {
             mclient.invokeMethod("message.poll", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", o.toString());
+                    Log.i(TAG, o.toString());
                     QwasiMessage message = new QwasiMessage()
                             .messageWithData((HashMap<String, Object>) o);
                     mmessageCache.put(message.messageId, message);
@@ -567,7 +570,7 @@ public class Qwasi {
     }
 
     public synchronized void postEvent(String type, HashMap<String, Object> data, final QwasiInterface qwasiInterface){
-        if((mregistered)&&(meventsEnabled)){
+        if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
             parms.put("type", type);
@@ -575,7 +578,7 @@ public class Qwasi {
             mclient.invokeMethod("event.post", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", "Event Posted");
+                    Log.i(TAG, "Event Posted");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
@@ -583,7 +586,7 @@ public class Qwasi {
                 @Override
                 public void onFailure(QwasiError e) {  //todo handle 401, and 404's app not found device not found
                     Exception cause = new Exception(e);
-                    Log.d("Debug", cause.getMessage());
+                    Log.i("Debug", cause.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed");
                     Witness.notify(error);
@@ -610,7 +613,7 @@ public class Qwasi {
 
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mregistered) {
-            if (mlocationEnabled) {
+            //if (mlocationEnabled) {
                 HashMap<String, Object> parms = new HashMap<>();
                 HashMap<String, Object> near = new HashMap<>();
                 near.put("lng", place.getLongitude());
@@ -631,7 +634,7 @@ public class Qwasi {
                                         QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                             }
                         } catch (JSONException e) { //todo handle jsonExeceptions?
-                            Log.d("QwasiDebug", "JsonExecption");
+                            Log.i(TAG, "JsonExecption");
                             e.printStackTrace();
                         }
                         qwasiInterface.onSuccess(mlocationManager.mregionMap);
@@ -647,7 +650,7 @@ public class Qwasi {
                         qwasiInterface.onFailure(error); //fixme 401/404
                     }
                 });
-            }
+            /*}
             //todo for M: Handle location permissions
             else{
                 Log.e("QwasiError", "Locations not enabled");
@@ -656,7 +659,7 @@ public class Qwasi {
                                 "Location Access is Disabled");
                 Witness.notify(error);
                 qwasiInterface.onFailure(error);
-            }
+            }*/
         }
         else {
             Log.e("QwasiError", "Device Not Registered");
@@ -679,7 +682,7 @@ public class Qwasi {
             mclient.invokeMethod("channel.subscribe", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", "subscribe to channel success");
+                    Log.i(TAG, "subscribe to channel success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone,
                                     "No error"));
@@ -715,7 +718,7 @@ public class Qwasi {
             mclient.invokeMethod("channel.unsubscribe", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", "Unsubcribe from channel Success");
+                    Log.i(TAG, "Unsubcribe from channel Success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
@@ -749,7 +752,7 @@ public class Qwasi {
             mclient.invokeMethod("device.set_data", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.d("QwasiDebug", "Set data Success");
+                    Log.i(TAG, "Set data Success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
@@ -814,12 +817,12 @@ public class Qwasi {
     public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface) {
         if(mregistered) {
             Object payload = message.mpayload;
+            HashMap<String, Object> encrypted = new HashMap<>();
             if (payload != null){
                 if (payload instanceof JSONObject){
                     //todo fix this issue
                 }
                 else if (payload instanceof String){  //payload is plaintext
-                    HashMap<String, Object> encrypted = new HashMap<>();
                     encrypted.put("payload", Base64.encode(((String) payload).getBytes(), Base64.DEFAULT));
                 }
                 else{  //message is silent
@@ -838,13 +841,13 @@ public class Qwasi {
             parms.put("audience", audi); //can be devices, usertokens, channels w/e
             parms.put("payload_type", message.mpayloadType);
             parms.put("notification", new HashMap<String, Object>().put("text", message.malert));
-            parms.put("payload", payload);
+            parms.put("payload", encrypted);
             parms.put("tags", message.mtags);
             parms.put("options", (new HashMap<String, Object>().put("encodedPayload", true)));
             mclient.invokeMethod("message.send", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object responseObject) {
-                    Log.d("QwasiDebug", "Message Sent Successfully");
+                    Log.i(TAG, "Message Sent Successfully");
                     qwasiInterface.onSuccess(responseObject);
                 }
 

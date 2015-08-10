@@ -3,9 +3,7 @@ package com.qwasi.sdk;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import android.util.Log;
 
-import org.altbeacon.beacon.BeaconConsumer;
 
 import java.util.HashMap;
 
@@ -25,7 +23,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     final private Qwasi sharedApplication;
     private String event;
     private HashMap<String, Object> data;
-
+    String TAG = "QwasiAppManager";
 
     public QwasiAppManager(){
         this.sharedApplication = Qwasi.getInstance();
@@ -41,6 +39,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState){
+        sharedApplication.mlocationManager.bindBeacon(activity);
     }
 
     @Override
@@ -59,26 +58,25 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         ++resumed;
         if (!sharedApplication.mlocationManager.mmanager.isConnected())
             sharedApplication.mlocationManager.mmanager.connect();
-        sharedApplication.mlocationManager.bindBeacon(activity);
     }
 
     @Override
     public void onActivityPaused(Activity activity){
-        Log.d("QwasiDebug", "ActivityPaused");
+        android.util.Log.d(TAG, "ActivityPaused");
         ++paused;
         sharedApplication.mlocationManager.mmanager.disconnect();
         android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
-        sharedApplication.mlocationManager.beaconManager.unbind((BeaconConsumer) activity); //issue #1
+        sharedApplication.mlocationManager.beaconManager.unbind(sharedApplication.mlocationManager); //issue #1
     }
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle outState){
-        Log.d("QwasiDebug", "SaveInstanceState");
+        android.util.Log.d(TAG, "SaveInstanceState");
     }
 
     @Override
     public void onActivityStarted(Activity activity){
-        Log.d("QwasiDebug", "ActivityStarted");
+        android.util.Log.d(TAG, "ActivityStarted");
         ++started;
     }
 

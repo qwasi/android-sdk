@@ -21,6 +21,7 @@ import com.google.android.gms.gcm.GcmListenerService;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
+import java.io.IOException;
 import java.util.regex.Pattern;
 
 import io.hearty.witness.Witness;
@@ -36,7 +37,7 @@ public class QwasiNotificationManager extends GcmListenerService{
     private Context mContext;
     final private Qwasi qwasi;
     private String senderId;
-    final String TAG = "QwasiNotificationMngr";
+    static final String TAG = "QwasiNotificationMngr";
 
     public QwasiNotificationManager() {
         super();
@@ -129,8 +130,12 @@ public class QwasiNotificationManager extends GcmListenerService{
                     prefEditor.putInt("AppVersion", appVersion);
                     prefEditor.apply();
                     Log.d(TAG, "New GCM token acquired: " + token);
-                } catch (Exception e) {
-                    Log.d(TAG, "Catch");
+                }
+                catch (PackageManager.NameNotFoundException e){
+                    Log.d(TAG, "Name not found");
+                }
+                catch (IOException e){
+                    Log.d(TAG, "IOExecption");
                 }
             }
         }).start();

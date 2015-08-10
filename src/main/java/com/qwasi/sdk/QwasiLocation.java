@@ -1,22 +1,16 @@
 package com.qwasi.sdk;
 
 import android.location.Location;
-import android.nfc.tech.NfcBarcode;
-import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 
 import org.altbeacon.beacon.Beacon;
-import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Identifier;
 import org.altbeacon.beacon.Region;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -27,20 +21,6 @@ import io.hearty.witness.Witness;
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-enum QwasiLocationType{
-    QwasiLocationTypeUnknown,
-    QwasiLocationTypeCoordinate,
-    QwasiLocationTypeGeofence,
-    QwasiLocationTypeBeacon,
-    QwasiLocationTypeRFC
-}
-
-enum QwasiLocationState{
-    QwasiLocationStateUnknown,
-    QwasiLocationStateOutside,
-    QwasiLocationStatePending,
-    QwasiLocationStateInside
-}
 
 public class QwasiLocation extends Location {
     QwasiLocationType type; //package private
@@ -51,19 +31,36 @@ public class QwasiLocation extends Location {
     private String name;
     private long geofenceRadius = 0;
     private JSONObject geometry;
-    private long distance;
-    private static long DwellTime; //in seconds
+    //private long distance;
+    private long DwellTime; //in seconds
     private Timer dwellTime;
     private int mdwellInterval;
     private Date mdwellStart;
     private long mexitDelay;
     public static Geofence region;
     public static Region beacon;
-    boolean mdwell;
-    boolean minside;
+    //private NfcBarcode NFCUUID;
+    public Beacon token;
+    boolean mdwell = false;
+    boolean minside =false;
     boolean mexit;
 
-    private NfcBarcode NFCUUID;
+    public enum QwasiLocationType{
+        QwasiLocationTypeUnknown,
+        QwasiLocationTypeCoordinate,
+        QwasiLocationTypeGeofence,
+        QwasiLocationTypeBeacon,
+        QwasiLocationTypeRFC
+    }
+
+    public enum QwasiLocationState{
+        QwasiLocationStateUnknown,
+        QwasiLocationStateOutside,
+        QwasiLocationStatePending,
+        QwasiLocationStateInside
+    }
+
+
 
     public QwasiLocation(){
         super(Qwasi.getInstance().mlocationManager.getLastLocation());
@@ -128,9 +125,7 @@ public class QwasiLocation extends Location {
                         .setCircularRegion(location.latitude, location.longitude, location.geofenceRadius)
                         .setExpirationDuration(Geofence.NEVER_EXPIRE)
                         .setLoiteringDelay(location.mdwellInterval)
-                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
-                                |Geofence.GEOFENCE_TRANSITION_DWELL
-                                | Geofence.GEOFENCE_TRANSITION_EXIT) //all the events
+                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT) //all the events
                         .build();
             }
 
@@ -142,7 +137,9 @@ public class QwasiLocation extends Location {
             }
             return location;
         }
-        return null;
+        else { //mRegionMap already has this location
+            return null;
+        }
     }
 
     public boolean isTypeCoordinate(){
@@ -159,7 +156,8 @@ public class QwasiLocation extends Location {
     }
 
     public void enter(){
-       synchronized (this) {
+        //Witness.notify(this);
+        synchronized (this) {
            if (!minside) {
                minside = true;
                if (!mdwell) {
@@ -167,52 +165,56 @@ public class QwasiLocation extends Location {
                    DwellTime = 0;
                    Witness.notify(this);
                }
-               this.dwell();
+               dwell();
            }
            mexit = false;
-       }
-    }
 
-    void dwell(){
-        synchronized (this){
-            if (minside && dwellTime != null){
-                DwellTime = 0;
-                dwellTime = new Timer(this.id+"timer", true);
-                dwellTime.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        synchronized (this){
-                            if (minside) {
-                                if (mexit) {
-                                    minside = false;
-                                } else {
-                                    mdwell = true;
-                                    state = QwasiLocationState.QwasiLocationStatePending;
-                                    mexitDelay = 0;
-                                    Witness.notify(this);
-                                }
-                            }
-                            else{
-                                this.cancel();
-                                mdwell = false;
-                                dwellTime = null;
-                                state = QwasiLocationState.QwasiLocationStateOutside;
-                                Witness.notify(this);
-                            }
-                        }
-                    } //time to start, and period in milliseconds
-                }, new Date(), mdwellInterval*1000);
-            }
         }
     }
+
+    synchronized void dwell(){
+
+            if (minside && dwellTime == null){
+                DwellTime = 0;
+                dwellTime = new Timer(this.id+"timer", true); //make a 1 second timer to update the ui thread
+                    dwellTime.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            synchronized (this) {
+                                if (minside) {
+                                    if (mexit) {
+                                        minside = false;
+                                    } else {
+                                        mdwell = true;
+                                        state = QwasiLocationState.QwasiLocationStatePending;
+                                        DwellTime = new Date().compareTo(mdwellStart);
+                                    }
+                                } else {
+                                    this.cancel();
+                                    mdwell = false;
+                                    dwellTime = null;
+                                    state = QwasiLocationState.QwasiLocationStateOutside;
+                                }
+                            }
+                        } //time to start, and period in milliseconds
+                    }, new Date(), mdwellInterval * 1000);
+                    Witness.notify(this);
+            }
+
+
+    }
+
 
     public void exit(){
         synchronized (this){
             if (minside){
-                mexitDelay = new Date().compareTo(mdwellStart);
+                DwellTime = new Date().compareTo(mdwellStart);
                 mexit = true;
             }
         }
-        //todo emit exit event
+    }
+
+    public long getDwellTime(){
+        return new Date().compareTo(mdwellStart);
     }
 }

@@ -26,6 +26,7 @@ public class QwasiConfig extends HashMap<String, Object> {
     public String mapplication = null;
     public String mkey = null;
     private Context sharedApplication;
+    String TAG = "QwasiConfig";
 
     public QwasiConfig(Context context){
         sharedApplication = context;
@@ -58,6 +59,7 @@ public class QwasiConfig extends HashMap<String, Object> {
                             url = new URL(splitString[1]);
                         }
                     }
+                    readBuffer.close();
                 }
             }
             else{ //read from the xml file
@@ -81,22 +83,22 @@ public class QwasiConfig extends HashMap<String, Object> {
         }
         catch (FileNotFoundException e){
             Log.e("QwasiError", "File not found "+e.getMessage());
-            Log.d("QwasiDebug", "Trying with default manifest");
+            Log.d(TAG, "Trying with default manifest");
             return configWithFile(null);
         }
         catch (MalformedURLException e){
             Log.e("QwasiError", "Malformed URL in file "+e.getMessage());
-            Log.d("QwasiDebug", "Passing to default values");
+            Log.d(TAG, "Passing to default values");
             return configWithURL(null, null, null);
         }
         catch (IOException e) {
             Log.e("QwasiError", "I/O Error reading file at: " + path);
-            Log.d("QwasiDebug", "Trying with default manifest");
+            Log.d(TAG, "Trying with default manifest");
             return configWithFile(null);
         }
         catch (PackageManager.NameNotFoundException e){
             Log.e("QwasiError", "Application name not found " + e.getMessage());
-            Log.d("QwasiDebug", "Passing to default values");
+            Log.d(TAG, "Passing to default values");
             return configWithURL(null, null, null);
         }
         return this.configWithURL(url, appID, apiKey);
