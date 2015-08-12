@@ -9,8 +9,6 @@ import android.content.Intent;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.IInterface;
-import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -350,12 +348,12 @@ public class QwasiLocationManager extends IntentService
                     .setBeaconLayout("m:2-3=0203,i:14-19l,d:10-13,p:9-9"));*/  //Placedge private type beacon
             beaconManager.getBeaconParsers().add(new BeaconParser()
                     .setBeaconLayout("m:2-3=beac,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25")); //altbeacon
-            try {
+            //try {
                 beaconManager.bind(this);  //#issue 1'
-            } catch (NullPointerException e) {
+            /*} catch (NullPointerException e) {
                 Log.wtf(TAG, "Beaconbind borked");
                 return false;
-            }
+            }*/
             return true;
         }
     }

@@ -25,11 +25,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
 dependencies{
-    compile 'com.google.android.gms:play-services-gcm:7.5.0'
-    compile 'com.google.android.gms:play-services-location:7.5.0'
-    compile 'com.qwasi:QwasiSDK:2.1.0@aar'
-    compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
-    compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
+    compile 'com.qwasi:QwasiSDK:2.1.2'
 }
 ```
 
@@ -44,6 +40,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
  'com.google.android.gms:play-services-location:7.5.0'
  'com.thetransactioncompany:jsonrpc2-base:1.38'
  'com.thetransactioncompany:jsonrpc2-client:1.15'
+ 'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
 ## Library initialization `Qwasi`

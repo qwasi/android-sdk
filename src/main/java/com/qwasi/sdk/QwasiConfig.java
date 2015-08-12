@@ -46,7 +46,7 @@ public class QwasiConfig extends HashMap<String, Object> {
                 if (inFile.exists()) {//from stackoverflow.com
                     FileInputStream fileInputStream = new FileInputStream(inFile);
                     DataInputStream dataIn = new DataInputStream(fileInputStream);
-                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn));
+                     BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn));
                     String line;
                     String splitString[];
                     while ((line = readBuffer.readLine()) != null) {

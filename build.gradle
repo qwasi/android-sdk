@@ -17,7 +17,8 @@ buildscript {
 
 allprojects{
     repositories{
-	jcenter()
+		jcenter()
+		maven{url "file:///Users/ccoulton/QwasiJSON"}
     }
 }
 
@@ -29,7 +30,7 @@ android {
     buildToolsVersion '22.0.1'
 	defaultConfig{
 		minSdkVersion 15
-		targetSdkVersion 19
+		targetSdkVersion 22
 	}
 }
 
@@ -47,8 +48,7 @@ dependencies {
 	//beacons radiusnetworks
 	compile 'org.altbeacon:android-beacon-library:2.3.5'
 	//Json client and sending
-	compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
-	compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
+	compile 'com.qwasi:QwasiJson:1.0.0'
 }
 
 sourceSets{
@@ -75,8 +75,7 @@ task sourcesJar(type: Jar) {
 
 task androidJavadoc(type: Javadoc) {
 	include 'org.altbeacon:android-beacon-library:2.3.5'
-	include 'com.transactioncompany:jsonrpc2-base:1.38'
-	include 'com.transactioncompany:jsonrpc2-client:1.15'
+	include 'com.qwasi:QwasiJson:1.0.0'
 	include 'com.google.android.gms:play-services-gcm:7.5.0'
 	include 'com.google.android.gms:play-services-location:7.50'
 	source = android.sourceSets.main.java.srcDirs

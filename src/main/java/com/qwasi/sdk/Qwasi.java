@@ -11,8 +11,6 @@ import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.android.gms.location.Geofence;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -241,25 +239,24 @@ public class Qwasi {
         mclient.invokeMethod("device.register", info, new QwasiInterface() {
             @Override
             public void onSuccess(Object o) {
+                try{
                 SharedPreferences.Editor editor = preferences.edit();
                 mregistered = true; //we've now registered
                 editor.putBoolean("registered", mregistered);
 
-                Map<String, Object> result = new HashMap<>();  //holder object
-                result.put("result", o);  //unpack response object
-                result = (Map<String, Object>) result.get("result"); //further unpacking
+                JSONObject result = (JSONObject) o;
 
                 //response.hashCode();
-                mdeviceToken = result.get("id").toString();  //set our device token from the server
+                mdeviceToken = result.getString("id");  //set our device token from the server
                 editor.putString("qwasi_device_token", mdeviceToken);
 
                 //grab the next key and unpack it.
-                Map<String, Object> info = (Map<String, Object>) result.get("application");
+                JSONObject info = result.getJSONObject("application");
                 mapplicationName = info.get("name").toString();
                 editor.putString("qwasi_app_id", info.get("id").toString());
 
                 //get the settings out
-                info = (Map<String, Object>) info.get("settings");
+                info = info.getJSONObject("settings");
                 mpushEnabled = (Boolean) info.get("push_enabled");
                 mlocationEnabled = (Boolean) info.get("location_enabled");
                 if (mlocationEnabled) mlocationManager.mmanager.connect();
@@ -269,13 +266,17 @@ public class Qwasi {
                 Log.i(TAG, "Device Successfully Registered");
                 Witness.notify(mdeviceToken);
                 qwasiInterface.onSuccess(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
+                }
+                catch (JSONException e){
+                    Log.wtf(TAG, "Malformed JsonObject response " + e.getMessage());
+                }
             }
 
             @Override
             public void onFailure(QwasiError e) {
-                Log.e("QwasiError", "Device Failed to Register");
+                Log.e("QwasiError", "Device Failed to Register: "+ e.getMessage());
                 QwasiError  error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceRegistrationFailed,
-                        "Device Registration failed");
+                        "Device Registration failed" +e.getMessage());
                 Witness.notify(error);
                 qwasiInterface.onFailure(error);
             }
@@ -301,11 +302,11 @@ public class Qwasi {
                 }
 
                 @Override
-                public void onFailure(QwasiError e) { //todo handle type of failure
-                    Log.e("QwasiError", "Set UserToken Failed");
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", "Set UserToken Failed: "+ e.getMessage());
                     QwasiError error =new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorSetUserTokenFailed,
-                                    "Set UserToken Failed");
+                                    "Set UserToken Failed "+ e.getMessage());
                     Witness.notify(error);
                     callbacks.onFailure(error);
                 }
@@ -364,15 +365,15 @@ public class Qwasi {
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("Debug", e.getMessage());
+                    Log.e("QwasiError", e.getMessage());
                     qwasiInterface.onFailure(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorDeviceUnregisterFailed,
-                                    "Qwasi Device Unregister failed"));
+                                    "Qwasi Device Unregister failed: "+ e.getMessage()));
                 }
             });
         }
-        else{
-            Log.e("QwasiError", "Device Not Registred");
+        else{ //404 device not found
+            Log.e("QwasiError", "Device Not Registered");
             QwasiError error = new QwasiError()
                     .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                             "Device not registered");
@@ -383,7 +384,7 @@ public class Qwasi {
 
     private synchronized void registerForNotifications(final QwasiInterface callback){
         if(mregistered){
-            while (qwasiNotificationManager.isRegistering()){}
+            while (qwasiNotificationManager.isRegistering());
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("id", mdeviceToken);
@@ -399,11 +400,11 @@ public class Qwasi {
                 }
 
                 @Override
-                public void onFailure(QwasiError e) { //todo handle why network failed
-                    Log.e("QwasiError", "Set Push Token failed");
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", "Set Push Token failed: "+e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed,
-                                    "Push Registration failed");
+                                    "Push Registration failed: "+e.getMessage());
                     Witness.notify(error);
                     callback.onFailure(error);
                 }
@@ -435,8 +436,8 @@ public class Qwasi {
                 }
 
                 @Override
-                public void onFailure(QwasiError e) { //todo handle why it failed
-                    Log.e("QwasiError", "Unregister for Note failed");
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", "Unregister for Note failed: "+e.getMessage());
                     callback.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushUnregisterFailed,
                             "Push Unregister Failed"));
                 }
@@ -482,18 +483,18 @@ public class Qwasi {
                         mclient.invokeMethod("message.fetch", parms, new QwasiInterface() {
                             @Override
                             public void onSuccess(Object o) {
-                                QwasiMessage temp = new QwasiMessage().messageWithData((HashMap<String, Object>) o);
+                                QwasiMessage temp = new QwasiMessage().messageWithData((JSONObject) o);
                                 mmessageCache.put(msgId, temp);
                                 Witness.notify(temp);
                                 qwasiInterface.onSuccess(temp);
                             }
 
                             @Override
-                            public void onFailure(QwasiError e) { //todo handle error types
+                            public void onFailure(QwasiError e) {
                                 //parse error?
-                                if (e.getCause() instanceof  FileNotFoundException)
-                                    qwasiInterface.onFailure(new QwasiError()
-                                            .errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound, "No messages found"));
+                                if (e.getMessage().contains("404"));
+                                    //qwasiInterface.onFailure(new QwasiError()
+                                            //.errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound, "No messages found"));
                                 else
                                     qwasiInterface.onFailure(new QwasiError()
                                             .errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed, "Message fetch failed"));
@@ -533,9 +534,8 @@ public class Qwasi {
             mclient.invokeMethod("message.poll", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
-                    Log.i(TAG, o.toString());
-                    QwasiMessage message = new QwasiMessage()
-                            .messageWithData((HashMap<String, Object>) o);
+                    //Log.i(TAG, o.toString());
+                    QwasiMessage message = new QwasiMessage().messageWithData((JSONObject) o);
                     mmessageCache.put(message.messageId, message);
                     Witness.notify(message);
                     qwasiInterface.onSuccess(message);
@@ -545,12 +545,12 @@ public class Qwasi {
                 public void onFailure(QwasiError e) {
                     QwasiError error;
                     //parse error
-                    if (e.getCause() instanceof FileNotFoundException) {
+                    if (e.getMessage().contains("404")) {
                         error = new QwasiError()
                                 .errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
                                         "Message not found ");
-
-                    } else {
+                    }
+                    else {
                         error = new QwasiError()
                                 .errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
                                         "Message Fetch Failed");
@@ -584,11 +584,10 @@ public class Qwasi {
                 }
 
                 @Override
-                public void onFailure(QwasiError e) {  //todo handle 401, and 404's app not found device not found
-                    Exception cause = new Exception(e);
-                    Log.i("Debug", cause.getMessage());
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", e.getMessage());
                     QwasiError error = new QwasiError()
-                            .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed");
+                            .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed "+e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -633,8 +632,9 @@ public class Qwasi {
                                 mlocationManager.startMoitoringLocation(
                                         QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                             }
-                        } catch (JSONException e) { //todo handle jsonExeceptions?
-                            Log.i(TAG, "JsonExecption");
+                        }
+                        catch (JSONException e) {
+                            Log.wtf(TAG, "malformed JSONArray");
                             e.printStackTrace();
                         }
                         qwasiInterface.onSuccess(mlocationManager.mregionMap);
@@ -642,12 +642,12 @@ public class Qwasi {
 
                     @Override
                     public void onFailure(QwasiError e) {
-                        e.printStackTrace();
+                        Log.e("QwasiError", e.getMessage());
                         QwasiError error = new QwasiError()
                                 .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
-                                        "Location Fetch Failed");
+                                        "Location Fetch Failed: "+e.getMessage());
                         Witness.notify(error);
-                        qwasiInterface.onFailure(error); //fixme 401/404
+                        qwasiInterface.onFailure(error);
                     }
                 });
             /*}
@@ -690,10 +690,10 @@ public class Qwasi {
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Subscribe to channel Failed");
+                    Log.e("QwasiError", "Subscribe to channel Failed: "+e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorChannelSubscribeFailed,
-                                    "Channel Subscribe Failed");
+                                    "Channel Subscribe Failed "+e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -725,10 +725,10 @@ public class Qwasi {
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Unsubscribe from channel Failed");
+                    Log.e("QwasiError", "Unsubscribe from channel Failed: "+e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorChannelUnsubscribeFailed,
-                                    "Channel Unsubscribe Failed");
+                                    "Channel Unsubscribe Failed "+e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -758,11 +758,11 @@ public class Qwasi {
                 }
 
                 @Override
-                public void onFailure(QwasiError e) { //todo 404/401
+                public void onFailure(QwasiError e) {
                     Log.e("QwasiError", "Set data Failed");
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorSetDeviceDataFailed,
-                                    "Device Data Set Failed");
+                                    "Device Data Set Failed: "+e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -795,7 +795,7 @@ public class Qwasi {
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Get data Failed");
+                    Log.e("QwasiError", "Get data Failed: "+e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorGetDeviceDataFailed,
                                     "Error Retriving: " + key + " for device " + mdeviceToken);
@@ -853,9 +853,9 @@ public class Qwasi {
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Message Send Failed");
+                    Log.e("QwasiError", "Message Send Failed: "+e.getMessage());
                     QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSendMessageFailed,
-                            "Send message Failed");
+                            "Send message Failed "+e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }

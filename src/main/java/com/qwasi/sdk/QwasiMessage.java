@@ -4,6 +4,7 @@ import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -34,45 +35,49 @@ public class QwasiMessage extends Object{
         mtags = new ArrayList<>();
     }
 
-    private QwasiMessage initWithData(HashMap<String, Object> data){
-        messageId = data.get("id").toString();
-        application = ((HashMap<String, Object>)data.get("application")).get("id").toString();
-        malert = data.get("text").toString();
-        if (Qwasi.getInstance().qwasiAppManager.isApplicationInForeground()){
-            selected = true;
-        }
-        //dateformater = date
-        //DateFormat dateFormatter = new DateFormat();
-
-        mtimestamp = new Date();
-
-        mpayloadType = data.get("payload_type").toString();
-        if (((HashMap<String, Object>) data.get("context")).containsKey("tags")) {
-            mtags.add(((HashMap<String, Object>) data.get("context")).get("tags"));
-        }
-        if (((HashMap<String, Object>) data.get("flags")).containsKey("fetched")) {
-            fetched = Boolean.getBoolean(((HashMap<String, Object>) data.get("flags")).get("fetched").toString());
-        }
-        mencodedPayload = data.get("payload");
-        byte [] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
-        try{
-            if (mpayloadType.equalsIgnoreCase("application/json")){
-                //error?
-                mpayload = new JSONObject(new String(temp, "UTF-8"));
+    private QwasiMessage initWithData(Object input){
+        try {
+            JSONObject data = (JSONObject) input;
+            messageId = data.getString("id");
+            application = data.getJSONObject("application").getString("id");
+            malert = data.get("text").toString();
+            if (Qwasi.getInstance().qwasiAppManager.isApplicationInForeground()) {
+                selected = true;
             }
+            //dateformater = date
+            //DateFormat dateFormatter = new DateFormat();
 
-            else if (mpayloadType.contains("text")){
-                mpayload = new String(temp, "UTF-8");
+            mtimestamp = new Date();
+
+            mpayloadType = data.get("payload_type").toString();
+            if (data.has("tags")) {
+                mtags.add(data.get("tags"));
             }
+            if (data.has("fetched")) {
+                fetched = Boolean.getBoolean(data.getString("fetched"));
+            }
+            mencodedPayload = data.get("payload");
+            byte[] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
+            try {
+                if (mpayloadType.equalsIgnoreCase("application/json")) {
+                    //error?
+                    mpayload = new JSONObject(new String(temp, "UTF-8"));
+                } else if (mpayloadType.contains("text")) {
+                    mpayload = new String(temp, "UTF-8");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Log.d(TAG, mpayload.toString());
+            return this;
         }
-        catch (Exception e){
-            e.printStackTrace();
+        catch (JSONException e){
+            Log.wtf(TAG, "Malformed JSONobject" + e.getMessage());
+            return null;
         }
-        Log.d(TAG, mpayload.toString());
-        return this;
     }
 
-    public QwasiMessage messageWithData(HashMap<String, Object> data){
+    public QwasiMessage messageWithData(JSONObject data){
         return this.initWithData(data);
     }
 
