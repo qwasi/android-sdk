@@ -1,5 +1,7 @@
 package com.qwasi.sdk;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -15,7 +17,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -36,7 +37,9 @@ public class Qwasi {
     long locationUpdatefilter;
     long locationEventFilter;
     QwasiAppManager qwasiAppManager = null; //package accessable
+    public QwasiBeacons qwasiBeacons;
     private QwasiNotificationManager qwasiNotificationManager= null;
+    protected String deviceName = null;
     public String mapplicationName = null;
     private String mdeviceToken = null;
     private QwasiClient mclient = null;
@@ -44,7 +47,7 @@ public class Qwasi {
     private HashMap<String, QwasiMessage> mmessageCache;
     public QwasiLocationManager mlocationManager;
     public QwasiConfig mconfig;
-    public String muserToken;
+    protected String muserToken;
     public Boolean mpushEnabled = false;
     public Boolean mlocationEnabled = false;
     public Boolean meventsEnabled = false;
@@ -83,6 +86,7 @@ public class Qwasi {
         qwasiNotificationManager= new QwasiNotificationManager(context);
         mconfig = new QwasiConfig(application);
         mlocationManager = new QwasiLocationManager();
+        qwasiBeacons = new QwasiBeacons();
         mconfig.configWithFile(); //default
         if (mconfig.isValid()){
             instance.initWithConfig(mconfig);
@@ -93,14 +97,10 @@ public class Qwasi {
     }
 
     public synchronized static Qwasi getInstance(){
-        if (instance == null){
-            instance = new Qwasi();
-        }
-        return instance;
+        return instance == null?new Qwasi():instance;
     }
 
-
-    public Context getContext(){return context;}
+    public Context getContext(){ return context; }
 
     public Qwasi qwasiWithConfig(QwasiConfig config) {
         return(this.initWithConfig(config));
@@ -154,13 +154,19 @@ public class Qwasi {
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 
-        if (qwasiNotificationManager.getPushToken() == null){
+        if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification();
         }
 
+        Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
+        deviceName = accounts.length > 0?
+                accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
         mmessageCache = new HashMap<>();
 
-        muserToken = preferences.getString("qwasi_user_token","DROIDTOKEN");
+        String test = preferences.getString("qwasi_user_token", ((TelephonyManager) context
+                .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number());
+        muserToken = test != null?test:"DROIDTOKEN";
+
         this.sharedApplication.registerActivityLifecycleCallbacks(qwasiAppManager);
         return this;
     }
@@ -176,19 +182,16 @@ public class Qwasi {
     }
 
     public void setPushEnabled(QwasiInterface callback){
-        if (mpushEnabled){
+        if (mpushEnabled)
             this.registerForNotifications(callback);
-        }
-        else{
+        else
             this.unregisterForNotifications(callback);
-        }
     }
     public synchronized void setLocationEnabled(boolean enabled){
         mlocationEnabled = enabled;
         if (mlocationEnabled){
             QwasiLocation current = mlocationManager.getLastLocation();
             double speed = current.getSpeed();
-
         }
     }
 
@@ -203,13 +206,13 @@ public class Qwasi {
         }
 
         if (name == null){  //if name is null get it from the phone, or user can give us one
-            name = Build.PRODUCT;
+            name = deviceName;
         }
 
         if (userToken == null){  //if we didn't get a usertoken set it to be the phone number
-            userToken = ((TelephonyManager) context
-                    .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number();
+            userToken = muserToken;
         }
+
         Map<String, Object> info = new HashMap<>();
 
         if (userInfo != null) {  //make sure that it's init so we don't crash
@@ -283,6 +286,10 @@ public class Qwasi {
         });
     }
 
+    public synchronized String getUserToken(){
+        return muserToken;
+    }
+
     public void setUserToken(String userToken){
         this.setUserToken(userToken, defaultCallback);
     }
@@ -297,13 +304,26 @@ public class Qwasi {
             mclient.invokeMethod("device.set_user_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
+                    Log.i(TAG, "Device Token Set");
+                    try {
+                        preferences.edit().putString("qwasi_user_token",
+                                ((JSONObject) o).get("user_token").toString()).apply();
+                    }
+                    catch (JSONException e){
+                        Log.wtf(TAG, "User token malformed");
+                        QwasiError error =new QwasiError()
+                                .errorWithCode(QwasiErrorCode.QwasiErrorSetUserTokenFailed,
+                                        "Set UserToken Failed "+ e.getMessage());
+                        Witness.notify(error);
+                        callbacks.onFailure(error);
+                    }
                     callbacks.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Set UserToken Failed: "+ e.getMessage());
+                    Log.e("QwasiError", "Set UserToken Failed: " + e.getMessage());
                     QwasiError error =new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorSetUserTokenFailed,
                                     "Set UserToken Failed "+ e.getMessage());
@@ -344,12 +364,7 @@ public class Qwasi {
     public synchronized void unregisterDevice(String deviceToken, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parm = new HashMap<>();
-            if (deviceToken == null){
-                parm.put("id", mdeviceToken);
-            }
-            else {
-                parm.put("id", deviceToken);
-            }
+            parm.put("id", deviceToken==null?mdeviceToken:deviceToken);
 
             mclient.invokeMethod("device.unregister", parm, new QwasiInterface() {
                 @Override
@@ -545,16 +560,14 @@ public class Qwasi {
                 public void onFailure(QwasiError e) {
                     QwasiError error;
                     //parse error
-                    if (e.getMessage().contains("404")) {
-                        error = new QwasiError()
+                    error = e.getMessage().contains("404")?
+                            new QwasiError()
                                 .errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
-                                        "Message not found ");
-                    }
-                    else {
-                        error = new QwasiError()
+                                        "No messages for Device") :
+                            new QwasiError()
                                 .errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
                                         "Message Fetch Failed");
-                    }
+
                     qwasiInterface.onFailure(error);
                 }
 
@@ -627,11 +640,12 @@ public class Qwasi {
                     public void onSuccess(Object o) {
                         JSONArray positions;
                         try {
-                            positions = new JSONArray(o.toString());
+                            positions = ((JSONObject) o).getJSONArray("result");
                             for (int index = 0; index < positions.length(); index++) {
                                 mlocationManager.startMoitoringLocation(
                                         QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                             }
+                            mlocationManager.pruneLocations();
                         }
                         catch (JSONException e) {
                             Log.wtf(TAG, "malformed JSONArray");

@@ -3,6 +3,7 @@ package com.qwasi.sdk;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -12,16 +13,15 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiConfig extends HashMap<String, Object> {
+public class QwasiConfig{
     public URL murl = null;
     public String mapplication = null;
     public String mkey = null;
@@ -109,7 +109,7 @@ public class QwasiConfig extends HashMap<String, Object> {
     }
 
     private QwasiConfig initWithURL(URL input, String App, String Key){
-        murl = input;
+        this.murl = input;
 
         if (murl == null){
             try {
@@ -120,13 +120,13 @@ public class QwasiConfig extends HashMap<String, Object> {
             }
         }
 
-        mapplication = App;
+        this.mapplication = App;
 
         if (mapplication == null){
             mapplication = "INVAILD_APP_ID";
         }
 
-        mkey = Key;
+        this.mkey = Key;
 
         if (mkey == null){
             mkey = "INVAILD_API_KEY";

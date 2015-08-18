@@ -1,6 +1,5 @@
 package com.qwasi.sdk;
 
-import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
 
@@ -9,8 +8,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -62,7 +59,7 @@ public class QwasiMessage extends Object{
                 if (mpayloadType.equalsIgnoreCase("application/json")) {
                     //error?
                     mpayload = new JSONObject(new String(temp, "UTF-8"));
-                } else if (mpayloadType.contains("text")) {
+                } else if (mpayloadType.contains("text/plain")) {
                     mpayload = new String(temp, "UTF-8");
                 }
             } catch (Exception e) {

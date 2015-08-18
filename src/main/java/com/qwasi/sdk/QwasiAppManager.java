@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 
-
 import java.util.HashMap;
 
 /**
@@ -39,13 +38,12 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState){
-        sharedApplication.mlocationManager.bindBeacon(activity);
+        sharedApplication.qwasiBeacons.setMainAct(activity);
     }
 
     @Override
     public void onActivityDestroyed(Activity activity){
         sharedApplication.mlocationManager.stopLocationUpdates();
-
     }
 
     @Override
@@ -66,7 +64,6 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         ++paused;
         sharedApplication.mlocationManager.mmanager.disconnect();
         android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
-        sharedApplication.mlocationManager.beaconManager.unbind(sharedApplication.mlocationManager); //issue #1
     }
 
     @Override

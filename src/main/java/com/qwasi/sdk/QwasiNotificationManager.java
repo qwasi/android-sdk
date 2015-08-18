@@ -4,11 +4,13 @@ package com.qwasi.sdk;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,8 +25,6 @@ import com.google.android.gms.iid.InstanceID;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
-
-import io.hearty.witness.Witness;
 
 /**
  * Created by ccoulton on 6/11/15.
@@ -170,11 +170,9 @@ public class QwasiNotificationManager extends GcmListenerService{
         Intent intent = new Intent(this, mContext.getClass());
         intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-        Uri defaultSoundUri;
-        if (!message.silent()) {
-            defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        }
-        else defaultSoundUri = null;
+
+        Uri defaultSoundUri = message.silent()?RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION): null;
+
         String appName = mContext.getPackageManager().getApplicationLabel(mContext.getApplicationInfo()).toString();
         NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(mContext.getApplicationInfo().icon)
