@@ -3,6 +3,7 @@ package com.qwasi.sdk;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -12,20 +13,22 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
+import java.nio.charset.Charset;
 
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiConfig extends HashMap<String, Object> {
+public class QwasiConfig{
     public URL murl = null;
-    public String mapplication = null;
-    public String mkey = null;
+    public String mapplication = "";
+    public String mkey = "";
     private Context sharedApplication;
+    String TAG = "QwasiConfig";
 
     public QwasiConfig(Context context){
         sharedApplication = context;
@@ -45,7 +48,7 @@ public class QwasiConfig extends HashMap<String, Object> {
                 if (inFile.exists()) {//from stackoverflow.com
                     FileInputStream fileInputStream = new FileInputStream(inFile);
                     DataInputStream dataIn = new DataInputStream(fileInputStream);
-                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn));
+                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, Charset.forName("UTF-8")));
                     String line;
                     String splitString[];
                     while ((line = readBuffer.readLine()) != null) {
@@ -58,6 +61,7 @@ public class QwasiConfig extends HashMap<String, Object> {
                             url = new URL(splitString[1]);
                         }
                     }
+                    readBuffer.close();
                 }
             }
             else{ //read from the xml file
@@ -81,22 +85,22 @@ public class QwasiConfig extends HashMap<String, Object> {
         }
         catch (FileNotFoundException e){
             Log.e("QwasiError", "File not found "+e.getMessage());
-            Log.d("QwasiDebug", "Trying with default manifest");
+            Log.d(TAG, "Trying with default manifest");
             return configWithFile(null);
         }
         catch (MalformedURLException e){
             Log.e("QwasiError", "Malformed URL in file "+e.getMessage());
-            Log.d("QwasiDebug", "Passing to default values");
+            Log.d(TAG, "Passing to default values");
             return configWithURL(null, null, null);
         }
         catch (IOException e) {
             Log.e("QwasiError", "I/O Error reading file at: " + path);
-            Log.d("QwasiDebug", "Trying with default manifest");
+            Log.d(TAG, "Trying with default manifest");
             return configWithFile(null);
         }
         catch (PackageManager.NameNotFoundException e){
             Log.e("QwasiError", "Application name not found " + e.getMessage());
-            Log.d("QwasiDebug", "Passing to default values");
+            Log.d(TAG, "Passing to default values");
             return configWithURL(null, null, null);
         }
         return this.configWithURL(url, appID, apiKey);
@@ -107,7 +111,7 @@ public class QwasiConfig extends HashMap<String, Object> {
     }
 
     private QwasiConfig initWithURL(URL input, String App, String Key){
-        murl = input;
+        this.murl = input;
 
         if (murl == null){
             try {
@@ -118,13 +122,13 @@ public class QwasiConfig extends HashMap<String, Object> {
             }
         }
 
-        mapplication = App;
+        this.mapplication = App;
 
         if (mapplication == null){
             mapplication = "INVAILD_APP_ID";
         }
 
-        mkey = Key;
+        this.mkey = Key;
 
         if (mkey == null){
             mkey = "INVAILD_API_KEY";

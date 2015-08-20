@@ -47,7 +47,7 @@ public class QwasiError extends Throwable{
         userInfo.put("code", code);
         if (error != null){
             userInfo.put(message + " reason= " + error.getMessage(), null);
-            userInfo.put("innerError", error);
+            userInfo.put("innerError", error); //todo UserInfo goes where
         }
         else{
             userInfo.put(message, null);

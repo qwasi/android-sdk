@@ -25,11 +25,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
 dependencies{
-    compile 'com.google.android.gms:play-services-gcm:7.5.0'
-    compile 'com.google.android.gms:play-services-location:7.5.0'
-    compile 'com.qwasi:QwasiSDK:2.1.0@aar'
-    compile 'com.thetransactioncompany:jsonrpc2-base:1.38'
-    compile 'com.thetransactioncompany:jsonrpc2-client:1.15'
+    compile 'com.qwasi:QwasiSDK:2.1.2-1'
 }
 ```
 
@@ -42,31 +38,31 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ```groovy
  'com.google.android.gms:play-services-gcm:7.5.0'
  'com.google.android.gms:play-services-location:7.5.0'
- 'com.thetransactioncompany:jsonrpc2-base:1.38'
- 'com.thetransactioncompany:jsonrpc2-client:1.15'
+ 'com.qwasi:QwasiJSON:1.0.0'
+ 'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
 ## Library initialization `Qwasi`
 ### Allocate a new Qwasi
 
 The Qwasi object is created as a Singleton object; in order to access it and the constructor simply call the static function getInstance anywhere in the program. If the Qwasi object hasn't been initialized, that will need to be done after getting the instance, with the application Context.
-    ```java
-    Qwasi qwasi = new Qwasi.getInstance();
-    qwasi.initQwasi(this);
-    ```
+```java
+Qwasi qwasi = new Qwasi.getInstance();
+qwasi.initQwasi(this);
+```
 
 ## Library Configuration `QwasiConfig`
 
 By default, the QwasiConfig will attempt to configure with basic information from the androidmanifest.xml tags. If a custom file is desired  it will need to be passed with its path and extension. The Qwasi Object attempts this by default when it is initialized.
-    ```java
-    QwasiConfig config = new QwasiConfig(Context);
-    config.configWithFile();
-    ```
+```java
+QwasiConfig config = new QwasiConfig(Context);
+config.configWithFile();
+```
 
 ### Default Configuration
 
 The default configuration file is part of the AndroidManifest.xml. You create and add this to your Android Studio project or add the lines to the existing file
-```xml
+```
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="your package name">
@@ -77,7 +73,7 @@ The default configuration file is part of the AndroidManifest.xml. You create an
 </manifest>
 ```
 Also if you wish to use the default QwasiNotificationManager, QwasiLocationManager, to handle Location and Notifications these will needed to be added to the AndroidManifest as well
-```xml
+```
     <application....>
         <!-- [Start Geofence Listener] -->
         <service
@@ -106,6 +102,7 @@ You can load a configuration from another property list by using:
 ```
 
 Example:
+
 ```java
     QwasiConfig config = new QwasiConfig();
     config.configWithFile("path to text file here");
@@ -120,6 +117,7 @@ You can create a runtime configuration object on the fly using:
 ```
 
 Example:
+
 ```java
     URL url = new URL("https://sandbox.qwasi.com/v1");
     QwasiConfig config = new QwasiConfig.configWithURL(url, "AppID string", "API String");
@@ -131,18 +129,22 @@ Example:
 
 The Qwasi library uses Witness library to create node like Emitter events. These events will be caught by the Reporter interface, to register for these events simply use syntax below:
 Event emitter registering:
+
 ```java
 Witness.register(QwasiMessage.class, this); //messaging events
 Witness.register(QwasiLocation.class, this); //location events
 Witness.register(String.class, this);  //general purpose events
 ```
+
 Interface implementation:
+
 ```java
 @Override
 public void notifyEvent(Object o){
     //handle threading events based on what you'd like to do.
 }
 ```
+
 **Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
 
 ## Interface `QwasiInterface`
@@ -153,6 +155,7 @@ All of the methods in the Qwasi Library use a simple interface to handle success
 
 These will be created and passed to the QwasiInterface onFailed(QwasiError Error) method that is passed or the default.
 Example:
+
 ```java
 qwasi.registerDevice("UserToken", new QwasiInterface({
     @Override
@@ -204,11 +207,13 @@ If the device has not been registered the user token will be updated when regist
 ### Un-registration
 
 If a device is unnecessary, it can be unregistered using:
+
 ```java
     public void qwasi.unregisterDevice(String);
 ```
 
 Example:
+
 ```java
     qwasi.unregisterDevice(qwasi.getMdeviceToken());
 ```
@@ -247,6 +252,7 @@ If your app does not support background fetch, you can periodically call:
 
 Calling this in the UIThread so that you can check for messages.
 Example:
+
 ```java
 protected void onStart(){
     ...
@@ -261,6 +267,7 @@ protected void onStart(){
     });
 }
 ```
+
 This method will not generate a notification. But if one is desired an example of how to create a notification can be seen at the QwasiNotificationManager onRecieve and sendNotification for an example.
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
@@ -295,6 +302,7 @@ public void subscribeToChannel(String, QwasiInterface)
 ```
 
 Example:
+
 ```java
     qwasi.subscribeToChannel("baseball");
 ```
@@ -325,6 +333,7 @@ public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
 ```
 
 Example:
+
 ```java
     qwasi.postEvent("login", HashMap<String, Object>("username", "bobvila"));
 ```
@@ -389,6 +398,7 @@ public void deviceValueForKey(String key);
 ###### API METHOD - `DEVICE.SET_DATA`
 
 Example:
+
 ```java
 qwasi.setDeviceValue("hotrod99", "user.displayname");
 qwasi.deviceValueForKey("user.displayname");

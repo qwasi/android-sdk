@@ -4,9 +4,11 @@
    
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!--Beacons-->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
-
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!--GCM-->
     <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
@@ -14,18 +16,39 @@
     <uses-permission android:name="com.google.android.c2dm.intent.REGISTRATION" />
     <!-- need your application package name here  -->
     <!--uses-permission android:name="com.qwasi.sdk.permission.C2D_MESSAGE" /-->
-    <uses-permission android:name="android.permission.GET_TASKS"/>
+    <!--Notifications -->
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <!--Location-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <!--<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
     <uses-permission android:name="ANDROID.PERMISSION.ACCESS_LOCATION_EXTRA_COMMANDS"/>
-
+    <!--QwasiConfig-->
     <meta-data android:name="appID" android:value="55a93a58d666874b6e1109ce" />
     <meta-data android:name="apiKey" android:value="4734601123be56bcdf4494907b2aaa9e"/>
     <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
     <meta-data android:name="gcm_senderid" android:value="335413682000" />
     <meta-data android:name="sdk_version" android:value="2.1.0"/>
+
+    <application>
+        <receiver android:name="org.altbeacon.beacon.startup.StartupBroadcastReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:enabled="true"
+            android:exported="false"
+            android:label="beacon"
+            android:name="org.altbeacon.beacon.service.BeaconService"
+            />
+
+        <service android:name="org.altbeacon.beacon.BeaconIntentProcessor"
+            android:enabled="true"
+            android:exported="false"
+            />
+
+    </application>
 
 </manifest>

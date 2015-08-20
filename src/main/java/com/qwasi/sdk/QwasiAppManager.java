@@ -3,7 +3,6 @@ package com.qwasi.sdk;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import android.util.Log;
 
 import java.util.HashMap;
 
@@ -20,13 +19,15 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     private int paused;
     private int started;
     private int stopped;
+    static boolean status;
     final private Qwasi sharedApplication;
     private String event;
     private HashMap<String, Object> data;
+    String TAG = "QwasiAppManager";
 
-
-    public QwasiAppManager(){
-        this.sharedApplication = Qwasi.getInstance();
+    public QwasiAppManager(Qwasi qwasi){
+        super();
+        sharedApplication = qwasi;
     }
 
     private Thread postEvent = new Thread(new Runnable() {
@@ -37,12 +38,19 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         }
     });
 
-    @Override
-    public void onActivityCreated(Activity activity, Bundle savedInstanceState){
+    static synchronized boolean getstatus(){
+        return status;
     }
 
     @Override
-    public void onActivityDestroyed(Activity activity){}
+    public void onActivityCreated(Activity activity, Bundle savedInstanceState){
+        QwasiLocationManager.getInstance().qwasiBeacons.setMainAct(activity);
+    }
+
+    @Override
+    public void onActivityDestroyed(Activity activity){
+        sharedApplication.mlocationManager.stopLocationUpdates();
+    }
 
     @Override
     public void onActivityResumed(Activity activity){
@@ -52,23 +60,26 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
         ++resumed;
+        if (!sharedApplication.mlocationManager.mmanager.isConnected())
+            sharedApplication.mlocationManager.mmanager.connect();
     }
 
     @Override
     public void onActivityPaused(Activity activity){
-        Log.d("QwasiDebug", "ActivityPaused");
+        android.util.Log.d(TAG, "ActivityPaused");
         ++paused;
-        android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
+        sharedApplication.mlocationManager.mmanager.disconnect();
+        android.util.Log.w("test", "application is in foreground: " + isApplicationInForeground());
     }
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle outState){
-        Log.d("QwasiDebug", "SaveInstanceState");
+        android.util.Log.d(TAG, "SaveInstanceState");
     }
 
     @Override
     public void onActivityStarted(Activity activity){
-        Log.d("QwasiDebug", "ActivityStarted");
+        android.util.Log.d(TAG, "ActivityStarted");
         ++started;
     }
 
@@ -78,6 +89,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<>();
         event = "com.qwasi.event.application.state";
         data.put("", "");
+        sharedApplication.mlocationManager.mmanager.disconnect();
         if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
         }
@@ -88,6 +100,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     }
 
     public boolean isApplicationInForeground(){
-        return resumed>paused;
+        status = resumed>paused;
+        return status;
     }
 }
