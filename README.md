@@ -204,7 +204,7 @@ Example:
     editor.apply();
 ```
 
-Note other registerDevice functions exist for when you have more or less information about the user, or device.
+**Note: other registerDevice functions exist for when you have more or less information about the user, or device.**
 ###### SDK EVENT - "REGISTER"
 ###### SDK Error - `QwasiErrorDeviceRegistrationFailed`
 ###### API METHOD - `DEVICE.REGISTER`
@@ -253,6 +253,7 @@ Example:
     qwasi.setPushEnabled();
 ```
 
+setPushEnabled emits the push token as a string, and also returns it on the onSuccess of the QwasiInterface passed to it.  It is recommended you save this to the application's Preferances with the key "gcm_token".
 ###### SDK EVENT - "PUSHTOKEN"
 ###### SDK ERROR - `QWASIERRORPUSHREGISTRATIONFAILED`
 ###### API METHOD - `DEVICE.SET_PUSH_TOKEN`
