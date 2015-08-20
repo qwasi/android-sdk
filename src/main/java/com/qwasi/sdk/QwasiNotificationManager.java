@@ -1,20 +1,12 @@
 package com.qwasi.sdk;
 
-
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
-
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -24,7 +16,6 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 import io.hearty.witness.Witness;
 
@@ -37,25 +28,27 @@ public class QwasiNotificationManager extends GcmListenerService{
     private String mpushToken;
     private Boolean mregistering;
     private Context mContext;
+    PendingIntent mIntent;
     //final private Qwasi qwasi;
     private String senderId;
+    private static QwasiNotificationManager instance;
     static final String TAG = "QwasiNotificationMngr";
 
-    public QwasiNotificationManager(){
+    private QwasiNotificationManager(){
         super();
+        mregistering = false;
+        mpushToken = "";
+        senderId = "335413682000"; //default
+        mContext = Qwasi.getContext();
     }
+
+    public static QwasiNotificationManager getInstance(){
+        return instance != null?instance:new QwasiNotificationManager();
+    }
+
     /**
      * Public constructor to be accessed from Qwasi
      */
-    public QwasiNotificationManager(Context app) {
-        super();
-        synchronized (this) {
-            mregistering = false;
-            mpushToken = "";
-            senderId = "335413682000"; //default
-            mContext = app;
-        }
-    }
 
     public Boolean isRegistering() {
         return mregistering;
@@ -133,18 +126,8 @@ public class QwasiNotificationManager extends GcmListenerService{
         }).start();
     }
 
-    @Override
-    public void onMessageReceived(String from, final Bundle data) {
-        synchronized (this) {
-            String qwasidata = (String) data.get("qwasi");
-            String[] results = qwasidata.split(Pattern.quote("\""));
-            Log.d(TAG, "From: " + results[11]);
-            Log.d(TAG, "Notification: " + results[7]);
-            Witness.notify(data);
-        }
+    void onMessage(PendingIntent intent, Bundle data){
+        this.mIntent = intent;
+        Witness.notify(data);
     }
-
-    /*private void sendNotification(QwasiMessage message) { //todo put me in qwasinotificationhandler
-
-    }*/
 }

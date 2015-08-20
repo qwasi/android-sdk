@@ -82,21 +82,17 @@ public class Qwasi{
 
     public Qwasi(Activity application){
         this.mclient = new QwasiClient();
-        if (context != null){
-            return;
-        }
         context = application.getApplicationContext();
         this.qwasiAppManager = new QwasiAppManager(this);
-        this.networkInfo = ((ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
-        qwasiNotificationManager= new QwasiNotificationManager(context);
+        this.networkInfo = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        qwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(context);
         mlocationManager = QwasiLocationManager.getInstance();
         application.getApplication().registerActivityLifecycleCallbacks(qwasiAppManager);
         mconfig.configWithFile(); //default
-        if (mconfig.isValid()){
+        if (mconfig.isValid()) {
             this.initWithConfig(mconfig);
-        }
-        else{
+        } else {
             Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
         }
     }
@@ -455,7 +451,6 @@ public class Qwasi{
                                     }
                                     else {
                                         QwasiMessage message = mmessageCache.get(msgId);
-                                        Witness.notify(message);
                                         sendNotification(message);
                                     }
                                 }
@@ -542,7 +537,6 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     QwasiMessage temp = new QwasiMessage().messageWithData((JSONObject) o);
                     mmessageCache.put(msgId, temp);
-                    Witness.notify(temp);
                     qwasiInterface.onSuccess(temp);
                 }
 
@@ -582,7 +576,10 @@ public class Qwasi{
                     //Log.i(TAG, o.toString());
                     QwasiMessage message = new QwasiMessage().messageWithData((JSONObject) o);
                     mmessageCache.put(message.messageId, message);
-                    Witness.notify(message);
+                    if (museLocalNotifications)
+                        sendNotification(message);
+                    else
+                        Witness.notify(message);
                     qwasiInterface.onSuccess(message);
                 }
 
@@ -600,7 +597,6 @@ public class Qwasi{
 
                     qwasiInterface.onFailure(error);
                 }
-
             });
         }
         else {
@@ -925,14 +921,15 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message){
-        Intent intent = new Intent(qwasiNotificationManager, context.getClass());
-        intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-        PendingIntent pendingIntent = PendingIntent.getActivity(qwasiNotificationManager, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
-        Uri defaultSoundUri = message.silent()? RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION): null;
+        PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
+
+        Uri defaultSoundUri = message.silent()?
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION):
+                null;
 
         String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
-        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(qwasiNotificationManager)
+        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(context.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
@@ -954,6 +951,8 @@ public class Qwasi{
             Log.d(TAG, "App context");
         }
         NotificationManager noteMng = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        noteMng.notify(message.messageId.hashCode(), noteBuilder.build());
+        noteMng.notify(0, noteBuilder.build());
+        Witness.notify(message);
     }
+
 }

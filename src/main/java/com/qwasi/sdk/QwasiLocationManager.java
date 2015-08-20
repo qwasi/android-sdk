@@ -44,7 +44,7 @@ import io.hearty.witness.Witness;
  * Released under the MIT Licence
  */
 
-public class QwasiLocationManager extends IntentService
+public class QwasiLocationManager //extends IntentService
         implements
         GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
@@ -68,7 +68,7 @@ public class QwasiLocationManager extends IntentService
     //public BeaconManager beaconManager;
 
     private QwasiLocationManager(){
-        super(TAG);
+        //super(TAG);
         sharedApplication = Qwasi.getContext();
         mactiveManager.setInterval(mupdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
@@ -78,7 +78,7 @@ public class QwasiLocationManager extends IntentService
         qwasiBeacons = new QwasiBeacons();
     }
 
-    static synchronized QwasiLocationManager getInstance(){
+    public static synchronized QwasiLocationManager getInstance(){
         return instance == null?new QwasiLocationManager():instance;
     }
 
@@ -187,8 +187,9 @@ public class QwasiLocationManager extends IntentService
 
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
-        LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
-        //mmanager.connect();
+        if (!mmanager.isConnected()) mmanager.connect();
+        else LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+
         if (sharedApplication instanceof BeaconConsumer){
             qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
         }
@@ -196,7 +197,8 @@ public class QwasiLocationManager extends IntentService
     }
 
     public void stopLocationUpdates(){
-        LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
+        if(mmanager.isConnected())
+            LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
         mmanager.disconnect();
         if (sharedApplication instanceof BeaconConsumer) {
             qwasiBeacons.beaconManager.unbind((BeaconConsumer) sharedApplication);
@@ -274,46 +276,8 @@ public class QwasiLocationManager extends IntentService
     }
 
     private PendingIntent getGeoPendingIntent(){
-        Intent intent = new Intent(sharedApplication, this.getClass());
+        Intent intent = new Intent(sharedApplication, QwasiGeofencehandler.class);
         sharedApplication.getSystemService(Context.LOCATION_SERVICE);
         return PendingIntent.getService(sharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-    }
-
-    @Override
-    public IBinder onBind(Intent intent){
-        return null;
-    }
-
-    @Override
-    public void onHandleIntent(Intent input) {
-        synchronized (this) {
-            GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(input);
-            Log.i(TAG, "Geofence Intent");
-            if (geofencingEvent.hasError()) {
-                Log.e("QwasiGeofence", String.valueOf(geofencingEvent.getErrorCode()));
-                return;
-            }
-            HashMap<String, Object> data = new HashMap<>();
-            // Get the transition type.
-            int geofenceTransition = geofencingEvent.getGeofenceTransition();
-            List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
-            //Test that the reported transition was of interest.
-            for (Geofence geofence : triggeringGeofences) { //todo emit and let qwasi objects figure it out
-                QwasiLocation temp = mregionMap.get(geofence.getRequestId());
-                if (temp != null) {
-                    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-                        // Send notification and log the transition details.
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
-                        Witness.notify(temp);
-                    } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-                        temp.exit();
-                        Witness.notify(temp);
-                    } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
-                        temp.enter();
-                    }
-                }
-            }
-        }
     }
 }

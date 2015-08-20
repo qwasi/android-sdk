@@ -18,6 +18,7 @@ Qwasi is available as a Gradle repo as a mavenCentral repo. To install it, simpl
 ```groovy
 repositories{
     mavenCentral()
+    jcenter()
 }
 ```
 
@@ -25,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
 dependencies{
-    compile 'com.qwasi:QwasiSDK:2.1.2-1'
+    compile 'com.qwasi:QwasiSDK:2.1.3'
 }
 ```
 
@@ -45,10 +46,10 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ## Library initialization `Qwasi`
 ### Allocate a new Qwasi
 
-The Qwasi object is created as a Singleton object; in order to access it and the constructor simply call the static function getInstance anywhere in the program. If the Qwasi object hasn't been initialized, that will need to be done after getting the instance, with the application Context.
+The Qwasi objects will need to be instantiated with the application Context.  This allows the Qwasi object
+to handle setting up all the other objects it relies on.
 ```java
-Qwasi qwasi = new Qwasi.getInstance();
-qwasi.initQwasi(this);
+Qwasi qwasi = new Qwasi(this);
 ```
 
 ## Library Configuration `QwasiConfig`
@@ -77,19 +78,23 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
     <application....>
         <!-- [Start Geofence Listener] -->
         <service
-            android:name="com.qwasi.sdk.QwasiLocationManager"
+            android:name="com.qwasi.sdk.QwasiGeofencehandler"
             android:exported="false">
         </service>
         <!-- [End Geofence Listener]-->
         <!-- [START gcm_listener] -->
         <service
-            android:name="com.qwasi.sdk.QwasiNotificationManager"
+            android:name="com.qwasi.sdk.QwasiGCMListener"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </service>
         <!-- [END gcm_listener] -->
+        <!-- [START Beacon Listener] -->
+        <service android:name="com.qwasi.sdk.QwasiBeacons" android:enabled="true"/>
+        <!-- [END Beacon Listener] -->
+
     </application>
 ```
 
@@ -131,9 +136,9 @@ The Qwasi library uses Witness library to create node like Emitter events. These
 Event emitter registering:
 
 ```java
-Witness.register(QwasiMessage.class, this); //messaging events
-Witness.register(QwasiLocation.class, this); //location events
-Witness.register(String.class, this);  //general purpose events
+Witness.register(QwasiMessage.class, Reporter); //messaging events
+Witness.register(QwasiLocation.class, Reporter); //location events
+Witness.register(String.class, Reporter);  //general purpose events
 ```
 
 Interface implementation:
@@ -141,8 +146,19 @@ Interface implementation:
 ```java
 @Override
 public void notifyEvent(Object o){
+    //will get all object types registered to the reporter
     //handle threading events based on what you'd like to do.
 }
+```
+
+Inline Example:
+```java
+Witness.register(QwasiMessage.class, new Reporter(){
+    @Override
+    public void notifyEvent(Object o){
+        //this will only grab QwasiMessage events reduces parsing or if trees
+    }
+};
 ```
 
 **Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
@@ -150,6 +166,7 @@ public void notifyEvent(Object o){
 ## Interface `QwasiInterface`
 
 All of the methods in the Qwasi Library use a simple interface to handle success and failure callbacks to create a smooth threading experience. While all of the methods can accept a custom QwasiInterface object, a default one is offered in the Library as an example and for convenience. It should be Overloaded in order to handle your needs at any given time.
+Most Qwasi functions make use of the default QwasiInterface while performing tasks inside of the SDK.
 
 ## Error Handling `QwasiError`
 
@@ -174,12 +191,12 @@ qwasi.registerDevice("UserToken", new QwasiInterface({
 
 Every device that engages with Qwasi SDK requires a unique device token. This token will be stored by the Qwasi object when it is instantiated, and passed to the server when a device is registered or push is enabled.
 There are many registerDevice overloads defined in Qwasi.java, the simplest and most useful is:
-public void registerDevice(String deviceToken, String userToken)
+public void registerDevice(String deviceToken, String userToken), when this function calls it's interface's onSuccess, it also broadcasts an event of the devicetoken as a String.
 Example:
 
 ```java
     // Get our device token from the defaults
-    SharedPreferences preferences =  this.getSharedPreferences("app preferences", Context.MODE_PRIVATE);
+    SharedPreferences preferences =  this.getSharedPreferences(Context.MODE_PRIVATE);
     String deviceToken = preferences.getString("key value", default value);
     qwasi.registerDevice(deviceToken, USER_TOKEN);
     SharedPreferences.Editor editor = preferences.edit();
@@ -193,7 +210,9 @@ Note other registerDevice functions exist for when you have more or less informa
 ###### API METHOD - `DEVICE.REGISTER`
 
 ### User Tokens
-User tokens are basically your vendor identifier for this device. Some developers use their customer id or loyalty id number, this allows you to address the devices with this token from the platform. These do not have to be unique and can be used to group devices under a single user token. The default is "".
+User tokens are basically your devices.
+Some developers use their customer id or loyalty id number, this allows you to address the devices with this token from the platform.
+These do not have to be unique and can be used to group devices under a single user token. The default is "".
 
 You can set the user token either via the `deviceRegister` call, or later via the Qwasi object.
 
@@ -268,7 +287,7 @@ protected void onStart(){
 }
 ```
 
-This method will not generate a notification. But if one is desired an example of how to create a notification can be seen at the QwasiNotificationManager onRecieve and sendNotification for an example.
+This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness.
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`
@@ -276,18 +295,18 @@ This method will not generate a notification. But if one is desired an example o
 
 ### Handling Incoming Messages
 
-You receive the message via the GCMListener registered in the AndroidManifest.xml, which can be ".QwasiNotificationManager" or some other class that you've defined.
+Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  They proceed to pass an PendingIntent, and the Bundle to QwasiNotificationManager.onMessage.  At which point the bundle is Emitted to the Qwasi Objects.
 Example:
 
 ```java
     @Override
     public void onMessageReceived(String from, final Bundle data){
-        qwasi.fetchMessageForNotification(data, QwasiInterface);
-        //or Qwasi.fetchMessageForNotification(data);
+        //build intent and pas
     }
 ```
 
-While this effective again without a sendNotification method that builds the notification to send to the UIThread, post it to the onSuccess defined or the default if none is defined.
+By default, messages recieved will be passed to the Notification manager and on to the proper Qwasi Object and posted to the As a Notification.
+
 ###### SDK EVENT - "MESSAGE"
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`
 ###### API METHOD - N/A
@@ -326,7 +345,7 @@ Example:
 
 ## Application Events
 
-The `Qwasi` platform supports triggers on application events, but the events have to be provided. By default, the library will send application state events (open, foreground, background, location). You can send custom events and configure your AIM to act on those as you see fit
+The `Qwasi` platform supports triggers on application events, but the events have to be provided. By default, the library will send application state events (open, foreground, background, location). You can send custom events and configure your AIM to act on those as you see fit.
 
 ```java
 public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
@@ -337,9 +356,10 @@ Example:
 ```java
     qwasi.postEvent("login", HashMap<String, Object>("username", "bobvila"));
 ```
+
 ## Location
 
-The Qwasi SDK can provide device location and track Geofence events. The Geofences must be pre-configured via the AIM or API interfaces. (Geofences are still experimental)
+The Qwasi SDK can provide device location and track Geofence, and Beacon events. The Geofences and Beacons must be pre-configured via the AIM or API interfaces.
 
 ### Enabling Location
 
@@ -347,6 +367,7 @@ Location is enabled or disabled via the Qwasi instance, once the device has been
 
 ```java
     qwasi.mlocationEnabled = true;
+    qwasi.setLocationEnabled();
 ```
 
 ### Location Manager
@@ -365,13 +386,32 @@ In order to use the LocationManager, you will nee to instantiate it, either with
 ###### API METHOD - `LOCATION.FETCH`
 
 ### Handling Location Events
-
+####LocationUpdates
 Like messages, locations are delivered by listeners which where set in the manifest.
 Example:
 
 ```java
-    public void onLocationChanged(Location location)
+    public void onLocationChanged(Location location) //location updates
 ```
+
+####GeoFences
+These Locations are emitted when the Geofencehandler receives and handles an Intent from the Google GeoFencing API.  By default all Geofence transistions are tracked by only exit and dwell events emitted by the handler.
+
+
+####Beacons
+The 'Qwasi API' supports beacons with the use of the AltBeacon Android Library.  These are handled by the pre-configured Beacons added though the API.
+In order to use beacons, you must implement BeaconConsumer, in your main Activity an example of that is as follows:
+
+```java
+    @Override
+    public void onBeaconServiceConnect(){
+        BeaconManager.getInstanceForApplication(this).setRangeNotifier(qwasi.mlocationManager.qwasiBeacons);
+    }
+```
+
+The location events from the Beacon Notifiers are sent fairly regularly, but won't be sent if these aren't implemented.
+
+**Note: For best performance RangeNotifier, and MonitorNotifier should be both be set.**
 
 ###### SDK EVENT - "LOCATION"
 ###### SDK ERROR - N/A
@@ -403,6 +443,7 @@ Example:
 qwasi.setDeviceValue("hotrod99", "user.displayname");
 qwasi.deviceValueForKey("user.displayname");
 ```
+
 ## Sending Message
 
 With the Qwasi API and SDK it is possible to send a message to other users, this could facilitate a 2-way communication or chat application. Qwasi does not explicitly support this functionality so much of the implementation is left to the developer. You will need to manage a mapping your own userTokens to some useful data, which can be stored in the device record as described above.
