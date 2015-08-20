@@ -33,6 +33,7 @@ public class QwasiLocation extends Location {
     QwasiLocationState state; //package private
     private double longitude;
     private double latitude;
+    String AppID;
     public String id;
     private String name;
     private long geofenceRadius = 0;
@@ -60,22 +61,16 @@ public class QwasiLocation extends Location {
         QwasiLocationTypeRFC
     }
 
-    public enum QwasiLocationState{
+    public enum QwasiLocationState {
         QwasiLocationStateUnknown,
         QwasiLocationStateOutside,
         QwasiLocationStatePending,
         QwasiLocationStateInside
     }
 
-    public QwasiLocation(){ super(Qwasi.getInstance().mlocationManager.getLastLocation());
-        this.latitude = super.getLatitude();
-        this.longitude = super.getLongitude();
-        this.mexit = false;
-        this.parser = new BeaconParser();
-    }
-
     public  QwasiLocation(Location location){
         super(location);
+        this.AppID = "";
         this.latitude = location.getLatitude();
         this.longitude = location.getLongitude();
         this.name = location.getProvider();
@@ -107,25 +102,26 @@ public class QwasiLocation extends Location {
         return temp;
     }
 
+    // FIXME: 8/19/15 make locations regardless let location manger deal with sorting
     static public QwasiLocation initWithLocationData(JSONObject input) throws JSONException{
         //if this location doesn't already exist in the mregionMap add it
-        QwasiLocation location = new QwasiLocation();
+        QwasiLocation location = new QwasiLocation(QwasiLocationManager.getInstance().getLastLocation());
         location.id = input.getJSONObject("properties").getString("id");
         location.name = input.getString("name");
         location.state = QwasiLocationState.QwasiLocationStateUnknown;
         location.mdwellInterval = input
                 .getJSONObject("properties").getInt("dwell_interval") * 1000; //ours is s google is ms
-        if (!Qwasi.getInstance().mlocationManager.mregionMap.containsKey(location.id)) {
+        if (!QwasiLocationManager.getInstance().mregionMap.containsKey(location.id)) {
             //for locations in response figure out what type they are i.e. beacons/geofence/rfid
             if (input.has("beacon")&&
-                    Qwasi.getInstance().getContext() instanceof BeaconConsumer) {//deal with beacons using altBeacons
+                    QwasiLocationManager.getInstance().qwasiBeacons.mainAct != null) {//deal with beacons using altBeacons
                 location.type = QwasiLocationType.QwasiLocationTypeBeacon;
 
                 JSONObject beaconconfig = input.getJSONObject("beacon");
                 String parsestring = beaconconfig.getString("parsestring");
                 JSONArray ids = beaconconfig.getJSONArray("id");
                 location.parser.setBeaconLayout(parsestring);
-                Qwasi.getInstance().qwasiBeacons.addParser(location.parser);
+                QwasiLocationManager.getInstance().qwasiBeacons.addParser(location.parser);
                 List<Identifier> identifierList = new ArrayList<>(3);
                 identifierList.add(Identifier.parse(ids.getString(0)));
                 /**
@@ -229,7 +225,7 @@ public class QwasiLocation extends Location {
         synchronized (this) {
             if (minside && dwellTime == null) {
                 DwellTime = 0;
-                dwellTime = new Timer(this.id + "timer", true); //todo make a 1 second timer to update the ui thread
+                dwellTime = new Timer(this.id + "timer", true);
                 Log.d("LocationDwell", "timer Start");
                 dwellTime.scheduleAtFixedRate(new TimerTask() {
                     @Override

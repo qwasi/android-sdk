@@ -19,13 +19,15 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     private int paused;
     private int started;
     private int stopped;
+    static boolean status;
     final private Qwasi sharedApplication;
     private String event;
     private HashMap<String, Object> data;
     String TAG = "QwasiAppManager";
 
-    public QwasiAppManager(){
-        this.sharedApplication = Qwasi.getInstance();
+    public QwasiAppManager(Qwasi qwasi){
+        super();
+        sharedApplication = qwasi;
     }
 
     private Thread postEvent = new Thread(new Runnable() {
@@ -36,9 +38,13 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         }
     });
 
+    static synchronized boolean getstatus(){
+        return status;
+    }
+
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState){
-        sharedApplication.qwasiBeacons.setMainAct(activity);
+        QwasiLocationManager.getInstance().qwasiBeacons.setMainAct(activity);
     }
 
     @Override
@@ -63,7 +69,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         android.util.Log.d(TAG, "ActivityPaused");
         ++paused;
         sharedApplication.mlocationManager.mmanager.disconnect();
-        android.util.Log.w("test", "application is in foreground: " + (resumed > paused));
+        android.util.Log.w("test", "application is in foreground: " + isApplicationInForeground());
     }
 
     @Override
@@ -94,6 +100,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     }
 
     public boolean isApplicationInForeground(){
-        return resumed>paused;
+        status = resumed>paused;
+        return status;
     }
 }

@@ -1,5 +1,6 @@
 package com.qwasi.sdk;
 
+import android.content.Context;
 import android.util.Base64;
 import android.util.Log;
 
@@ -14,7 +15,7 @@ import java.util.Date;
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiMessage extends Object{
+public class QwasiMessage{
     public String malert;
     public Date mtimestamp;
     public String messageId;
@@ -38,9 +39,7 @@ public class QwasiMessage extends Object{
             messageId = data.getString("id");
             application = data.getJSONObject("application").getString("id");
             malert = data.get("text").toString();
-            if (Qwasi.getInstance().qwasiAppManager.isApplicationInForeground()) {
-                selected = true;
-            }
+            selected = QwasiAppManager.getstatus();
             //dateformater = date
             //DateFormat dateFormatter = new DateFormat();
 

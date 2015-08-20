@@ -26,6 +26,8 @@ import com.google.android.gms.iid.InstanceID;
 import java.io.IOException;
 import java.util.regex.Pattern;
 
+import io.hearty.witness.Witness;
+
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
@@ -35,23 +37,23 @@ public class QwasiNotificationManager extends GcmListenerService{
     private String mpushToken;
     private Boolean mregistering;
     private Context mContext;
-    final private Qwasi qwasi;
+    //final private Qwasi qwasi;
     private String senderId;
     static final String TAG = "QwasiNotificationMngr";
 
-    public QwasiNotificationManager() {
+    public QwasiNotificationManager(){
         super();
-        qwasi = Qwasi.getInstance();
-        mContext = qwasi.getContext();
     }
-
+    /**
+     * Public constructor to be accessed from Qwasi
+     */
     public QwasiNotificationManager(Context app) {
+        super();
         synchronized (this) {
             mregistering = false;
             mpushToken = "";
-            mContext = app;
-            qwasi = Qwasi.getInstance();
             senderId = "335413682000"; //default
+            mContext = app;
         }
     }
 
@@ -67,19 +69,20 @@ public class QwasiNotificationManager extends GcmListenerService{
         mpushToken = pushToken;
     }
 
-    public QwasiErrorCode registerForRemoteNotification() {
+    void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
             // If we can find google play services, have the user download it?
             //GooglePlayServicesUtil.getErrorDialog();
-            return QwasiErrorCode.QwasiErrorPushNotEnabled;
-        } else {
+            callbacks.onFailure(new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorPushNotEnabled, "Google play not enabled"));
+        }
+        else {
             try {
                 SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                 String token;
                 token = sharedPreferences.getString("gcm_token", null);
                 // We don't have a token so get a new one
                 if ((token == null) || token.isEmpty()) {
-                    mregistering = true;
                     registerForPushInBackground();
                 } else {
                     // check the version of the token
@@ -91,44 +94,32 @@ public class QwasiNotificationManager extends GcmListenerService{
                         registerForPushInBackground();
                     }
                 }
-                mregistering = false;
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 Log.e("QwasiError", "Problem registering" + e.getMessage());
-                return QwasiErrorCode.QwasiErrorPushRegistrationFailed;
+                callbacks.onFailure(new QwasiError()
+                        .errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed, "problem with registering"));
             }
         }
-        return QwasiErrorCode.QwasiErrorNone;
+        callbacks.onSuccess(this.getPushToken());
     }
 
-    private void registerForPushInBackground(/*final OnPushRegistrationListener listener*/) {
+    private void registerForPushInBackground() {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 String token;
-
                 try {
+                    mregistering = true;
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-                    SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
-                    SharedPreferences.Editor prefEditor = sharedPreferences.edit();
                     Log.d(TAG, "attempting token");
-                    if (appinfo.metaData.containsKey("gcm_senderid")) {
-                        senderId = appinfo.metaData.get("gcm_senderid").toString();
-
-                    }
-                    Log.d(TAG, senderId);
-                    int appVersion = appinfo.metaData.getInt("AppVersion"); //most likely null
+                    senderId = appinfo.metaData.containsKey("gcm_senderid")? //if it contains the value
+                            appinfo.metaData.getString("gcm_senderid")://set the it to the value
+                            senderId; //or the default
+                    //Log.d(TAG, senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
                     token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                    if (!token.isEmpty()) {
-                        mpushToken = token;
-                    }
-                    if (appVersion == 0) {
-                        appVersion = 210;
-                    }
-                    // save this token
-                    prefEditor.putString("gcm_token", token);
-                    prefEditor.putInt("AppVersion", appVersion);
-                    prefEditor.apply();
+                    mpushToken = token.isEmpty()?token:null;
                     Log.d(TAG, "New GCM token acquired: " + token);
                 }
                 catch (PackageManager.NameNotFoundException e){
@@ -137,67 +128,23 @@ public class QwasiNotificationManager extends GcmListenerService{
                 catch (IOException e){
                     Log.d(TAG, "IOExecption");
                 }
+                mregistering = false;
             }
         }).start();
     }
 
+    @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    String qwasidata = (String) data.get("qwasi");
-                    String[] results = qwasidata.split(Pattern.quote("\""));
-                    Log.d(TAG, "From: " + results[11]);
-                    Log.d(TAG, "Notification: " + results[7]);
-                    qwasi.fetchMessageForNotification(data, new Qwasi.QwasiInterface() {
-                        @Override
-                        public void onSuccess(Object o) {
-                            sendNotification((QwasiMessage) o);
-                        }
-
-                        @Override
-                        public void onFailure(QwasiError e) {
-                            e.printStackTrace();
-                        }
-                    });
-                }
-            }).start();
+            String qwasidata = (String) data.get("qwasi");
+            String[] results = qwasidata.split(Pattern.quote("\""));
+            Log.d(TAG, "From: " + results[11]);
+            Log.d(TAG, "Notification: " + results[7]);
+            Witness.notify(data);
         }
     }
 
-    private void sendNotification(QwasiMessage message) {
-        Intent intent = new Intent(this, mContext.getClass());
-        intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT);
+    /*private void sendNotification(QwasiMessage message) { //todo put me in qwasinotificationhandler
 
-        Uri defaultSoundUri = message.silent()?RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION): null;
-
-        String appName = mContext.getPackageManager().getApplicationLabel(mContext.getApplicationInfo()).toString();
-        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
-                .setSmallIcon(mContext.getApplicationInfo().icon)
-                .setContentTitle(appName)
-                .setContentText(message.malert)
-                .setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
-                .setSound(defaultSoundUri) //default sound
-                .setContentIntent(pendingIntent);
-
-        //configure expanded action
-        if (message.mpayloadType.contains("text")){ //text
-            noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-        }
-        else if(message.mpayloadType.contains("image")){ //image
-            Log.d(TAG, "Image");
-            //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-        }
-        else if(message.mpayloadType.contains("json")){//application
-            Log.d(TAG, "App context");
-        }
-
-        NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        noteMng.notify(message.messageId.hashCode(), noteBuilder.build());
-        //Witness.notify(message);
-    }
+    }*/
 }

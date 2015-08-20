@@ -39,9 +39,9 @@ public class QwasiBeacons extends Service
 
     public QwasiBeacons() {
         super();
-        context = Qwasi.getInstance().getContext();
-        mainAct = context instanceof BeaconConsumer?(BeaconConsumer) context:null;
-        map = Qwasi.getInstance().mlocationManager.mregionMap;
+        context = Qwasi.getContext();
+        mainAct = BeaconConsumer.class.isAssignableFrom(context.getClass())?(BeaconConsumer) context:null;
+        map = QwasiLocationManager.getInstance().mregionMap;
         beaconManager = BeaconManager.getInstanceForApplication(context.getApplicationContext());
         beaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
         parsers = beaconManager.getBeaconParsers();
@@ -49,7 +49,7 @@ public class QwasiBeacons extends Service
     }
 
     synchronized void setMainAct(Activity main){
-        mainAct = main instanceof BeaconConsumer?(BeaconConsumer) main:null;
+        mainAct = BeaconConsumer.class.isAssignableFrom(main.getClass())?(BeaconConsumer) main:null;
     }
 
     synchronized void addParser(BeaconParser input) {

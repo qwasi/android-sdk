@@ -50,42 +50,36 @@ public class QwasiLocationManager extends IntentService
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
     private Context sharedApplication;
-    private Qwasi shared;
     boolean mstarted = false;
-    long mupdateDistance; //10 meter
+    long mupdateDistance = 100; //10 meter
     long mupdateInterval =1800000; //30 minutes in milliseconds;
     public GoogleApiClient mmanager = null;
     public HashMap<String, QwasiLocation> mregionMap = new HashMap<>();
     private QwasiLocation mLastLocation = null;
     protected LocationRequest mactiveManager = LocationRequest.create();
     private static String TAG = "QwasiLocationManager";
+    public QwasiBeacons qwasiBeacons;
+    private static QwasiLocationManager instance;
     List<String> locationsfetched = new ArrayList<>();
 
     //RangingActivity rangingActivity = new RangingActivity();
 
     static String eventTag = "com.qwasi.event.location.update";
-    public BeaconManager beaconManager;
+    //public BeaconManager beaconManager;
 
-    public QwasiLocationManager(){
+    private QwasiLocationManager(){
         super(TAG);
-        shared = Qwasi.getInstance();
-        mupdateDistance = (shared.locationUpdatefilter);
-        sharedApplication = shared.getContext();
+        sharedApplication = Qwasi.getContext();
         mactiveManager.setInterval(mupdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
+        instance = this;
+        qwasiBeacons = new QwasiBeacons();
     }
 
-    private void postToServer() {
-        HashMap<String, Object> data = new HashMap<>();
-        data.put("lat", mLastLocation.getLatitude());
-        data.put("lng", mLastLocation.getLongitude());
-        //YYYY-MM-DDTHH:MM:SSS
-        data.put("timestamp", System.currentTimeMillis()/1000);
-        shared.postEvent(eventTag, data);
-        shared.fetchLocationsNear(mLastLocation);
-
+    static synchronized QwasiLocationManager getInstance(){
+        return instance == null?new QwasiLocationManager():instance;
     }
 
     public QwasiLocation getLastLocation(){
@@ -136,7 +130,7 @@ public class QwasiLocationManager extends IntentService
 
     @Override
     public void onConnected(Bundle bundle){
-        mstarted = mmanager.isConnected()?true:false;
+        mstarted = mmanager.isConnected();
         if (mstarted)
             startLocationUpdates();
         else
@@ -150,13 +144,12 @@ public class QwasiLocationManager extends IntentService
         if (mLastLocation == null){
             mLastLocation = new QwasiLocation(location);
         }
-        else if (location.distanceTo(mLastLocation)< shared.locationUpdatefilter){  //if it hasn't been 100m
+        else if (location.distanceTo(mLastLocation)< mupdateDistance){  //if it hasn't been 100m
             return;
         }
         else {
             mLastLocation.initWithLocation(location);
         }
-        postToServer();
         Witness.notify(mLastLocation);
     }
 
@@ -173,7 +166,7 @@ public class QwasiLocationManager extends IntentService
         return this;
     }
 
-    public Object init(){
+    public synchronized Object init(){
 
         mmanager = new GoogleApiClient.Builder(sharedApplication)
                 .addConnectionCallbacks(this)
@@ -184,7 +177,7 @@ public class QwasiLocationManager extends IntentService
         return this;
     }
 
-    public Object initWithGoogleApi(GoogleApiClient manager){
+    public synchronized Object initWithGoogleApi(GoogleApiClient manager){
         mmanager = manager;
         mmanager.registerConnectionCallbacks(this);
         mmanager.registerConnectionFailedListener(this);
@@ -195,21 +188,23 @@ public class QwasiLocationManager extends IntentService
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
         LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+        //mmanager.connect();
         if (sharedApplication instanceof BeaconConsumer){
-            shared.qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
+            qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
         }
         //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
     }
 
     public void stopLocationUpdates(){
         LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
+        mmanager.disconnect();
         if (sharedApplication instanceof BeaconConsumer) {
-            shared.qwasiBeacons.beaconManager.unbind((BeaconConsumer) sharedApplication);
+            qwasiBeacons.beaconManager.unbind((BeaconConsumer) sharedApplication);
         }
         mstarted = false;
     }
 
-    void pruneLocations(){
+    void pruneLocations(){ // FIXME:make this remove locations with no app id
         //this is for removing of old locations that didn't come back as valid from the last fetch
         Iterator<String> stringIterator = mregionMap.keySet().iterator();
         while(stringIterator.hasNext() && (locationsfetched.size() != mregionMap.size())){
@@ -223,14 +218,13 @@ public class QwasiLocationManager extends IntentService
     }
 
     public QwasiErrorCode startMoitoringLocation(QwasiLocation input){
-        Witness.notify(input.toString());
         synchronized (this){
             if (input != null) {
+                Witness.notify(input.toString());
                 locationsfetched.add(input.id);
                 mregionMap.put(input.id, input);
                 if (input.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
                     GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-                    //builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER | GeofencingRequest.INITIAL_TRIGGER_DWELL);
                     builder.addGeofence(input.region);
 
                     if (mmanager.isConnected()) {
@@ -243,9 +237,8 @@ public class QwasiLocationManager extends IntentService
                 }
                 else if(input.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon){
                     try{
-                        //shared.qwasiBeacons.addParsers();
-                        shared.qwasiBeacons.beaconManager.startRangingBeaconsInRegion(input.beacon);
-                        shared.qwasiBeacons.beaconManager.startMonitoringBeaconsInRegion(input.beacon);
+                        qwasiBeacons.beaconManager.startRangingBeaconsInRegion(input.beacon);
+                        qwasiBeacons.beaconManager.startMonitoringBeaconsInRegion(input.beacon);
                     }
                     catch (Exception e){
                         Log.e("QwasiError", e.getMessage());
@@ -257,7 +250,7 @@ public class QwasiLocationManager extends IntentService
                 return QwasiErrorCode.QwasiErrorLocationMonitoringFailed;
             }
         }
-        Witness.notify("Location Start Monitor"+ input.toString());
+        Witness.notify("Location Start Monitor" + input.toString());
         return QwasiErrorCode.QwasiErrorNone;
     }
 
@@ -269,8 +262,8 @@ public class QwasiLocationManager extends IntentService
 
         else {
             try {
-                shared.qwasiBeacons.beaconManager.stopRangingBeaconsInRegion(location.beacon);
-                shared.qwasiBeacons.beaconManager.stopMonitoringBeaconsInRegion(location.beacon);
+                qwasiBeacons.beaconManager.stopRangingBeaconsInRegion(location.beacon);
+                qwasiBeacons.beaconManager.stopMonitoringBeaconsInRegion(location.beacon);
             }
             catch (RemoteException e){
                 Log.e("QwasiError", e.getMessage());
@@ -305,34 +298,22 @@ public class QwasiLocationManager extends IntentService
             int geofenceTransition = geofencingEvent.getGeofenceTransition();
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
             //Test that the reported transition was of interest.
-            for (Geofence geofence : triggeringGeofences) {
-                QwasiLocation temp = Qwasi.getInstance().mlocationManager.mregionMap.get(geofence.getRequestId());
+            for (Geofence geofence : triggeringGeofences) { //todo emit and let qwasi objects figure it out
+                QwasiLocation temp = mregionMap.get(geofence.getRequestId());
                 if (temp != null) {
                     if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
                         // Send notification and log the transition details.
                         temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
                         Witness.notify(temp);
-                        shared.postEvent("com.qwasi.event.location.enter", data);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                         temp.exit();
                         Witness.notify(temp);
-                        shared.postEvent("com.qwasi.event.location.exit", data);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                         temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
                         temp.enter();
                     }
                 }
             }
-        }
-    }
-
-    public Context getApplicationContext(){       //#issue 1
-        return sharedApplication.getApplicationContext();
-    }
-
-    public void setBeaconManager(BeaconManager input){
-        synchronized (this){
-            beaconManager = input;
         }
     }
 }

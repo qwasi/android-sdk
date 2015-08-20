@@ -16,6 +16,8 @@ import java.io.InputStreamReader;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
+
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
@@ -23,8 +25,8 @@ import java.net.URL;
  */
 public class QwasiConfig{
     public URL murl = null;
-    public String mapplication = null;
-    public String mkey = null;
+    public String mapplication = "";
+    public String mkey = "";
     private Context sharedApplication;
     String TAG = "QwasiConfig";
 
@@ -46,7 +48,7 @@ public class QwasiConfig{
                 if (inFile.exists()) {//from stackoverflow.com
                     FileInputStream fileInputStream = new FileInputStream(inFile);
                     DataInputStream dataIn = new DataInputStream(fileInputStream);
-                     BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn));
+                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, Charset.forName("UTF-8")));
                     String line;
                     String splitString[];
                     while ((line = readBuffer.readLine()) != null) {

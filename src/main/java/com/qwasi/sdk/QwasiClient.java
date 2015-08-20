@@ -21,7 +21,6 @@ import org.json.JSONObject;
 public class QwasiClient {
     private URL server = null;
     private QwasiSession session;
-    private HttpURLConnection connection;
     private JSONRPCHttpClient msession = null;
     //NetworkTask task;
     String TAG = "QwasiClient";
