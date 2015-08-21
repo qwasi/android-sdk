@@ -3,13 +3,10 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
-import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
@@ -138,6 +135,7 @@ public class Qwasi{
         locationUpdatefilter= 100;
         locationEventFilter = 50;
         locationSyncFilter = 200.0;
+        mdeviceToken = "";
 
         mlocationManager.init();
         preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
@@ -147,7 +145,7 @@ public class Qwasi{
         museLocalNotifications = preferences.getBoolean("localNote", false);
 
         //if we have a device token saved already use it.
-        mdeviceToken = preferences.getString("qwasi_device_token", "");
+        mdeviceToken = "";
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 

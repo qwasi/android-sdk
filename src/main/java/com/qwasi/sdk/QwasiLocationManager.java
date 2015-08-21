@@ -1,34 +1,24 @@
 package com.qwasi.sdk;
 
 import android.app.Activity;
-
-import android.app.IntentService;
 import android.app.PendingIntent;
-
 import android.content.Context;
 import android.content.Intent;
-
 import android.location.Location;
-
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.RemoteException;
-
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.ErrorDialogFragment;
 import com.google.android.gms.common.api.GoogleApiClient;
 
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.GeofencingEvent;
 import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import org.altbeacon.beacon.BeaconConsumer;
-import org.altbeacon.beacon.BeaconManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;

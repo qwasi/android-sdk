@@ -1,9 +1,9 @@
 package com.qwasi.sdk;
 
-import android.content.Context;
 import android.util.Base64;
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -22,7 +22,7 @@ public class QwasiMessage{
     public String application;
     public String mpayloadType;
     public Object mpayload;
-    public ArrayList<Object> mtags;
+    public JSONArray mtags;
     public Boolean selected;
     public Boolean fetched;
     private Object mencodedPayload;
@@ -30,24 +30,25 @@ public class QwasiMessage{
 
     public QwasiMessage(){
         super();
-        mtags = new ArrayList<>();
+        mtags = new JSONArray();
     }
 
     private QwasiMessage initWithData(Object input){
         try {
             JSONObject data = (JSONObject) input;
-            messageId = data.getString("id");
-            application = data.getJSONObject("application").getString("id");
-            malert = data.get("text").toString();
+            messageId = data.has("id")?data.getString("id"):"";
+            application = data.getJSONObject("application").has("id")?
+                    data.getJSONObject("application").getString("id"):"";
+            malert = data.has("text")?data.getString("text"):"";
             selected = QwasiAppManager.getstatus();
             //dateformater = date
             //DateFormat dateFormatter = new DateFormat();
-
+            mtags = new JSONArray();
             mtimestamp = new Date();
 
             mpayloadType = data.get("payload_type").toString();
-            if (data.has("tags")) {
-                mtags.add(data.get("tags"));
+            if (data.getJSONObject("context").has("tags")) {
+                mtags = (data.getJSONObject("context").getJSONArray("tags"));
             }
             if (data.has("fetched")) {
                 fetched = Boolean.getBoolean(data.getString("fetched"));
@@ -58,7 +59,7 @@ public class QwasiMessage{
                 if (mpayloadType.equalsIgnoreCase("application/json")) {
                     //error?
                     mpayload = new JSONObject(new String(temp, "UTF-8"));
-                } else if (mpayloadType.contains("text/plain")) {
+                } else if (mpayloadType.contains("text")) {
                     mpayload = new String(temp, "UTF-8");
                 }
             } catch (Exception e) {
@@ -85,7 +86,7 @@ public class QwasiMessage{
         malert = alert;
         mpayload = payload;
         mpayloadType = payloadtype;
-        mtags = tags;
+        mtags = new JSONArray(tags);
         mtimestamp = new Date();
         if (mpayloadType == null) {
             if (mpayload instanceof JSONObject){
