@@ -64,7 +64,7 @@ public class QwasiMessage{
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            Log.d(TAG, mpayload.toString());
+            //Log.d(TAG, mpayload.toString());
             return this;
         }
         catch (JSONException e){
