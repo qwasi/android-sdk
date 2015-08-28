@@ -48,6 +48,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 
 The Qwasi objects will need to be instantiated with the application Context.  This allows the Qwasi object
 to handle setting up all the other objects it relies on.
+
 ```java
 Qwasi qwasi = new Qwasi(this);
 ```
@@ -55,6 +56,7 @@ Qwasi qwasi = new Qwasi(this);
 ## Library Configuration `QwasiConfig`
 
 By default, the QwasiConfig will attempt to configure with basic information from the androidmanifest.xml tags. If a custom file is desired  it will need to be passed with its path and extension. The Qwasi Object attempts this by default when it is initialized.
+
 ```java
 QwasiConfig config = new QwasiConfig(Context);
 config.configWithFile();
@@ -63,19 +65,35 @@ config.configWithFile();
 ### Default Configuration
 
 The default configuration file is part of the AndroidManifest.xml. You create and add this to your Android Studio project or add the lines to the existing file
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="your package name">
+
+```xml
+<application>
     <meta-data android:name="appID"  android:value="your hex app id here"/>
     <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
     <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
     <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
-</manifest>
+    ...
+</application>
 ```
+
+The SDK also uses several permissions, include these permissions in order to use the full potential of the SDK
+
+```xml
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+```
+
 Also if you wish to use the default QwasiNotificationManager, QwasiLocationManager, to handle Location and Notifications these will needed to be added to the AndroidManifest as well
-```
-    <application....>
+
+```xml
+    <application...>
+    ...
         <!-- [Start Geofence Listener] -->
         <service
             android:name="com.qwasi.sdk.QwasiGeofencehandler"
