@@ -23,10 +23,10 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="ANDROID.PERMISSION.ACCESS_LOCATION_EXTRA_COMMANDS"/>
     <!--QwasiConfig-->
-    <meta-data android:name="appID" android:value="55a93a58d666874b6e1109ce" />
+    <!--<meta-data android:name="appID" android:value="55a93a58d666874b6e1109ce" />
     <meta-data android:name="apiKey" android:value="4734601123be56bcdf4494907b2aaa9e"/>
     <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
-    <meta-data android:name="gcm_senderid" android:value="335413682000" />
+    <meta-data android:name="gcm_senderid" android:value="335413682000" />-->
     <meta-data android:name="sdk_version" android:value="2.1.0"/>
 
     <application>

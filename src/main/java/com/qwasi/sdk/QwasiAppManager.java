@@ -60,8 +60,10 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
         ++resumed;
-        if (!sharedApplication.mlocationManager.mmanager.isConnected())
-            sharedApplication.mlocationManager.mmanager.connect();
+        if (QwasiLocationManager.getInstance().mmanager !=null) { //fixme [Droid-29]
+            if (!sharedApplication.mlocationManager.mmanager.isConnected())
+                sharedApplication.mlocationManager.mmanager.connect();
+        }
     }
 
     @Override
