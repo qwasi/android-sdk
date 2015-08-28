@@ -926,7 +926,7 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message){  //todo check to find out why notifications don't open app
-
+        //fixme [Droid- 28]
         PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
 
         Uri defaultSoundUri = message.silent()?

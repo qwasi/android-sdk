@@ -64,7 +64,7 @@ public class QwasiConfig{
                     readBuffer.close();
                 }
             }
-            else{ //read from the xml file
+            else{ //read from the xml file fixme in appliction defaults not working. [Droid-30]
                 //set up new application info w/  Application.packageManager.getApplicationInfo("application name", get the meta data)
                 ApplicationInfo applicationInfo = sharedApplication.getPackageManager().getApplicationInfo(sharedApplication.getPackageName(), PackageManager.GET_META_DATA);
                 if((applicationInfo.metaData != null)&&(!applicationInfo.metaData.isEmpty())){  //make sure we have meta data to parse
