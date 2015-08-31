@@ -39,6 +39,7 @@ public class QwasiNotificationManager{
         mpushToken = "";
         senderId = "335413682000"; //default
         mContext = Qwasi.getContext();
+        instance = this;
     }
 
     public static QwasiNotificationManager getInstance(){
@@ -72,9 +73,9 @@ public class QwasiNotificationManager{
             try {
                 SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                 String token;
-                token = sharedPreferences.getString("gcm_token", null);
+                token = sharedPreferences.getString("gcm_token", "");
                 // We don't have a token so get a new one
-                if ((token == null || token.isEmpty())&& !mregistering) {
+                if (token.isEmpty()&& !mregistering) {
                     registerForPushInBackground();
                 } else {
                     // check the version of the token
@@ -110,7 +111,7 @@ public class QwasiNotificationManager{
                             senderId; //or the default
                     //Log.d(TAG, senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
+                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
                     mpushToken =!token.isEmpty()?token:"";
                     Log.d(TAG, "New GCM token acquired: " + token);
                     Witness.notify(mregistering);

@@ -19,6 +19,9 @@ import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -153,6 +156,10 @@ public class Qwasi{
         if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
+            mlocationManager.init();
+        }
+
         Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
         deviceName = accounts.length > 0?
                 accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
@@ -403,7 +410,8 @@ public class Qwasi{
     }
 
     private synchronized void registerForNotifications(final QwasiInterface callback){
-        if (qwasiNotificationManager.getPushToken().isEmpty())  {
+        String test = qwasiNotificationManager.getPushToken();
+        if (test == null || test.isEmpty())  {
             mPushTokenCallback =new Reporter() {
                 @Override
                 public void notifyEvent(Object o) {
@@ -412,7 +420,7 @@ public class Qwasi{
             };
             Witness.register(Boolean.class, mPushTokenCallback);
         }
-        else if (!qwasiNotificationManager.getPushToken().isEmpty()&& mregistered){
+        else if (!test.isEmpty()&& mregistered){
             Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
@@ -926,8 +934,8 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message){  //todo check to find out why notifications don't open app
-        //fixme [Droid- 28]
-        PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
+        //fixme [Droid-28]
+        PendingIntent pendingIntent = qwasiNotificationManager.mIntent; //[Droid-28] Pending intent is null
 
         Uri defaultSoundUri = message.silent()?
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
@@ -956,7 +964,7 @@ public class Qwasi{
             Log.d(TAG, "App context");
         }
         NotificationManager noteMng = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        noteMng.notify(0, noteBuilder.build());
+        noteMng.notify(Integer.decode("+#"+message.messageId), noteBuilder.build());
         Witness.notify(message);
     }
 
