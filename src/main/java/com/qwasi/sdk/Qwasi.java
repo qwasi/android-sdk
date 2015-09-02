@@ -431,7 +431,6 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
-                    Witness.notify(qwasiNotificationManager.getPushToken());
                     QwasiNotificationHandler = new Reporter() {
                         @Override
                         public void notifyEvent(Object o) {
@@ -475,8 +474,8 @@ public class Qwasi{
                         }
                     };
                     Witness.register(Bundle.class, QwasiNotificationHandler);
-                    callback.onSuccess(
-                            new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No error"));
+                    callback.onSuccess(qwasiNotificationManager.getPushToken());
+                    Witness.notify(qwasiNotificationManager.getPushToken());
                 }
 
                 @Override
