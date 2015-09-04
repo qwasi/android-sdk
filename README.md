@@ -16,18 +16,18 @@ To run the example project, clone the repo, and run 'gradle build' to make sure 
 Qwasi is available as a Gradle repo as a mavenCentral repo. To install it, simply add the following lines to your build.gradle file:
 
 ```groovy
-repositories{
-    mavenCentral()
-    jcenter()
-}
+    repositories{
+        mavenCentral()
+        jcenter()
+    }
 ```
 
 You must also include the SDK into the dependencies.
 
 ```groovy
-dependencies{
-    compile 'com.qwasi:QwasiSDK:2.1.0-4'
-}
+    dependencies{
+        compile 'com.qwasi:QwasiSDK:2.1.0-4'
+    }
 ```
 
 ## License
@@ -50,7 +50,7 @@ The Qwasi objects will need to be instantiated with the application Context.  Th
 to handle setting up all the other objects it relies on.
 
 ```java
-Qwasi qwasi = new Qwasi(this);
+  Qwasi qwasi = new Qwasi(this);
 ```
 
 ## Library Configuration `QwasiConfig`
@@ -58,8 +58,8 @@ Qwasi qwasi = new Qwasi(this);
 By default, the QwasiConfig will attempt to configure with basic information from the androidmanifest.xml tags. If a custom file is desired  it will need to be passed with its path and extension. The Qwasi Object attempts this by default when it is initialized.
 
 ```java
-QwasiConfig config = new QwasiConfig(Context);
-config.configWithFile();
+  QwasiConfig config = new QwasiConfig(Context);
+  config.configWithFile();
 ```
 
 ### Default Configuration
@@ -67,13 +67,13 @@ config.configWithFile();
 The default configuration file is part of the AndroidManifest.xml. You create and add this to your Android Studio project or add the lines to the existing file
 
 ```xml
-<application>
-    <meta-data android:name="appID"  android:value="your hex app id here"/>
-    <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
-    <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
-    <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
-    ...
-</application>
+    <application>
+        <meta-data android:name="appID"  android:value="your hex app id here"/>
+        <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
+        <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
+        <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
+        ...
+    </application>
 ```
 
 The SDK also uses several permissions, include these permissions in order to use the full potential of the SDK
@@ -153,30 +153,30 @@ The Qwasi library uses Witness library to create node like Emitter events. These
 Event emitter registering:
 
 ```java
-Witness.register(QwasiMessage.class, Reporter); //messaging events
-Witness.register(QwasiLocation.class, Reporter); //location events
-Witness.register(String.class, Reporter);  //general purpose events
-//will get DeviceToken and PushToken
+    Witness.register(QwasiMessage.class, Reporter); //messaging events
+    Witness.register(QwasiLocation.class, Reporter); //location events
+    Witness.register(String.class, Reporter);  //general purpose events
+    //will get DeviceToken and PushToken
 ```
 
 Interface implementation:
 
 ```java
-@Override
-public void notifyEvent(Object o){
-    //will get all object types registered to the reporter
-    //handle threading events based on what you'd like to do.
-}
+    @Override
+    public void notifyEvent(Object o){
+        //will get all object types registered to the reporter
+        //handle threading events based on what you'd like to do.
+    }
 ```
 
 Inline Example:
 ```java
-Witness.register(QwasiMessage.class, new Reporter(){
-    @Override
-    public void notifyEvent(Object o){
-        //this will only grab QwasiMessage events reduces parsing or if trees
-    }
-};
+    Witness.register(QwasiMessage.class, new Reporter(){
+        @Override
+        public void notifyEvent(Object o){
+            //this will only grab QwasiMessage events reduces parsing or if trees
+        }
+    };
 ```
 
 **Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
@@ -192,16 +192,16 @@ These will be created and passed to the QwasiInterface onFailed(QwasiError Error
 Example:
 
 ```java
-qwasi.registerDevice("UserToken", new QwasiInterface({
-    @Override
-    public void onSuccess(Object o){
-        //do success conditions here
-    }
-    @Override
-    public void onFailure(QwasiError e){
-        //handle error here
-    }
-});
+    qwasi.registerDevice("UserToken", new QwasiInterface({
+        @Override
+        public void onSuccess(Object o){
+            //do success conditions here
+        }
+        @Override
+        public void onFailure(QwasiError e){
+            //handle error here
+        }
+    });
 ```
 
 ## Device Registration
@@ -336,7 +336,7 @@ By default, messages recieved will be passed to the Notification manager and on 
 ### Subscribe to a Channel
 
 ```java
-public void subscribeToChannel(String, QwasiInterface)
+    public void subscribeToChannel(String, QwasiInterface)
 ```
 
 Example:
@@ -367,7 +367,7 @@ Example:
 The `Qwasi` platform supports triggers on application events, but the events have to be provided. By default, the library will send application state events (open, foreground, background, location). You can send custom events and configure your AIM to act on those as you see fit.
 
 ```java
-public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
+    public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
 ```
 
 Example:
@@ -459,8 +459,8 @@ public void deviceValueForKey(String key);
 Example:
 
 ```java
-qwasi.setDeviceValue("hotrod99", "user.displayname");
-qwasi.deviceValueForKey("user.displayname");
+    qwasi.setDeviceValue("hotrod99", "user.displayname");
+    qwasi.deviceValueForKey("user.displayname");
 ```
 
 ## Sending Message
@@ -472,9 +472,9 @@ public void sendMessage(QwasiMessage message, String userToken);
 ###### SDK EVENT - N/A
 ###### SDK ERROR - `QWASIERRORSENDMESSAGEFAILED`
 ###### API METHOD - `MESSAGE.SEND`
+Example Sender:
 
 ```java
-Example Sender:
     HashMap<String, Object> payload = new Hashmap<String, Object>;
     payload.put("from", "notbob98");
     QwasiMessage welcome = new QwasiMessage().initWithAlert("sup foo",
