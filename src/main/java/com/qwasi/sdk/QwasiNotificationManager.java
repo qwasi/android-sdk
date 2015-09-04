@@ -2,6 +2,7 @@ package com.qwasi.sdk;
 
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -27,7 +28,7 @@ public class QwasiNotificationManager{
     private String mpushToken = "";
     private Boolean mregistering;
     private Context mContext;
-    PendingIntent mIntent;
+    Intent mIntent;
     //final private Qwasi qwasi;
     private String senderId;
     private static QwasiNotificationManager instance;
@@ -127,7 +128,7 @@ public class QwasiNotificationManager{
         }).start();
     }
 
-    void onMessage(PendingIntent intent, Bundle data){
+    void onMessage(Intent intent, Bundle data){
         this.mIntent = intent;
         Witness.notify(data);
     }

@@ -14,7 +14,7 @@ public class QwasiGCMListener extends GcmListenerService{
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
             Intent intent = new Intent(this, Qwasi.getContext().getClass()).addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-            QwasiNotificationManager.getInstance().onMessage(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT), data);
+            QwasiNotificationManager.getInstance().onMessage(intent, data);
 
         }
     }

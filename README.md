@@ -9,7 +9,7 @@ To run the example project, clone the repo, and run 'gradle build' to make sure 
 ## Requirements
 
 1. Android Studio
-21. Gradle
+2. Gradle
 
 ## Installation
 
@@ -26,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
 dependencies{
-    compile 'com.qwasi:QwasiSDK:2.1.3'
+    compile 'com.qwasi:QwasiSDK:2.1.0-4'
 }
 ```
 
@@ -84,7 +84,6 @@ The SDK also uses several permissions, include these permissions in order to use
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 ```
@@ -112,7 +111,7 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
         <!-- [START Beacon Listener] -->
         <service android:name="com.qwasi.sdk.QwasiBeacons" android:enabled="true"/>
         <!-- [END Beacon Listener] -->
-
+    ...
     </application>
 ```
 
@@ -157,6 +156,7 @@ Event emitter registering:
 Witness.register(QwasiMessage.class, Reporter); //messaging events
 Witness.register(QwasiLocation.class, Reporter); //location events
 Witness.register(String.class, Reporter);  //general purpose events
+//will get DeviceToken and PushToken
 ```
 
 Interface implementation:
