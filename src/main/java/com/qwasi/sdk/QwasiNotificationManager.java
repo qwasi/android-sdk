@@ -2,6 +2,7 @@ package com.qwasi.sdk;
 
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -11,7 +12,6 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.gcm.GcmListenerService;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
@@ -24,11 +24,11 @@ import io.hearty.witness.Witness;
  * For Qwasi Inc. for their Open source Android SDK example
  * Released under the MIT Licence
  */
-public class QwasiNotificationManager extends GcmListenerService{
-    private String mpushToken;
+public class QwasiNotificationManager{
+    private String mpushToken = "";
     private Boolean mregistering;
     private Context mContext;
-    PendingIntent mIntent;
+    Intent mIntent;
     //final private Qwasi qwasi;
     private String senderId;
     private static QwasiNotificationManager instance;
@@ -40,6 +40,7 @@ public class QwasiNotificationManager extends GcmListenerService{
         mpushToken = "";
         senderId = "335413682000"; //default
         mContext = Qwasi.getContext();
+        instance = this;
     }
 
     public static QwasiNotificationManager getInstance(){
@@ -62,7 +63,7 @@ public class QwasiNotificationManager extends GcmListenerService{
         mpushToken = pushToken;
     }
 
-    void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
+    synchronized void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
             // If we can find google play services, have the user download it?
             //GooglePlayServicesUtil.getErrorDialog();
@@ -73,9 +74,9 @@ public class QwasiNotificationManager extends GcmListenerService{
             try {
                 SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
                 String token;
-                token = sharedPreferences.getString("gcm_token", null);
+                token = sharedPreferences.getString("gcm_token", "");
                 // We don't have a token so get a new one
-                if ((token == null) || token.isEmpty()) {
+                if (token.isEmpty()&& !mregistering) {
                     registerForPushInBackground();
                 } else {
                     // check the version of the token
@@ -97,7 +98,7 @@ public class QwasiNotificationManager extends GcmListenerService{
         callbacks.onSuccess(this.getPushToken());
     }
 
-    private void registerForPushInBackground() {
+    private synchronized void registerForPushInBackground() {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -111,9 +112,10 @@ public class QwasiNotificationManager extends GcmListenerService{
                             senderId; //or the default
                     //Log.d(TAG, senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-                    mpushToken = token.isEmpty()?token:null;
+                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
+                    mpushToken =!token.isEmpty()?token:"";
                     Log.d(TAG, "New GCM token acquired: " + token);
+                    Witness.notify(mregistering);
                 }
                 catch (PackageManager.NameNotFoundException e){
                     Log.d(TAG, "Name not found");
@@ -126,7 +128,7 @@ public class QwasiNotificationManager extends GcmListenerService{
         }).start();
     }
 
-    void onMessage(PendingIntent intent, Bundle data){
+    void onMessage(Intent intent, Bundle data){
         this.mIntent = intent;
         Witness.notify(data);
     }

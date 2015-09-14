@@ -3,11 +3,9 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
-import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -21,6 +19,9 @@ import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,6 +65,7 @@ public class Qwasi{
     String TAG = "Qwasi";
     Reporter QwasiNotificationHandler;
     Reporter QwasiLocationHandler;
+    Reporter mPushTokenCallback;
 
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
@@ -138,6 +140,7 @@ public class Qwasi{
         locationUpdatefilter= 100;
         locationEventFilter = 50;
         locationSyncFilter = 200.0;
+        mdeviceToken = "";
 
         mlocationManager.init();
         preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
@@ -147,13 +150,17 @@ public class Qwasi{
         museLocalNotifications = preferences.getBoolean("localNote", false);
 
         //if we have a device token saved already use it.
-        mdeviceToken = preferences.getString("qwasi_device_token", "");
+        mdeviceToken = "";
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 
         if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
+            mlocationManager.init();
+        }
+
         Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
         deviceName = accounts.length > 0?
                 accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
@@ -187,7 +194,6 @@ public class Qwasi{
         mlocationEnabled = enabled;
         Log.d(TAG, "setLocationEnabled"+mlocationEnabled.toString());
         if (mlocationEnabled){
-            QwasiLocation current = mlocationManager.getLastLocation();
             QwasiLocationHandler = new Reporter() {
                 @Override
                 public void notifyEvent(Object o) {
@@ -390,7 +396,7 @@ public class Qwasi{
                     Log.e("QwasiError", e.getMessage());
                     qwasiInterface.onFailure(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorDeviceUnregisterFailed,
-                                    "Qwasi Device Unregister failed: "+ e.getMessage()));
+                                    "Qwasi Device Unregister failed: " + e.getMessage()));
                 }
             });
         }
@@ -405,8 +411,18 @@ public class Qwasi{
     }
 
     private synchronized void registerForNotifications(final QwasiInterface callback){
-        if(mregistered){
-            while (qwasiNotificationManager.isRegistering());
+        String test = qwasiNotificationManager.getPushToken();
+        if (test == null || test.isEmpty())  {
+            mPushTokenCallback =new Reporter() {
+                @Override
+                public void notifyEvent(Object o) {
+                    registerForNotifications(callback);
+                }
+            };
+            Witness.register(Boolean.class, mPushTokenCallback);
+        }
+        else if (!test.isEmpty()&& mregistered){
+            Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("id", mdeviceToken);
@@ -416,26 +432,25 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
-                    Witness.notify(qwasiNotificationManager.getPushToken());
                     QwasiNotificationHandler = new Reporter() {
                         @Override
                         public void notifyEvent(Object o) {
                             HashMap<String, Object> results = new HashMap<>();
-                            String qwasi =((Bundle)o).getString("qwasi", "");
+                            String qwasi = ((Bundle) o).getString("qwasi", "");
 
                             qwasi = qwasi.replaceAll(Pattern.quote("}"), "")
                                     .replaceAll(Pattern.quote("{"), "")
                                     .replaceAll(Pattern.quote("\""), "");
 
                             String[] pairs = qwasi.split(Pattern.quote(","));
-                            for(String pair :pairs){
-                                String[] key= pair.split(":");
+                            for (String pair : pairs) {
+                                String[] key = pair.split(":");
                                 results.put(key[0], key[1]);
                             }
                             String msgId = results.get("msg_id").toString();
                             String appId = results.get("app_id").toString();
-                            if (!(msgId.isEmpty()) && !(appId.isEmpty())){
-                                if (appId.equals(mconfig.mapplication)){
+                            if (!(msgId.isEmpty()) && !(appId.isEmpty())) {
+                                if (appId.equals(mconfig.mapplication)) {
                                     if ((mmessageCache.isEmpty()) || (!mmessageCache.containsKey(msgId))) {
                                         fetchMessageForNotification(msgId, new QwasiInterface() {
                                             @Override
@@ -448,30 +463,28 @@ public class Qwasi{
 
                                             }
                                         });
-                                    }
-                                    else {
+                                    } else {
                                         QwasiMessage message = mmessageCache.get(msgId);
                                         sendNotification(message);
                                     }
                                 }
-                            }
-                            else{
+                            } else {
                                 callback.onFailure(new QwasiError()
                                         .errorWithCode(QwasiErrorCode.QwasiErrorInvaildMessage, "Message is Invalid"));
                             }
                         }
                     };
                     Witness.register(Bundle.class, QwasiNotificationHandler);
-                    callback.onSuccess(
-                            new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorNone, "No error"));
+                    callback.onSuccess(qwasiNotificationManager.getPushToken());
+                    Witness.notify(qwasiNotificationManager.getPushToken());
                 }
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Set Push Token failed: "+e.getMessage());
+                    Log.e("QwasiError", "Set Push Token failed: " + e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed,
-                                    "Push Registration failed: "+e.getMessage());
+                                    "Push Registration failed: " + e.getMessage());
                     Witness.notify(error);
                     callback.onFailure(error);
                 }
@@ -920,12 +933,15 @@ public class Qwasi{
         void onFailure(QwasiError e);
     }
 
-    private void sendNotification(QwasiMessage message){
+    private void sendNotification(QwasiMessage message){  //todo check to find out why notifications don't open app
+        //fixme [Droid-28]
+        //Intent launchIntent = new Intent(context, context.getApplicationContext().getClass());
+        Intent intent = qwasiNotificationManager.mIntent;
+        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
-        PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
 
         Uri defaultSoundUri = message.silent()?
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION):
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
                 null;
 
         String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
@@ -934,7 +950,7 @@ public class Qwasi{
                 .setContentTitle(appName)
                 .setContentText(message.malert)
                 .setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
+                .setDefaults(Notification.DEFAULT_ALL) //default sound antd vibrate
                 .setSound(defaultSoundUri) //default sound
                 .setContentIntent(pendingIntent);
 
