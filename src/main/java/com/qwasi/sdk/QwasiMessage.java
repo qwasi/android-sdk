@@ -100,7 +100,8 @@ public class QwasiMessage{
     }
 
     public Boolean silent(){
-        return (malert == null)||(malert.isEmpty());
+        malert = malert == null? "":malert;
+        return (malert.isEmpty());
     }
 
     public String description(){

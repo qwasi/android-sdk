@@ -142,7 +142,7 @@ public class Qwasi{
         locationSyncFilter = 200.0;
         mdeviceToken = "";
 
-        mlocationManager.init();
+        //mlocationManager.init();  //DROID-29
         preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
         mregistered = preferences.getBoolean("registered", false);
 
@@ -158,7 +158,7 @@ public class Qwasi{
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
-            mlocationManager.init();
+            mlocationManager.init(); //DROID-29
         }
 
         Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
@@ -283,8 +283,8 @@ public class Qwasi{
                     info = info.getJSONObject("settings");
                     mpushEnabled = (Boolean) info.get("push_enabled");
                     mlocationEnabled = (Boolean) info.get("location_enabled");
+                    setLocationEnabled(mlocationEnabled);
                     if (mlocationEnabled){
-                        setLocationEnabled(mlocationEnabled);
                         mlocationManager.mmanager.connect();
                     }
                     meventsEnabled = (Boolean) info.get("events_enabled");
@@ -421,7 +421,7 @@ public class Qwasi{
             };
             Witness.register(Boolean.class, mPushTokenCallback);
         }
-        else if (!test.isEmpty()&& mregistered){
+        else if (mregistered){
             Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
@@ -933,27 +933,24 @@ public class Qwasi{
         void onFailure(QwasiError e);
     }
 
-    private void sendNotification(QwasiMessage message){  //todo check to find out why notifications don't open app
-        //fixme [Droid-28]
+    private void sendNotification(QwasiMessage message){
         //Intent launchIntent = new Intent(context, context.getApplicationContext().getClass());
-        Intent intent = qwasiNotificationManager.mIntent;
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-
+        //Intent intent = qwasiNotificationManager.mIntent;
+        //PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
 
         Uri defaultSoundUri = message.silent()?
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
                 null;
 
         String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
-        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(context)
+        NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
                 .setSmallIcon(context.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
                 .setAutoCancel(true)
                 .setDefaults(Notification.DEFAULT_ALL) //default sound antd vibrate
                 .setSound(defaultSoundUri) //default sound
-                .setContentIntent(pendingIntent);
-
+                ;
         //configure expanded action
         if (message.mpayloadType.contains("text")){ //text
             noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));

@@ -26,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.0-4'
+        compile 'com.qwasi:QwasiSDK:2.1.0-5'
     }
 ```
 
@@ -39,7 +39,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ```groovy
  'com.google.android.gms:play-services-gcm:7.5.0'
  'com.google.android.gms:play-services-location:7.5.0'
- 'com.qwasi:QwasiJSON:1.0.0'
+ 'com.qwasi:QwasiJSON:1.0.0'  //Not stable for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
@@ -325,6 +325,19 @@ Example:
 ```
 
 By default, messages recieved will be passed to the Notification manager and on to the proper Qwasi Object and posted to the As a Notification.
+
+Notifications generated in this manner will create a PendingIntent that will launch the app, for this functionality to work correctly please set your exported for the launch activity to true, and include the following code into your onCreate
+
+```java
+    @Override
+    public void onCreate(Bundle ...){
+        super.onCreate(...);
+        if((getIntent().getFlags() & Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)!=0){
+            finish();
+            return;
+        }
+    }
+```
 
 ###### SDK EVENT - "MESSAGE"
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`

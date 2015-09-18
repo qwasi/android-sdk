@@ -8,6 +8,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -28,9 +29,11 @@ public class QwasiNotificationManager{
     private String mpushToken = "";
     private Boolean mregistering;
     private Context mContext;
-    Intent mIntent;
+    PendingIntent mIntent;
+    NotificationCompat.Builder noteBuilder;
     //final private Qwasi qwasi;
     private String senderId;
+
     private static QwasiNotificationManager instance;
     static final String TAG = "QwasiNotificationMngr";
 
@@ -128,8 +131,8 @@ public class QwasiNotificationManager{
         }).start();
     }
 
-    void onMessage(Intent intent, Bundle data){
-        this.mIntent = intent;
+    void onMessage(NotificationCompat.Builder builder, Bundle data){
+        this.noteBuilder = builder;
         Witness.notify(data);
     }
 }
