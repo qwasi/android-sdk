@@ -5,10 +5,9 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -157,10 +156,9 @@ public class Qwasi{
         if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
-        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
+        /*if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
             mlocationManager.init(); //DROID-29
-        }
-
+        }*/
         Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
         deviceName = accounts.length > 0?
                 accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
@@ -665,8 +663,13 @@ public class Qwasi{
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mregistered) {
             //if (mlocationEnabled) {
-                HashMap<String, Object> parms = new HashMap<>();
-                HashMap<String, Object> near = new HashMap<>();
+                if (place == null){
+                    place = QwasiLocation.initEmpty();
+                }
+            HashMap<String, Object> parms = new HashMap<>();
+            HashMap<String, Object> near = new HashMap<>();
+            if (!place.empty) {
+
                 near.put("lng", place.getLongitude());
                 near.put("lat", place.getLatitude());
                 near.put("radius", locationSyncFilter * 10);
@@ -674,35 +677,39 @@ public class Qwasi{
                 near = new HashMap<>();
                 near.put("schema", "2.0");
                 parms.put("options", near);
-                mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
-                    @Override
-                    public void onSuccess(Object o) {
-                        JSONArray positions;
-                        try {
-                            positions = ((JSONObject) o).getJSONArray("result");
-                            for (int index = 0; index < positions.length(); index++) {
-                                mlocationManager.startMoitoringLocation(
-                                        QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
-                            }
-                            //mlocationManager.pruneLocations();
+            }
+            else{
+               parms.put("", "");
+            }
+            mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    JSONArray positions;
+                    try {
+                        positions = ((JSONObject) o).getJSONArray("result");
+                        for (int index = 0; index < positions.length(); index++) {
+                            mlocationManager.startMoitoringLocation(
+                                    QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                         }
-                        catch (JSONException e) {
-                            Log.wtf(TAG, "malformed JSONArray");
-                            e.printStackTrace();
-                        }
-                        qwasiInterface.onSuccess(mlocationManager.mregionMap);
+                        //mlocationManager.pruneLocations();
                     }
+                    catch (JSONException e) {
+                        Log.wtf(TAG, "malformed JSONArray");
+                        e.printStackTrace();
+                    }
+                    qwasiInterface.onSuccess(mlocationManager.mregionMap);
+                }
 
-                    @Override
-                    public void onFailure(QwasiError e) {
-                        Log.e("QwasiError", e.getMessage());
-                        QwasiError error = new QwasiError()
-                                .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
-                                        "Location Fetch Failed: "+e.getMessage());
-                        Witness.notify(error);
-                        qwasiInterface.onFailure(error);
-                    }
-                });
+                @Override
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", e.getMessage());
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
+                                    "Location Fetch Failed: "+e.getMessage());
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            });
             /*}
             //todo for M: Handle location permissions
             else{
