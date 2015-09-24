@@ -55,7 +55,7 @@ public class QwasiClient {
                 JSONObject jsonparms = new JSONObject(parms);
                 try {
                     JSONObject response = msession.callJSONObject(method, jsonparms);
-                    Log.d(TAG, method + " succesful");
+                    Log.d(TAG, method + " successful");
                     callbacks.onSuccess(response);
                 }
                 catch (JSONRPCException e) {

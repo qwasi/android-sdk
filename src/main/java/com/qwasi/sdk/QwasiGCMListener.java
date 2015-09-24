@@ -3,6 +3,7 @@ package com.qwasi.sdk;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 
 import com.google.android.gms.gcm.GcmListenerService;
 
@@ -13,9 +14,11 @@ public class QwasiGCMListener extends GcmListenerService{
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            Intent intent = new Intent(this, Qwasi.getContext().getClass()).addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-            QwasiNotificationManager.getInstance().onMessage(intent, data);
-
+            Intent intent = (getPackageManager().getLaunchIntentForPackage(getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
+                    .setContentIntent(pendingIntent);
+            QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
         }
     }
 }

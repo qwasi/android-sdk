@@ -5,10 +5,9 @@ import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -142,7 +141,7 @@ public class Qwasi{
         locationSyncFilter = 200.0;
         mdeviceToken = "";
 
-        mlocationManager.init();
+        //mlocationManager.init();  //DROID-29
         preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
         mregistered = preferences.getBoolean("registered", false);
 
@@ -157,10 +156,9 @@ public class Qwasi{
         if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
-        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
-            mlocationManager.init();
-        }
-
+        /*if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS) {
+            mlocationManager.init(); //DROID-29
+        }*/
         Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
         deviceName = accounts.length > 0?
                 accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
@@ -283,8 +281,8 @@ public class Qwasi{
                     info = info.getJSONObject("settings");
                     mpushEnabled = (Boolean) info.get("push_enabled");
                     mlocationEnabled = (Boolean) info.get("location_enabled");
+                    setLocationEnabled(mlocationEnabled);
                     if (mlocationEnabled){
-                        setLocationEnabled(mlocationEnabled);
                         mlocationManager.mmanager.connect();
                     }
                     meventsEnabled = (Boolean) info.get("events_enabled");
@@ -421,7 +419,7 @@ public class Qwasi{
             };
             Witness.register(Boolean.class, mPushTokenCallback);
         }
-        else if (!test.isEmpty()&& mregistered){
+        else if (mregistered){
             Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
@@ -665,8 +663,13 @@ public class Qwasi{
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mregistered) {
             //if (mlocationEnabled) {
-                HashMap<String, Object> parms = new HashMap<>();
-                HashMap<String, Object> near = new HashMap<>();
+                if (place == null){
+                    place = QwasiLocation.initEmpty();
+                }
+            HashMap<String, Object> parms = new HashMap<>();
+            HashMap<String, Object> near = new HashMap<>();
+            if (!place.empty) {
+
                 near.put("lng", place.getLongitude());
                 near.put("lat", place.getLatitude());
                 near.put("radius", locationSyncFilter * 10);
@@ -674,35 +677,39 @@ public class Qwasi{
                 near = new HashMap<>();
                 near.put("schema", "2.0");
                 parms.put("options", near);
-                mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
-                    @Override
-                    public void onSuccess(Object o) {
-                        JSONArray positions;
-                        try {
-                            positions = ((JSONObject) o).getJSONArray("result");
-                            for (int index = 0; index < positions.length(); index++) {
-                                mlocationManager.startMoitoringLocation(
-                                        QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
-                            }
-                            //mlocationManager.pruneLocations();
+            }
+            else{
+               parms.put("", "");
+            }
+            mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    JSONArray positions;
+                    try {
+                        positions = ((JSONObject) o).getJSONArray("result");
+                        for (int index = 0; index < positions.length(); index++) {
+                            mlocationManager.startMoitoringLocation(
+                                    QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                         }
-                        catch (JSONException e) {
-                            Log.wtf(TAG, "malformed JSONArray");
-                            e.printStackTrace();
-                        }
-                        qwasiInterface.onSuccess(mlocationManager.mregionMap);
+                        //mlocationManager.pruneLocations();
                     }
+                    catch (JSONException e) {
+                        Log.wtf(TAG, "malformed JSONArray");
+                        e.printStackTrace();
+                    }
+                    qwasiInterface.onSuccess(mlocationManager.mregionMap);
+                }
 
-                    @Override
-                    public void onFailure(QwasiError e) {
-                        Log.e("QwasiError", e.getMessage());
-                        QwasiError error = new QwasiError()
-                                .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
-                                        "Location Fetch Failed: "+e.getMessage());
-                        Witness.notify(error);
-                        qwasiInterface.onFailure(error);
-                    }
-                });
+                @Override
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", e.getMessage());
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorLocationFetchFailed,
+                                    "Location Fetch Failed: "+e.getMessage());
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            });
             /*}
             //todo for M: Handle location permissions
             else{
@@ -933,27 +940,24 @@ public class Qwasi{
         void onFailure(QwasiError e);
     }
 
-    private void sendNotification(QwasiMessage message){  //todo check to find out why notifications don't open app
-        //fixme [Droid-28]
+    private void sendNotification(QwasiMessage message){
         //Intent launchIntent = new Intent(context, context.getApplicationContext().getClass());
-        Intent intent = qwasiNotificationManager.mIntent;
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_ONE_SHOT);
-
+        //Intent intent = qwasiNotificationManager.mIntent;
+        //PendingIntent pendingIntent = qwasiNotificationManager.mIntent;
 
         Uri defaultSoundUri = message.silent()?
                 RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
                 null;
 
         String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
-        NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(context)
+        NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
                 .setSmallIcon(context.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
                 .setAutoCancel(true)
                 .setDefaults(Notification.DEFAULT_ALL) //default sound antd vibrate
                 .setSound(defaultSoundUri) //default sound
-                .setContentIntent(pendingIntent);
-
+                ;
         //configure expanded action
         if (message.mpayloadType.contains("text")){ //text
             noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));

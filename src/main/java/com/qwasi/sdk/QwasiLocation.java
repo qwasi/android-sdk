@@ -51,6 +51,7 @@ public class QwasiLocation extends Location {
     boolean mdwell = false;
     boolean minside =false;
     boolean mexit;
+    boolean empty;
 
     public enum QwasiLocationType{
         QwasiLocationTypeUnknown,
@@ -70,6 +71,7 @@ public class QwasiLocation extends Location {
     public  QwasiLocation(Location location){
         super(location);
         this.AppID = "";
+        this.empty = false;
         this.latitude = location.getLatitude();
         this.longitude = location.getLongitude();
         this.name = location.getProvider();
@@ -94,6 +96,12 @@ public class QwasiLocation extends Location {
 
     public  double getLatitude(){
         return latitude;
+    }
+
+    static public QwasiLocation initEmpty(){
+        QwasiLocation temp = new QwasiLocation(new Location("Qwasi"));
+        temp.empty = true;
+        return temp;
     }
 
     static public QwasiLocation initWithLocation(Location location){
