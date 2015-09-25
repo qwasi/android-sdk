@@ -112,7 +112,7 @@ public class QwasiLocation extends Location {
     // FIXME: 8/19/15 make locations regardless let location manger deal with sorting
     static public QwasiLocation initWithLocationData(JSONObject input) throws JSONException{
         //if this location doesn't already exist in the mregionMap add it
-        QwasiLocation location = new QwasiLocation(QwasiLocationManager.getInstance().getLastLocation());
+        QwasiLocation location = initEmpty();
         location.id = input.getJSONObject("properties").getString("id");
         location.name = input.getString("name");
         location.state = QwasiLocationState.QwasiLocationStateUnknown;

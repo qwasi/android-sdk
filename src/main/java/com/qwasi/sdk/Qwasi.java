@@ -7,7 +7,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -19,8 +18,6 @@ import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,6 +36,7 @@ import io.hearty.witness.Witness;
  * Released under the MIT Licence
  */
 public class Qwasi{
+    static Activity mainActivity;
     static private Context context = null;
     private SharedPreferences preferences;
     private double locationSyncFilter;
@@ -83,6 +81,7 @@ public class Qwasi{
 
     public Qwasi(Activity application){
         this.mclient = new QwasiClient();
+        mainActivity = application;
         context = application.getApplicationContext();
         this.qwasiAppManager = new QwasiAppManager(this);
         this.networkInfo = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
@@ -97,6 +96,8 @@ public class Qwasi{
             Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
         }
     }
+
+    static public Activity getMainActivity(){return mainActivity;}
 
     static public Context getContext(){ return context; }
 
@@ -585,7 +586,8 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     //Log.i(TAG, o.toString());
-                    QwasiMessage message = new QwasiMessage().messageWithData((JSONObject) o);
+                    QwasiMessage message = new QwasiMessage();
+                    message.messageWithData((JSONObject)o);
                     mmessageCache.put(message.messageId, message);
                     if (museLocalNotifications)
                         sendNotification(message);
@@ -669,7 +671,6 @@ public class Qwasi{
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> near = new HashMap<>();
             if (!place.empty) {
-
                 near.put("lng", place.getLongitude());
                 near.put("lat", place.getLatitude());
                 near.put("radius", locationSyncFilter * 10);
@@ -678,15 +679,12 @@ public class Qwasi{
                 near.put("schema", "2.0");
                 parms.put("options", near);
             }
-            else{
-               parms.put("", "");
-            }
             mclient.invokeMethod("location.fetch", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     JSONArray positions;
                     try {
-                        positions = ((JSONObject) o).getJSONArray("result");
+                        positions = ((JSONObject) o).getJSONArray("value");
                         for (int index = 0; index < positions.length(); index++) {
                             mlocationManager.startMoitoringLocation(
                                     QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
