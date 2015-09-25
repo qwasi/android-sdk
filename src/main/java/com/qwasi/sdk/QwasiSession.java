@@ -34,7 +34,7 @@ public class QwasiSession {
         headers[0] = new BasicHeader("x-qwasi-api-key", mconfig.mkey);
         headers[1] = new BasicHeader("x-qwasi-app-id", mconfig.mapplication);
         headers[2] = new BasicHeader("x-qwasi-device-id", sharedApp.getMdeviceToken()); //is This needed?
-        headers[3] = new BasicHeader("accept-version", "~2.1.0");
+        headers[3] = new BasicHeader("accept-version", "2.1.0");
     }
 
 }
