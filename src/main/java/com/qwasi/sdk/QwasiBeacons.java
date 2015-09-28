@@ -1,6 +1,7 @@
 package com.qwasi.sdk;
 
 import android.app.Activity;
+import android.app.Application;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -40,15 +41,16 @@ public class QwasiBeacons extends Service
     public QwasiBeacons() {
         super();
         context = Qwasi.getContext();
-        mainAct = BeaconConsumer.class.isAssignableFrom(context.getClass())?(BeaconConsumer) context:null;
+        mainAct = Qwasi.getMainActivity() instanceof  BeaconConsumer? (BeaconConsumer) Qwasi.mainActivity:null;
         map = QwasiLocationManager.getInstance().mregionMap;
-        beaconManager = BeaconManager.getInstanceForApplication(context.getApplicationContext());
+        beaconManager = BeaconManager.getInstanceForApplication(context);
         beaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
         parsers = beaconManager.getBeaconParsers();
         //beaconManager.setBackgroundBetweenScanPeriod(FOCUSSCANPERIOD * 10);
     }
 
     synchronized void setMainAct(Activity main){
+        Log.d(TAG, "SetMain");
         mainAct = BeaconConsumer.class.isAssignableFrom(main.getClass())?(BeaconConsumer) main:null;
     }
 

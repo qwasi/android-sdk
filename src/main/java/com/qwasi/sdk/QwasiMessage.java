@@ -37,22 +37,23 @@ public class QwasiMessage{
         try {
             JSONObject data = (JSONObject) input;
             messageId = data.has("id")?data.getString("id"):"";
-            application = data.getJSONObject("application").has("id")?
-                    data.getJSONObject("application").getString("id"):"";
+            application = data.has("application")?
+                    data.getJSONObject("application").has("id")?
+                            data.getJSONObject("application").getString("id"):""
+                    :"";
             malert = data.has("text")?data.getString("text"):"";
             selected = QwasiAppManager.getstatus();
             //dateformater = date
             //DateFormat dateFormatter = new DateFormat();
-            mtags = new JSONArray();
+            //mtags = new JSONArray();
             mtimestamp = new Date();
 
             mpayloadType = data.get("payload_type").toString();
-            if (data.getJSONObject("context").has("tags")) {
-                mtags = (data.getJSONObject("context").getJSONArray("tags"));
-            }
-            if (data.has("fetched")) {
-                fetched = Boolean.getBoolean(data.getString("fetched"));
-            }
+            mtags = data.has("context")?
+                    data.getJSONObject("context").has("tags")?
+                            data.getJSONObject("context").getJSONArray("tags"): new JSONArray()
+                    :new JSONArray();
+            fetched = data.has("fetched")? data.getBoolean("fetched"):false;
             mencodedPayload = data.get("payload");
             byte[] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
             try {
