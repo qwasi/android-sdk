@@ -99,7 +99,7 @@ public class QwasiLocation extends Location {
     }
 
     static public QwasiLocation initEmpty(){
-        QwasiLocation temp = new QwasiLocation(new Location("Qwasi"));
+        QwasiLocation temp = new QwasiLocation(new Location("Qwasi")); //json issue
         temp.empty = true;
         return temp;
     }
