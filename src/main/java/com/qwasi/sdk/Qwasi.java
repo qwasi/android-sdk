@@ -279,15 +279,21 @@ public class Qwasi{
                     mapplicationName = info.get("name").toString();
 
                     //get the settings out
-                    info = info.getJSONObject("settings");
-                    mpushEnabled = (Boolean) info.get("push_enabled");
-                    mlocationEnabled = (Boolean) info.get("location_enabled");
+                    if (info.has("settings")) {
+                        info = info.getJSONObject("settings");
+                        mpushEnabled = (Boolean) info.get("push_enabled");
+                        mlocationEnabled = (Boolean) info.get("location_enabled");
+                        meventsEnabled = (Boolean) info.get("events_enabled");
+                    }
+                    else{ //get this from the app?
+                        mpushEnabled = true;
+                        mlocationEnabled = true;
+                        meventsEnabled = true;
+                    }
                     setLocationEnabled(mlocationEnabled);
-                    if (mlocationEnabled){
+                    if (mlocationEnabled) {
                         mlocationManager.mmanager.connect();
                     }
-                    meventsEnabled = (Boolean) info.get("events_enabled");
-
                     Log.i(TAG, "Device Successfully Registered");
                     Witness.notify(mdeviceToken);
                     qwasiInterface.onSuccess(o);
