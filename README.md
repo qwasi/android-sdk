@@ -39,7 +39,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ```groovy
  'com.google.android.gms:play-services-gcm:7.5.0'
  'com.google.android.gms:play-services-location:7.5.0'
- 'com.qwasi:QwasiJSON:1.0.1'  //forces legacy libraries for mashmellow
+ 'com.qwasi:QwasiJSON:1.0.1'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
