@@ -17,6 +17,7 @@ import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+import android.webkit.WebView;
 
 
 import org.json.JSONArray;
@@ -51,6 +52,7 @@ public class Qwasi{
     private String mdeviceToken = null;
     private QwasiClient mclient = null;
     public NetworkInfo networkInfo;
+    private Map<String, Void> mchannels;
     private HashMap<String, QwasiMessage> mmessageCache;
     public QwasiLocationManager mlocationManager;
     public QwasiConfig mconfig;
@@ -82,6 +84,7 @@ public class Qwasi{
     public Qwasi(Activity application){
         this.mclient = new QwasiClient();
         mainActivity = application;
+        mchannels = new HashMap<>();
         context = application.getApplicationContext();
         this.qwasiAppManager = new QwasiAppManager(this);
         this.networkInfo = ((ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
@@ -329,7 +332,7 @@ public class Qwasi{
 
             parms.put("id", mdeviceToken);
             parms.put("user_token", muserToken);
-            mclient.invokeMethod("device.set_user_token", parms, new QwasiInterface() {
+            mclient.invokeNotification("device.set_user_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Device Token Set");
@@ -382,7 +385,7 @@ public class Qwasi{
             HashMap<String, Object> parm = new HashMap<>();
             parm.put("id", deviceToken==null?mdeviceToken:deviceToken);
 
-            mclient.invokeMethod("device.unregister", parm, new QwasiInterface() {
+            mclient.invokeNotification("device.unregister", parm, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     mdeviceToken = "";
@@ -511,7 +514,7 @@ public class Qwasi{
             parms.put("id", mdeviceToken);
             parms.put("proto", "push.poll");
             parms.put("token", "");
-            mclient.invokeMethod("device.set_push_token", parms, new QwasiInterface() {
+            mclient.invokeNotification("device.set_push_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     mpushEnabled = false;
@@ -522,7 +525,7 @@ public class Qwasi{
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Unregister for Note failed: "+e.getMessage());
+                    Log.e("QwasiError", "Unregister for Note failed: " + e.getMessage());
                     callback.onFailure(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorPushUnregisterFailed,
                             "Push Unregister Failed"));
                 }
@@ -593,7 +596,7 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     //Log.i(TAG, o.toString());
                     QwasiMessage message = new QwasiMessage();
-                    message.messageWithData((JSONObject)o);
+                    message.messageWithData((JSONObject) o);
                     mmessageCache.put(message.messageId, message);
                     if (museLocalNotifications)
                         sendNotification(message);
@@ -606,13 +609,13 @@ public class Qwasi{
                 public void onFailure(QwasiError e) {
                     QwasiError error;
                     //parse error
-                    error = e.getMessage().contains("404")?
+                    error = e.getMessage().contains("404") ?
                             new QwasiError()
-                                .errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
-                                        "No messages for Device") :
+                                    .errorWithCode(QwasiErrorCode.QwasiErrorMessageNotFound,
+                                            "No messages for Device") :
                             new QwasiError()
-                                .errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
-                                        "Message Fetch Failed");
+                                    .errorWithCode(QwasiErrorCode.QwasiErrorMessageFetchFailed,
+                                            "Message Fetch Failed");
 
                     qwasiInterface.onFailure(error);
                 }
@@ -633,7 +636,7 @@ public class Qwasi{
             parms.put("device", mdeviceToken);
             parms.put("type", type);
             parms.put("data", data);
-            mclient.invokeMethod("event.post", parms, new QwasiInterface() {
+            mclient.invokeNotification("event.post", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Event Posted");
@@ -645,7 +648,7 @@ public class Qwasi{
                 public void onFailure(QwasiError e) {
                     Log.e("QwasiError", e.getMessage());
                     QwasiError error = new QwasiError()
-                            .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed "+e.getMessage());
+                            .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed " + e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -738,15 +741,17 @@ public class Qwasi{
         this.subscribeToChannel(channel, defaultCallback);
     }
 
-    public synchronized void subscribeToChannel(String channel, final QwasiInterface qwasiInterface){
+    public synchronized void subscribeToChannel(final String channel, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
             parms.put("channel", channel);
-            mclient.invokeMethod("channel.subscribe", parms, new QwasiInterface() {
+            mclient.invokeNotification("channel.subscribe", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "subscribe to channel success");
+                    if (!mchannels.containsKey(channel))
+                        mchannels.put(channel, null);
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone,
                                     "No error"));
@@ -774,15 +779,18 @@ public class Qwasi{
         this.unsubscribeFromChannel(channel, defaultCallback);
     }
 
-    public synchronized void unsubscribeFromChannel(String channel, final QwasiInterface qwasiInterface){
+    public synchronized void unsubscribeFromChannel(final String channel, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("device", mdeviceToken);
             parms.put("channel", channel);
-            mclient.invokeMethod("channel.unsubscribe", parms, new QwasiInterface() {
+            mclient.invokeNotification("channel.unsubscribe", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Unsubcribe from channel Success");
+                    if (mchannels.containsKey(channel)){
+                        mchannels.remove(channel);
+                    }
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
@@ -807,13 +815,14 @@ public class Qwasi{
         }
     }
 
+    //device set
     public synchronized void setDeviceValue(Object value, String key, final QwasiInterface qwasiInterface){
         if(mregistered){
             HashMap<String, Object> parms = new HashMap<>();
             parms.put("id", mdeviceToken);
             parms.put("key", key);
             parms.put("value", value);
-            mclient.invokeMethod("device.set_data", parms, new QwasiInterface() {
+            mclient.invokeNotification("device.set_data", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set data Success");
@@ -847,7 +856,7 @@ public class Qwasi{
     public void deviceValueForKey(String key) {
         this.deviceValueForKey(key, defaultCallback); //default
     }
-
+    //device.get
     public synchronized void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
         if (mregistered){
             final Map<String, Object> parms = new HashMap<>();
@@ -855,11 +864,13 @@ public class Qwasi{
             parms.put("key", key);
             mclient.invokeMethod("device.get_data", parms, new QwasiInterface() {
                 @Override
-                public void onSuccess(Object o) {qwasiInterface.onSuccess(o);}
+                public void onSuccess(Object o) {
+                    qwasiInterface.onSuccess(o);
+                }
 
                 @Override
                 public void onFailure(QwasiError e) {
-                    Log.e("QwasiError", "Get data Failed: "+e.getMessage());
+                    Log.e("QwasiError", "Get data Failed: " + e.getMessage());
                     QwasiError error = new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorGetDeviceDataFailed,
                                     "Error Retriving: " + key + " for device " + mdeviceToken);
@@ -873,6 +884,139 @@ public class Qwasi{
             QwasiError error = new QwasiError()
                     .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                             "Device not Registered");
+            Witness.notify(error);
+            qwasiInterface.onFailure(error);
+        }
+    }
+
+    public synchronized void setMemberValue(Object value, String key){
+        setMemberValue(value, key, defaultCallback);
+    }
+
+    public synchronized void setMemberValue(Object value, String key, final QwasiInterface qwasiInterface){
+        if (mregistered){
+            Map<String, Object> parms = new HashMap<>();
+            parms.put("id", muserToken);
+            parms.put("key",key);
+            parms.put("value", value);
+            mclient.invokeMethod("member.set", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+
+                }
+
+                @Override
+                public void onFailure(QwasiError e) {
+
+                }
+            });
+        }
+        else{
+            QwasiError error = new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorSetMemberDataFailed, "Device Not Registered");
+            Witness.notify(error);
+            qwasiInterface.onFailure(error);
+        }
+    }
+
+    public synchronized void memberValueForKey(String key){
+        memberValueForKey(key, defaultCallback);
+    }
+
+    public synchronized void memberValueForKey(String key, final QwasiInterface qwasiInterface){
+        if (mregistered){
+            Map<String, Object> parms = new HashMap<>();
+            parms.put("id", muserToken);
+            parms.put("key", key);
+            mclient.invokeMethod("member.get", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    Log.i(TAG, "Member Value retrieval");
+                    qwasiInterface.onSuccess(o);
+                }
+
+                @Override
+                public void onFailure(QwasiError e) {
+
+                }
+            });
+        }
+        else {
+            QwasiError error = new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorSetMemberDataFailed, "Device Not Registered");
+            Witness.notify(error);
+            qwasiInterface.onFailure(error);
+        }
+    }
+
+    public synchronized void memberSetUserName(String userName, String password, String currentPass){
+        this.memberSetUserName(userName, password, currentPass,defaultCallback);
+    }
+
+    public synchronized void memberSetUserName(String userName, String password, String currentPass, final QwasiInterface qwasiInterface){
+        if (mregistered){
+            final Map<String, Object> parms = new HashMap<>();
+            parms.put("id", muserToken);
+            parms.put("username", userName);
+            parms.put("password", password);
+            parms.put("current", currentPass);
+            mclient.invokeMethod("member.set_auth", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    Log.i(TAG, "Member Auth Success");
+                    qwasiInterface.onSuccess(new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
+                }
+
+                @Override
+                public void onFailure(QwasiError e) {
+                    Log.e(TAG, "Member Auth Failed: "+e.getMessage());
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorSetMemberAuthFailed,
+                                    "Member Set Auth Failed");
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            });
+
+        }
+        else{
+            QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSetMemberAuthFailed, "Device Not Registered");
+            Witness.notify(error);
+            qwasiInterface.onFailure(error);
+        }
+    }
+
+    public synchronized void memberAuthUser(String userName, String password){
+        this.memberAuthUser(userName, password, defaultCallback);
+    }
+
+    public synchronized void memberAuthUser(String userName, String password, final QwasiInterface qwasiInterface){
+        if (mregistered){
+            final Map<String, Object> parms = new HashMap<>();
+            parms.put("username", userName);
+            parms.put("password", password);
+            mclient.invokeMethod("member.auth", parms, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    Log.i(TAG, "Member Auth Success");
+                    qwasiInterface.onSuccess(new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
+                }
+
+                @Override
+                public void onFailure(QwasiError e) {
+                    Log.e(TAG, "Member Auth Failed: "+e.getMessage());
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorAuthMemberFailed,
+                                    "Member Auth Failed");
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            });
+        }
+        else{
+            QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSetMemberAuthFailed, "Device not Registered");
             Witness.notify(error);
             qwasiInterface.onFailure(error);
         }
@@ -920,7 +1064,7 @@ public class Qwasi{
                 public void onFailure(QwasiError e) {
                     Log.e("QwasiError", "Message Send Failed: "+e.getMessage());
                     QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorSendMessageFailed,
-                            "Send message Failed "+e.getMessage());
+                            "Send message Failed " + e.getMessage());
                     Witness.notify(error);
                     qwasiInterface.onFailure(error);
                 }
@@ -937,6 +1081,10 @@ public class Qwasi{
 
     public void  sendMessage(QwasiMessage message, String userToken){
         this.sendMessage(message, userToken, defaultCallback);
+    }
+
+    public synchronized Map<String, Void> channels(){
+        return (new HashMap<>(mchannels));
     }
 
     public interface QwasiInterface{

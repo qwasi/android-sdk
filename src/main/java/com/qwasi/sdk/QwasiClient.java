@@ -67,4 +67,24 @@ public class QwasiClient {
             }
         }).start();
     }
+
+    void invokeNotification(final String method, final Map<String, Object> parms, final Qwasi.QwasiInterface callbacks){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "invoking API "+method+", with parms: "+parms.toString());
+                JSONObject jsonparms = new JSONObject(parms);
+                try{
+                    msession.call(method, jsonparms);
+                    Log.d(TAG, method + " successful");
+                    callbacks.onSuccess(null);
+                }
+                catch (JSONRPCException e){
+                    QwasiError temp = new QwasiError();
+                    temp.errorWithCode(QwasiErrorCode.QwasiErrorNone, e.getCause().getMessage());
+                    callbacks.onFailure(temp);
+                }
+            }
+        }).start();
+    }
 }
