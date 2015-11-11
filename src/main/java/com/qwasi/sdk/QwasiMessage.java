@@ -106,6 +106,6 @@ public class QwasiMessage{
     }
 
     public String description(){
-        return mpayload.toString();
+        return mpayload != null? mpayload.toString(): "";
     }
 }
