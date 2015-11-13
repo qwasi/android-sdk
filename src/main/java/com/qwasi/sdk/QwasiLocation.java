@@ -79,7 +79,6 @@ public class QwasiLocation extends Location {
         type = QwasiLocationType.QwasiLocationTypeCoordinate;
         state = QwasiLocationState.QwasiLocationStateUnknown;
         parser = new BeaconParser();
-        return;
     }
 
     public double getDistance(){
@@ -197,8 +196,7 @@ public class QwasiLocation extends Location {
     public synchronized Geofence getRegion(){return this.region;}
 
     public boolean isTypeCoordinate(){
-        if (this.type == QwasiLocationType.QwasiLocationTypeCoordinate) return true;
-        return false;
+        return this.type == QwasiLocationType.QwasiLocationTypeCoordinate;
     }
 
     public QwasiLocationType typeCheck(){

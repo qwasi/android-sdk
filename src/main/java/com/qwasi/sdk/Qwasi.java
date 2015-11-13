@@ -17,8 +17,6 @@ import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
-import android.webkit.WebView;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
