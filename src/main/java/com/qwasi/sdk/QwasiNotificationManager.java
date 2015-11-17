@@ -1,8 +1,6 @@
 package com.qwasi.sdk;
 
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -29,7 +27,7 @@ public class QwasiNotificationManager{
     private String mpushToken = "";
     private Boolean mregistering;
     private Context mContext;
-    PendingIntent mIntent;
+    //PendingIntent mIntent;
     NotificationCompat.Builder noteBuilder;
     //final private Qwasi qwasi;
     private String senderId;
@@ -110,10 +108,11 @@ public class QwasiNotificationManager{
                     mregistering = true;
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
                     Log.d(TAG, "attempting token");
-                    senderId = appinfo.metaData.containsKey("gcm_senderid")? //if it contains the value
-                            appinfo.metaData.getString("gcm_senderid")://set the it to the value
-                            senderId; //or the default
-                    //Log.d(TAG, senderId);
+                    //Device Registering issue 11-4-15
+                    senderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
+                            appinfo.metaData.getString("gcm_senderid", "335413682000"): //get it
+                            senderId;  //or set to default, default also included in case android munges it
+                    Log.d(TAG, senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
                     token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
                     mpushToken =!token.isEmpty()?token:"";

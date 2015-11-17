@@ -26,11 +26,15 @@ enum QwasiErrorCode{
     QwasiErrorSetUserTokenFailed,
     QwasiErrorSetDeviceDataFailed,
     QwasiErrorGetDeviceDataFailed,
+    QwasiErrorSetMemberDataFailed,
+    QwasiErrorGetMemberDataFailed,
     QwasiErrorSendMessageFailed,
     QwasiErrorInvaildMessage,
     QwasiErrorLocationAccessDenied,
     QwasiErrorLocationAccessInsufficient,
-    QwasiErrorMessageNotFound
+    QwasiErrorMessageNotFound,
+    QwasiErrorSetMemberAuthFailed,
+    QwasiErrorAuthMemberFailed
 }
 
 public class QwasiError extends Throwable{

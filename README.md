@@ -39,7 +39,7 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ```groovy
  'com.google.android.gms:play-services-gcm:7.5.0'
  'com.google.android.gms:play-services-location:7.5.0'
- 'com.qwasi:QwasiJSON:1.0.0'  //Not stable for marshmallow
+ 'com.qwasi:QwasiJSON:1.0.1'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
@@ -72,9 +72,11 @@ The default configuration file is part of the AndroidManifest.xml. You create an
         <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
         <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
         <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
+        <!--example gcm token would be "\ 335413682000", see note for reason-->
         ...
     </application>
 ```
+Note: GCM senderId's being fully numeric may be confused as Integers by the android system. Adding a "\ " to the front of the number will avoid this; This will default to Qwasi's senderID if not corrected.
 
 The SDK also uses several permissions, include these permissions in order to use the full potential of the SDK
 

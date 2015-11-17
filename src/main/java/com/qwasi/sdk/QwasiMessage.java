@@ -25,7 +25,7 @@ public class QwasiMessage{
     public JSONArray mtags;
     public Boolean selected;
     public Boolean fetched;
-    private Object mencodedPayload;
+    Object mencodedPayload;
     String TAG = "QwasiMessage";
 
     public QwasiMessage(){
@@ -53,7 +53,7 @@ public class QwasiMessage{
                     data.getJSONObject("context").has("tags")?
                             data.getJSONObject("context").getJSONArray("tags"): new JSONArray()
                     :new JSONArray();
-            fetched = data.has("fetched")? data.getBoolean("fetched"):false;
+            fetched = data.has("fetched")&&data.getBoolean("fetched");
             mencodedPayload = data.get("payload");
             byte[] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
             try {
@@ -106,6 +106,6 @@ public class QwasiMessage{
     }
 
     public String description(){
-        return mpayload.toString();
+        return mpayload != null? mpayload.toString(): "";
     }
 }

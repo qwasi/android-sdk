@@ -42,7 +42,7 @@ public class QwasiLocation extends Location {
     private Timer dwellTime;
     private int mdwellInterval;
     private long mdwellStart;
-    private int mexitDelay;
+    //private int mexitDelay;
     Geofence region;
     Region beacon;
     BeaconParser parser;
@@ -79,7 +79,6 @@ public class QwasiLocation extends Location {
         type = QwasiLocationType.QwasiLocationTypeCoordinate;
         state = QwasiLocationState.QwasiLocationStateUnknown;
         parser = new BeaconParser();
-        return;
     }
 
     public double getDistance(){
@@ -113,7 +112,7 @@ public class QwasiLocation extends Location {
     static public QwasiLocation initWithLocationData(JSONObject input) throws JSONException{
         //if this location doesn't already exist in the mregionMap add it
         QwasiLocation location = initEmpty();
-        location.id = input.getJSONObject("properties").getString("id");
+        location.id = input.getString("id");
         location.name = input.getString("name");
         location.state = QwasiLocationState.QwasiLocationStateUnknown;
         location.mdwellInterval = input
@@ -156,8 +155,7 @@ public class QwasiLocation extends Location {
 
             else if (input.has("geofence")) {  //geofence builder
                 location.type = QwasiLocationType.QwasiLocationTypeGeofence;
-                location.mexitDelay = input.getJSONObject("properties")
-                        .getInt("exit_interval") *1000;
+                //location.mexitDelay = input.getJSONObject("properties").has("exit_interval")? input.getJSONObject("properties").getInt("exit_interval") *1000:;
                 location.geometry = input.getJSONObject("geofence").getJSONObject("geometry");
                 location.latitude = location.geometry.getJSONArray("coordinates").getDouble(1);
                 location.longitude = location.geometry.getJSONArray("coordinates").getDouble(0);
@@ -198,8 +196,7 @@ public class QwasiLocation extends Location {
     public synchronized Geofence getRegion(){return this.region;}
 
     public boolean isTypeCoordinate(){
-        if (this.type == QwasiLocationType.QwasiLocationTypeCoordinate) return true;
-        return false;
+        return this.type == QwasiLocationType.QwasiLocationTypeCoordinate;
     }
 
     public QwasiLocationType typeCheck(){
