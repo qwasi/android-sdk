@@ -37,10 +37,7 @@ public class QwasiMessage{
         try {
             JSONObject data = (JSONObject) input;
             messageId = data.has("id")?data.getString("id"):"";
-            application = data.has("application")?
-                    data.getJSONObject("application").has("id")?
-                            data.getJSONObject("application").getString("id"):""
-                    :"";
+            application = data.has("application")?data.getString("application"):"";
             malert = data.has("text")?data.getString("text"):"";
             selected = QwasiAppManager.getstatus();
             //dateformater = date
