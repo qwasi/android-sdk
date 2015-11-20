@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -73,11 +74,12 @@ public class QwasiNotificationManager{
         }
         else {
             try {
-                SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                 String token;
                 token = sharedPreferences.getString("gcm_token", "");
                 // We don't have a token so get a new one
                 if (token.isEmpty()&& !mregistering) {
+                    mregistering = !mregistering;
                     registerForPushInBackground();
                 } else {
                     // check the version of the token

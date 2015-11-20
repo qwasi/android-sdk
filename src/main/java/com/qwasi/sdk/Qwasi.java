@@ -13,6 +13,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
@@ -144,7 +145,7 @@ public class Qwasi{
         mdeviceToken = "";
 
         //mlocationManager.init();  //DROID-29
-        preferences = context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+        preferences = PreferenceManager.getDefaultSharedPreferences(context);
         mregistered = preferences.getBoolean("registered", false);
 
         //are localNotifcations set
