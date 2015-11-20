@@ -109,12 +109,12 @@ public class QwasiNotificationManager{
                 try {
                     mregistering = true;
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-                    Log.d(TAG, "attempting token");
+                    Log.d(TAG, "Attempting to Aquire new Token");
                     //Device Registering issue 11-4-15
                     senderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
                             appinfo.metaData.getString("gcm_senderid", "335413682000"): //get it
                             senderId;  //or set to default, default also included in case android munges it
-                    Log.d(TAG, senderId);
+                    Log.d(TAG, "Using SenderID: "+senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
                     token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
                     mpushToken =!token.isEmpty()?token:"";
