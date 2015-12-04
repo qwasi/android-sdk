@@ -18,8 +18,8 @@ import org.json.JSONObject;
  * Released under the MIT Licence
  */
 public class QwasiClient {
-    private URL server = null;
-    private QwasiSession session;
+    URL server = null;
+    QwasiSession session;
     private JSONRPCHttpClient msession = null;
     //NetworkTask task;
     String TAG = "QwasiClient";
@@ -41,7 +41,7 @@ public class QwasiClient {
                 msession = new JSONRPCHttpClient(server.toString(),session.headers);
             }
             catch (MalformedURLException e){
-                //Already Did this in QwasiConfig....
+                Log.d(TAG, e.getMessage());
             }
         }
         return this;

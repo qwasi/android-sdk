@@ -138,14 +138,10 @@ public class QwasiConfig{
 
     public boolean isValid(){
 
-        if((murl == null)|| //if url is null
+        return!((murl == null)|| //if url is null
                 ((mapplication == null) || //or if application is null, or (it's empty or invalid)
                         (mapplication.equalsIgnoreCase("")|| mapplication.equalsIgnoreCase("INVAILD_APP_ID")))||
                 ((mkey == null) || //or if key is null, or it's empty or invalid
-                        (mkey.equalsIgnoreCase("")|| mkey.equalsIgnoreCase("INVAILD_API_KEY")))
-                ){
-            return false;
-        }
-        return true;
+                        (mkey.equalsIgnoreCase("")|| mkey.equalsIgnoreCase("INVAILD_API_KEY"))));
     }
 }

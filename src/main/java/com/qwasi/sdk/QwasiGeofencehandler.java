@@ -15,6 +15,8 @@ import io.hearty.witness.Witness;
 
 /**
  * Created by ccoulton on 8/20/15.
+ * for Qwasi Technology's Android Open source project
+ * Released under MIT Licence, and Hosted by OSSR
  */
 public class QwasiGeofencehandler extends IntentService {
     String TAG = "QwasiGeofence";

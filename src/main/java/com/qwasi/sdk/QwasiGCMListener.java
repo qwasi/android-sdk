@@ -9,6 +9,8 @@ import com.google.android.gms.gcm.GcmListenerService;
 
 /**
  * Created by ccoulton on 8/20/15.
+ * as part Qwasi Technogoly for their Android Open Source Project
+ * Released under the MIT License.  Hosted on OSSR
  */
 public class QwasiGCMListener extends GcmListenerService{
     @Override

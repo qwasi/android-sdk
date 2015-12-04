@@ -33,7 +33,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     private Thread postEvent = new Thread(new Runnable() {
         @Override
         public void run() {
-            sharedApplication.postEvent(event, data);
+            sharedApplication.postEvent(event, data, null);
             this.notify();
         }
     });
@@ -55,7 +55,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     @Override
     public void onActivityResumed(Activity activity){
         data = new HashMap<>();
-        event = "com.qwasi.event.application.state";
+        event = sharedApplication.kEventApplicationState;
         data.put("", "");
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
@@ -71,7 +71,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         android.util.Log.d(TAG, "ActivityPaused");
         ++paused;
         sharedApplication.mlocationManager.mmanager.disconnect();
-        android.util.Log.w("test", "application is in foreground: " + isApplicationInForeground());
+        android.util.Log.w(TAG, "application is in foreground: " + isApplicationInForeground());
     }
 
     @Override
@@ -89,7 +89,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     public void onActivityStopped(Activity activity){
         ++stopped;
         data = new HashMap<>();
-        event = "com.qwasi.event.application.state";
+        event = sharedApplication.kEventApplicationState;
         data.put("", "");
         sharedApplication.mlocationManager.mmanager.disconnect();
         if (postEvent.getState() == Thread.State.TERMINATED) {
