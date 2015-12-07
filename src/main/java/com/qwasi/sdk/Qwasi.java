@@ -108,7 +108,7 @@ public class Qwasi{
         application.getApplication().registerActivityLifecycleCallbacks(qwasiAppManager);
         mconfig.configWithFile(); //default
         if (mconfig.isValid()) {
-            this.initWithConfig(mconfig);
+            this.initWithConfig(mconfig, "");
         } else {
             Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
         }
@@ -118,8 +118,12 @@ public class Qwasi{
 
     static public Context getContext(){ return context; } //return application context
 
+    public Qwasi qwasiWithConfig(QwasiConfig config, String deviceToken){
+        return(initWithConfig(config, deviceToken));
+    }
+
     public Qwasi qwasiWithConfig(QwasiConfig config) /*ios 57*/{
-        return(this.initWithConfig(config));
+        return(initWithConfig(config, ""));
     }
 
     public boolean getRegistrationStatus() {
@@ -155,7 +159,7 @@ public class Qwasi{
         }
     }
 
-    private synchronized Qwasi initWithConfig(QwasiConfig config) /*ios*/ {
+    private synchronized Qwasi initWithConfig(QwasiConfig config, String deviceToken) /*ios*/ {
         if ((config != null)&&(config.isValid())) {
             mconfig = config;
             this.setConfig(config);
@@ -163,7 +167,7 @@ public class Qwasi{
         locationUpdatefilter= LOCATION_UPDATE_FILTER;
         locationEventFilter = LOCATION_EVENT_FILTER;
         locationSyncFilter = LOCATION_SYNC_FILTER;
-        mdeviceToken = "";
+        mdeviceToken = deviceToken;
 
         preferences = PreferenceManager.getDefaultSharedPreferences(context);
         mregistered = preferences.getBoolean("registered", false);
@@ -174,7 +178,6 @@ public class Qwasi{
         mmessageCache = new HashMap<>();
 
         //if we have a device token saved already use it.
-        mdeviceToken = "";
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 
