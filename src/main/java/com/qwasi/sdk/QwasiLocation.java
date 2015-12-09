@@ -104,11 +104,9 @@ public class QwasiLocation extends Location {
     }
 
     static public QwasiLocation initWithLocation(Location location){
-        QwasiLocation temp = new QwasiLocation(location);
-        return temp;
+        return new QwasiLocation(location);
     }
 
-    // FIXME: 8/19/15 make locations regardless let location manger deal with sorting
     static public QwasiLocation initWithLocationData(JSONObject input) throws JSONException{
         //if this location doesn't already exist in the mregionMap add it
         QwasiLocation location = initEmpty();

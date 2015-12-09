@@ -12,6 +12,7 @@ import java.util.List;
  * Released under the MIT Licence
  * This file uses examples from JSONRPC2 website on how to build custom headers
  */
+@SuppressWarnings("deprecation")
 public class QwasiSession {
     private Qwasi sharedApp;
     private QwasiConfig mconfig;

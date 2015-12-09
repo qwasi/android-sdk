@@ -1,14 +1,14 @@
 {
-  "name": "QwasiSDK",
-  "version": "2.1.1",
-  "description": "Android SDK",
-  "main": "index.js",
+  "name":"QwasiSDK",
+  "version":"2.1.0-8",
+  "description":"Android SDK",
+  "main":"index.js",
   "scripts": {
 	"test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
 	"type": "git",
-	"url": "ssh://git@code.qwasi.com/sdk/android-sdk.git"
+	"url": "ssh://git@code.qwasi.net/sdk/android-sdk.git"
   },
   "author": "Charles Coulton",
   "license": "MIT",

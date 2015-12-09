@@ -6,6 +6,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -73,11 +74,12 @@ public class QwasiNotificationManager{
         }
         else {
             try {
-                SharedPreferences sharedPreferences = mContext.getSharedPreferences(mContext.getPackageName(), Context.MODE_PRIVATE);
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                 String token;
                 token = sharedPreferences.getString("gcm_token", "");
                 // We don't have a token so get a new one
                 if (token.isEmpty()&& !mregistering) {
+                    mregistering = !mregistering;
                     registerForPushInBackground();
                 } else {
                     // check the version of the token
@@ -107,12 +109,12 @@ public class QwasiNotificationManager{
                 try {
                     mregistering = true;
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-                    Log.d(TAG, "attempting token");
+                    Log.d(TAG, "Attempting to Aquire new Token");
                     //Device Registering issue 11-4-15
                     senderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
                             appinfo.metaData.getString("gcm_senderid", "335413682000"): //get it
                             senderId;  //or set to default, default also included in case android munges it
-                    Log.d(TAG, senderId);
+                    Log.d(TAG, "Using SenderID: "+senderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
                     token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
                     mpushToken =!token.isEmpty()?token:"";

@@ -21,7 +21,7 @@ import com.google.android.gms.location.LocationServices;
 import org.altbeacon.beacon.BeaconConsumer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -45,17 +45,12 @@ public class QwasiLocationManager //extends IntentService
     long mupdateInterval =1800000; //30 minutes in milliseconds;
     public GoogleApiClient mmanager = null;
     public HashMap<String, QwasiLocation> mregionMap = new HashMap<>();
-    private QwasiLocation mLastLocation = null;
+    QwasiLocation mLastLocation = null;
     protected LocationRequest mactiveManager = LocationRequest.create();
     private static String TAG = "QwasiLocationManager";
     public QwasiBeacons qwasiBeacons;
     private static QwasiLocationManager instance;
     List<String> locationsfetched = new ArrayList<>();
-
-    //RangingActivity rangingActivity = new RangingActivity();
-
-    static String eventTag = "com.qwasi.event.location.update";
-    //public BeaconManager beaconManager;
 
     private QwasiLocationManager(){
         //super(TAG);
@@ -138,7 +133,7 @@ public class QwasiLocationManager //extends IntentService
             return;
         }
         else {
-            mLastLocation.initWithLocation(location);
+            mLastLocation = QwasiLocation.initWithLocation(location);
         }
         Witness.notify(mLastLocation);
     }
@@ -249,7 +244,7 @@ public class QwasiLocationManager //extends IntentService
     public void stopMonitoringLocation(QwasiLocation location){
 
         if (location.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
-            LocationServices.GeofencingApi.removeGeofences(mmanager, Arrays.asList(location.id));
+            LocationServices.GeofencingApi.removeGeofences(mmanager, Collections.singletonList(location.id));
         }
 
         else {

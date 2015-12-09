@@ -1,7 +1,6 @@
 package com.qwasi.sdk;
 
 import android.app.Activity;
-import android.app.Application;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -30,13 +29,13 @@ public class QwasiBeacons extends Service
     implements BeaconConsumer,
         RangeNotifier,
         MonitorNotifier{
-    private static long FOCUSSCANPERIOD = 2000;
+    final static long FOCUSSCANPERIOD = 2000;
     HashMap<String, QwasiLocation> map;
     List<BeaconParser> parsers;
     BeaconManager beaconManager;
     private static String TAG = "QwasiBeacon";
     BeaconConsumer mainAct;
-    private Context context;
+    Context context;
 
     public QwasiBeacons() {
         super();
