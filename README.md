@@ -95,6 +95,16 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
 ```xml
     <application...>
     ...
+        <!-- [Start GCMReciver] -->
+        <receiver
+                    android:name="com.google.android.gms.gcm.GcmReceiver"
+                    android:exported="true"
+                    android:permission="com.google.android.c2dm.permission.SEND" >
+                    <intent-filter>
+                        <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                    </intent-filter>
+                </receiver>
+        <!-- [End GCMReciever]-->
         <!-- [Start Geofence Listener] -->
         <service
             android:name="com.qwasi.sdk.QwasiGeofencehandler"
@@ -218,13 +228,15 @@ Example:
     // Get our device token from the defaults
     SharedPreferences preferences =  this.getSharedPreferences(Context.MODE_PRIVATE);
     String deviceToken = preferences.getString("key value", default value);
-    qwasi.registerDevice(deviceToken, USER_TOKEN);
-    SharedPreferences.Editor editor = preferences.edit();
+    qwasi.registerDevice(deviceToken, USER_TOKEN); //this is an asyncrous function.
+    SharedPreferences.Editor editor = preferences.edit(); 
     editor.putString("key" qwasi.getMDeviceToken);
     editor.apply();
 ```
 
 **Note: other registerDevice functions exist for when you have more or less information about the user, or device.**
+**Note: Most API method calls are Async meaning use call backs if you are doing a series of them that depend on other functions operations.**
+
 ###### SDK EVENT - "REGISTER"
 ###### SDK Error - `QwasiErrorDeviceRegistrationFailed`
 ###### API METHOD - `DEVICE.REGISTER`
@@ -265,15 +277,22 @@ As a general rule there is very little reason to do so, however if a user choose
 ## Push Notifications
 
 Qwasi supports a simplified registration for push notifications. Once the device is registered, if mpushEnabled wasn't true set it and then, simply call the method:
- public void setPushEnabled(QwasiInterface)
+ public void setPushEnabled(QwasiInterface), other versions of this method exist.
 Example:
 
 ```java
     qwasi.mpushEnabled = true;
     qwasi.setPushEnabled();
+    //or more prefered as this this is async and if called directly after deviceregister
+    qwasi.deviceRegister(null, new QwasiInterface(...
+        setPushEnabled(Boolean, QwasiInterface);
+        ...
+        });
 ```
 
 setPushEnabled emits the push token as a string, and also returns it on the onSuccess of the QwasiInterface passed to it.  It is recommended you save this to the application's Preferances with the key "gcm_token".
+**Note: This function is ASYNC, if the register flag has not been set by the program or by device register it will fail gracefully by putting your device into push.poll rather than gcm.push**
+
 ###### SDK EVENT - "PUSHTOKEN"
 ###### SDK ERROR - `QWASIERRORPUSHREGISTRATIONFAILED`
 ###### API METHOD - `DEVICE.SET_PUSH_TOKEN`
@@ -309,6 +328,7 @@ protected void onStart(){
 ```
 
 This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness.
+**NOTE: Applications WILL NOT Recieve notifications if they are force closed!  This method allows you to retrieve messages sent while the user has had the application closed.**
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`

@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.ErrorDialogFragment;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import com.google.android.gms.location.GeofencingRequest;
@@ -152,12 +153,13 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public synchronized Object init(){
-
-        mmanager = new GoogleApiClient.Builder(sharedApplication)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(Qwasi.getContext()) == ConnectionResult.SUCCESS) {
+            mmanager = new GoogleApiClient.Builder(sharedApplication)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
         //beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getApplicationContext());
         return this;
     }
