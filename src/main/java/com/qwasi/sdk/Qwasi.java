@@ -204,11 +204,20 @@ public class Qwasi{
     }
 
     public void setPushEnabled(Boolean pushEnabled)/*iOS 101*/{
+        setPushEnabled(pushEnabled, defaultCallback);
+    }
+
+    @Deprecated
+    public void setPushEnabled(final QwasiInterface callbacks){
+        setPushEnabled(mpushEnabled, callbacks);
+    }
+
+    public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
         if (pushEnabled){
-            registerForNotifications(defaultCallback);
+            registerForNotifications(callbacks);
         }
-        else{
-            unregisterForNotifications(defaultCallback);
+        else {
+            unregisterForNotifications(callbacks);
         }
     }
 
@@ -375,6 +384,10 @@ public class Qwasi{
     public void registerDevice(String deviceToken, String name, QwasiInterface qwasiInterface) {
         this.mregisterDevice(deviceToken, name, null, null, qwasiInterface);
     }
+
+    /*public void registerDevice(String deviceName, String userToken, QwasiInterface qwasiInterface){
+        this.mregisterDevice(deviceName, null, userToken, null, qwasiInterface);
+    }*/
 
     public void registerDevice(String deviceToken, QwasiInterface qwasiInterface){
         this.mregisterDevice(deviceToken, null, null, null, qwasiInterface);
