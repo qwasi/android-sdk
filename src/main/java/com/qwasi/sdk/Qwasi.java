@@ -105,6 +105,7 @@ public class Qwasi{
         qwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(context);
         mlocationManager = QwasiLocationManager.getInstance();
+        mlocationManager.init();
         application.getApplication().registerActivityLifecycleCallbacks(qwasiAppManager);
         mconfig.configWithFile(); //default
         if (mconfig.isValid()) {
