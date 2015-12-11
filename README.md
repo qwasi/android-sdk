@@ -293,6 +293,7 @@ Example:
 ```
 
 setPushEnabled emits the push token as a string, and also returns it on the onSuccess of the QwasiInterface passed to it.  It is recommended you save this to the application's Preferances with the key "gcm_token".
+
 **Note: This function is ASYNC, if the register flag has not been set by the program or by device register it will fail gracefully by putting your device into push.poll rather than gcm.push**
 
 ###### SDK EVENT - "PUSHTOKEN"
