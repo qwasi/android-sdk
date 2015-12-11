@@ -382,13 +382,13 @@ public class Qwasi{
     public void registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, QwasiInterface qwasiInterface) {
         this.mregisterDevice(deviceToken, name, userToken, userInfo, qwasiInterface);}
 
-    public void registerDevice(String deviceToken, String name, QwasiInterface qwasiInterface) {
+    public void registerDeviceWithName(String deviceToken, String name, QwasiInterface qwasiInterface) {
         this.mregisterDevice(deviceToken, name, null, null, qwasiInterface);
     }
 
-    /*public void registerDevice(String deviceName, String userToken, QwasiInterface qwasiInterface){
+    public void registerDevice(String deviceName, String userToken, QwasiInterface qwasiInterface){
         this.mregisterDevice(deviceName, null, userToken, null, qwasiInterface);
-    }*/
+    }
 
     public void registerDevice(String deviceToken, QwasiInterface qwasiInterface){
         this.mregisterDevice(deviceToken, null, null, null, qwasiInterface);

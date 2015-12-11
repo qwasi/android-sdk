@@ -228,10 +228,12 @@ Example:
     // Get our device token from the defaults
     SharedPreferences preferences =  this.getSharedPreferences(Context.MODE_PRIVATE);
     String deviceToken = preferences.getString("key value", default value);
-    qwasi.registerDevice(deviceToken, USER_TOKEN); //this is an asyncrous function.
+    qwasi.registerDevice(deviceToken, USER_TOKEN, new QwasiInterface({...
     SharedPreferences.Editor editor = preferences.edit(); 
     editor.putString("key" qwasi.getMDeviceToken);
     editor.apply();
+    ...
+    }); //this is an asyncrous function.
 ```
 
 **Note: other registerDevice functions exist for when you have more or less information about the user, or device.**
