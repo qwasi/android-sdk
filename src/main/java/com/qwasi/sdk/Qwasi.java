@@ -22,6 +22,7 @@ import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -95,7 +96,7 @@ public class Qwasi{
         }
     };
 
-    public Qwasi(Activity application)/*public constructor iOS 46 todo: shared?*/ {
+    public Qwasi(Activity application)/*public constructor iOS 46*/ {
         this.mclient = new QwasiClient();
         mainActivity = application;
         mchannels = new HashMap<>();
@@ -229,7 +230,7 @@ public class Qwasi{
             mlocationManager = mlocationManager == null? QwasiLocationManager.getInstance():mlocationManager;
             QwasiLocationHandler = new Reporter() {
                 @Override
-                public void notifyEvent(Object o) { //todo? location stuff here?
+                public void notifyEvent(Object o) { //todo? set up a witness from location manager to filter locations
                     Log.d(TAG, "LocationHandler");
                     QwasiLocation location = (QwasiLocation) o;
                     HashMap<String, Object> data = new HashMap<>();
@@ -269,7 +270,6 @@ public class Qwasi{
                     data.put("dwellTime", location.getDwellTime());
                     if (location.isTypeCoordinate()){
                         QwasiLocation mLastLocation = mlocationManager.getLastLocation();
-                        //YYYY-MM-DDTHH:MM:SSS todo?
                         data.put("timestamp", System.currentTimeMillis() / 1000);
                         postEvent(kEventLocationUpdate, data, false);
                         fetchLocationsNear(mLastLocation);
@@ -476,7 +476,7 @@ public class Qwasi{
 
     private synchronized void registerForNotifications(final QwasiInterface callback)/*iOS 433*/{
         String test = qwasiNotificationManager.getPushToken();
-        if (test == null || test.isEmpty())  {// FIXME: refactor to be closer to ios, does this but smoother
+        if (test == null || test.isEmpty())  {
             mPushTokenCallback =new Reporter() {
                 @Override
                 public void notifyEvent(Object o) {
@@ -1088,15 +1088,15 @@ public class Qwasi{
             //HashMap<String, Object> encrypted = new HashMap<>();
             String encrypted;
             if (payload != null){
-                /*if (payload instanceof JSONObject){
-                    //todo fix this issue
+                if (payload instanceof JSONObject){
+                    payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
                 }
-                else */if (payload instanceof String) {  //payload is plaintext
+                else if (payload instanceof String) {  //payload is plaintext
                     encrypted = URLDecoder.decode((String) payload, "UTF-8");
                     payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
                 }
                 else  //message is silent
-                    payload = null;
+                    payload = "";
             //throw an error, get the data if the data is null, or the error isn't print error
             //set payload to the JSONData
             }

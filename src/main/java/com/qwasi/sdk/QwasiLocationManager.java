@@ -126,7 +126,33 @@ public class QwasiLocationManager //extends IntentService
     @Override
     public void onLocationChanged(Location location){
         android.util.Log.d(TAG, "On location changed");
-
+        if (mlastLocationEvent == null || location.distanceTo(mlastLocationEvent)
+                > Qwasi.MAX(Qwasi.LOCATION_EVENT_FILTER, Qwasi.UPDATE_FILTER(location.getSpeed(), Qwasi.locationEventFilter))){
+            data.put("lat", location.getLatitude());
+            data.put("lng", location.getLongitude());
+            postEvent(kEventLocationUpdate, data, defaultCallback);
+            mlastLocationEvent = location;
+        }
+        //if(mlastLocationUpdate == null || location.distanceTo(mlastLocationUpdadate)>
+        //        UPDATE_FILTER(location.distanceTo(mlastLocationUpdate))){
+        //    Witness.notify(location);
+        //    mlastLocationUpdate = location;
+        //}
+        //if (mlastLocationSync == null || location.distanceTo(mlastLocationSync)
+        //        > MAX(LOCATION_SYNC_FILTER, UPDATE_FILTER(location.getSpeed(), locationSyncFilter))){
+        //    fetchLocationsNear(location, new QwasiInterface() {
+        //        @Override
+        //        public void onSuccess(Object o) {
+        //
+        //        }
+        //
+        //        @Override
+        //        public void onFailure(QwasiError e) {
+        //            Witness.notify(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorLocationSyncFailed, "Location Sync Failed"));
+        //        }
+        //    });
+        //    mlastLocationSync = location;
+        //}
         if (mLastLocation == null){
             mLastLocation = new QwasiLocation(location);
         }
@@ -198,8 +224,8 @@ public class QwasiLocationManager //extends IntentService
         Iterator<String> stringIterator = mregionMap.keySet().iterator();
         while(stringIterator.hasNext() && (locationsfetched.size() != mregionMap.size())){
             String current = stringIterator.next();
-            if(!locationsfetched.contains(current)){
-            //if the regionmap has a location key not in the latest fetch
+            if(!locationsfetched.contains(current)) {
+                //if the regionmap has a location key not in the latest fetch
                 this.stopMonitoringLocation(mregionMap.get(current));
             }
         }
