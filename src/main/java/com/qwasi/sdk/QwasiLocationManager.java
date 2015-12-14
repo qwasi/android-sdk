@@ -61,6 +61,7 @@ public class QwasiLocationManager //extends IntentService
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
         instance = this;
+        mmanager = new GoogleApiClient.Builder(sharedApplication).addApi(LocationServices.API).build();
         qwasiBeacons = new QwasiBeacons();
     }
 
@@ -126,7 +127,6 @@ public class QwasiLocationManager //extends IntentService
     @Override
     public void onLocationChanged(Location location){
         android.util.Log.d(TAG, "On location changed");
-
         if (mLastLocation == null){
             mLastLocation = new QwasiLocation(location);
         }
@@ -139,15 +139,15 @@ public class QwasiLocationManager //extends IntentService
         Witness.notify(mLastLocation);
     }
 
-    private QwasiLocationManager backgroundManager(){
-        /*static QwasiLocationManager sharedInstance = null;
+    QwasiLocationManager backgroundManager(){  //todo is this needed as android doesn't have "background" manager
+        /*QwasiLocationManager sharedInstance = null;
         if(mactiveManager != null){
             return(mactiveManager);
         }*/
         return this;
     }
 
-    public Object initWithRequiredAuthorization(/*CLAuthstatus status*/){
+    public Object initWithRequiredAuthorization(/*CLAuthstatus status*/){//todo M? granular location?
         //return this.initWithLocationManager();
         return this;
     }
@@ -160,7 +160,6 @@ public class QwasiLocationManager //extends IntentService
                     .addApi(LocationServices.API)
                     .build();
         }
-        //beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getApplicationContext());
         return this;
     }
 
@@ -168,7 +167,6 @@ public class QwasiLocationManager //extends IntentService
         mmanager = manager;
         mmanager.registerConnectionCallbacks(this);
         mmanager.registerConnectionFailedListener(this);
-        //beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getApplicationContext());
         return this;
     }
 
@@ -198,8 +196,8 @@ public class QwasiLocationManager //extends IntentService
         Iterator<String> stringIterator = mregionMap.keySet().iterator();
         while(stringIterator.hasNext() && (locationsfetched.size() != mregionMap.size())){
             String current = stringIterator.next();
-            if(!locationsfetched.contains(current)){
-            //if the regionmap has a location key not in the latest fetch
+            if(!locationsfetched.contains(current)) {
+                //if the regionmap has a location key not in the latest fetch
                 this.stopMonitoringLocation(mregionMap.get(current));
             }
         }
