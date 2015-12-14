@@ -48,6 +48,7 @@ public class QwasiLocation extends Location {
     BeaconParser parser;
     //private NfcBarcode NFCUUID;
     public Beacon token;
+    static private String TAG = "QwasiLocation";
     boolean mdwell = false;
     boolean minside =false;
     boolean mexit;
@@ -127,7 +128,12 @@ public class QwasiLocation extends Location {
                 location.parser.setBeaconLayout(parsestring);
                 QwasiLocationManager.getInstance().qwasiBeacons.addParser(location.parser);
                 List<Identifier> identifierList = new ArrayList<>(3);
-                identifierList.add(Identifier.parse(ids.getString(0)));
+                try {
+                    identifierList.add(Identifier.parse(ids.getString(0)));
+                }
+                catch (Exception e){
+                    Log.e(TAG, "Beacon Parsing issue: "+location.id+location.name);
+                }
                 /**
                  * ids will be 1 to 3 fields long, of string, int, int or sting string
                  *  or a string, int or a just a string

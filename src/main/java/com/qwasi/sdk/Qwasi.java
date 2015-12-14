@@ -13,6 +13,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
@@ -483,6 +484,9 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
                     QwasiNotificationHandler = new Reporter() {
+                        /**
+                        * todo: since this isn't created set every time the app starts if this isn't called, figure out how to do that.
+                        * */
                         @Override
                         public void notifyEvent(Object o) {
                             HashMap<String, Object> results = new HashMap<>();
@@ -560,6 +564,7 @@ public class Qwasi{
             mclient.invokeNotification("device.set_push_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
+                    Log.d(TAG, "Device unregistered for push success");
                     mpushEnabled = false;
                     Witness.remove(Bundle.class, QwasiNotificationHandler);
                     callback.onSuccess(new QwasiError().
