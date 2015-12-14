@@ -75,7 +75,7 @@ public class Qwasi{
     final String kEventLocationEnter    = "com.qwasi.event.location.enter";
     final String kEventLocationDwell    = "com.qwasi.event.location.dwell";
     final String kEventLocationExit     = "com.qwasi.event.location.exit";
-
+    private QwasiLocation mlastLocationEvent, mlastLocationUpdate, mlastLocationSync = null;
     Reporter QwasiNotificationHandler;
     Reporter QwasiLocationHandler;
     Reporter mPushTokenCallback;
@@ -106,7 +106,7 @@ public class Qwasi{
         qwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(context);
         mlocationManager = QwasiLocationManager.getInstance();
-        mlocationManager.init();
+        //mlocationManager.init();
         application.getApplication().registerActivityLifecycleCallbacks(qwasiAppManager);
         mconfig.configWithFile(); //default
         if (mconfig.isValid()) {
@@ -140,7 +140,7 @@ public class Qwasi{
         return mdeviceToken;
     }
 
-    private String getVerboseVersionName()/*Android Verbose Version *Android only**/{
+    String getVerboseVersionName()/*Android Verbose Version *Android only**/{
         switch(Build.VERSION.SDK_INT){
             case Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1: //15 min version 2.0.3
                 return "Android Ice_Cream Sandwich";  //5.1
@@ -230,39 +230,28 @@ public class Qwasi{
             mlocationManager = mlocationManager == null? QwasiLocationManager.getInstance():mlocationManager;
             QwasiLocationHandler = new Reporter() {
                 @Override
-                public void notifyEvent(Object o) { //todo? set up a witness from location manager to filter locations
+                public void notifyEvent(Object o) {
                     Log.d(TAG, "LocationHandler");
                     QwasiLocation location = (QwasiLocation) o;
                     HashMap<String, Object> data = new HashMap<>();
-                    // onLocationChanged
-                    //if (mlastLocationEvent == null || location.distanceTo(mlastLocationEvent)
-
-                    //        > MAX(LOCATION_EVENT_FILTER, UPDATE_FILTER(location.getSpeed(), locationEventFilter))){
-                    //    data.put("lat", location.getLatitude());
-                    //    data.put("lng", location.getLongitude());
-                    //    postEvent(kEventLocationUpdate, data, defaultCallback);
-                    //    mlastLocationEvent = location;
-                    //}
-                    //if(mlastLocationUpdate == null || location.distanceTo(mlastLocationUpdadate)>
-                    //        UPDATE_FILTER(location.distanceTo(mlastLocationUpdate))){
-                    //    Witness.notify(location);
-                    //    mlastLocationUpdate = location;
-                    //}
-                    //if (mlastLocationSync == null || location.distanceTo(mlastLocationSync)
-                    //        > MAX(LOCATION_SYNC_FILTER, UPDATE_FILTER(location.getSpeed(), locationSyncFilter))){
-                    //    fetchLocationsNear(location, new QwasiInterface() {
-                    //        @Override
-                    //        public void onSuccess(Object o) {
-                    //
-                    //        }
-                    //
-                    //        @Override
-                    //        public void onFailure(QwasiError e) {
-                    //            Witness.notify(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorLocationSyncFailed, "Location Sync Failed"));
-                    //        }
-                    //    });
-                    //    mlastLocationSync = location;
-                    //}
+                    float speed = location.getSpeed();
+                    // onLocationChanged filter out locations too close
+                    if (mlastLocationEvent == null || location.distanceTo(mlastLocationEvent)
+                           > MAX(LOCATION_EVENT_FILTER, UPDATE_FILTER(speed, locationEventFilter))){
+                        data.put("lat", location.getLatitude());
+                        data.put("lng", location.getLongitude());
+                        postEvent(kEventLocationUpdate, data, true);
+                        mlastLocationEvent = location;
+                    }
+                    if(mlastLocationUpdate == null || location.distanceTo(mlastLocationUpdate)>
+                            UPDATE_FILTER(speed, location.distanceTo(mlastLocationUpdate))){
+                        mlastLocationUpdate = location;
+                    }
+                    if (mlastLocationSync == null || location.distanceTo(mlastLocationSync)
+                            > MAX(LOCATION_SYNC_FILTER, UPDATE_FILTER(speed, locationSyncFilter))){
+                        fetchLocationsNear(location);
+                        mlastLocationSync = location;
+                    }
                     data.put("id", location.id);
                     data.put("name", location.getName());
                     data.put("lng", location.getLongitude());
@@ -274,7 +263,6 @@ public class Qwasi{
                         postEvent(kEventLocationUpdate, data, false);
                         fetchLocationsNear(mLastLocation);
                     }
-                    //else if (location.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon){} fixme stub
                     else if (location.AppID.equals(AppID)){
                         if(location.state == QwasiLocation.QwasiLocationState.QwasiLocationStateInside){
                             postEvent(kEventLocationDwell, data, false); //post inside event;
@@ -298,10 +286,8 @@ public class Qwasi{
         //if devicetoken is null set it empty so the server will gen one
         deviceToken = deviceToken == null? mdeviceToken:deviceToken;
 
-
         //if name is null get it from the phone, or user can give us one
         name = name == null? deviceName:name;
-
 
          //if we didn't get a usertoken set it to be the phone number
         userToken = userToken== null?muserToken:userToken;
@@ -538,6 +524,7 @@ public class Qwasi{
                             }
                         }
                     };
+                    mpushEnabled = true;
                     Witness.register(Bundle.class, QwasiNotificationHandler);
                     callback.onSuccess(qwasiNotificationManager.getPushToken());
                     Witness.notify(qwasiNotificationManager.getPushToken());
@@ -553,7 +540,7 @@ public class Qwasi{
                     callback.onFailure(error);
                 }
             });
-            //todo check if remote notes are allowed
+            //todo M Remote notification allowed?
         }
         else {
             Log.e("QwasiError", "Device Not Registered");
@@ -1158,12 +1145,15 @@ public class Qwasi{
                 null;
 
         String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
+        if (qwasiNotificationManager.noteBuilder == null){
+            new QwasiGCMListener().onMessagePolled();
+        }
         NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
                 .setSmallIcon(context.getApplicationInfo().icon)
                 .setContentTitle(appName)
                 .setContentText(message.malert)
                 .setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL) //default sound antd vibrate
+                .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
                 .setSound(defaultSoundUri) //default sound
                 ;
         //configure expanded action

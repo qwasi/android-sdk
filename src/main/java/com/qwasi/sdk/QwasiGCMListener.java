@@ -23,4 +23,14 @@ public class QwasiGCMListener extends GcmListenerService{
             QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
         }
     }
+
+    public void onMessagePolled(){
+        synchronized (this) {
+            Intent intent = (getPackageManager().getLaunchIntentForPackage(getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
+                    .setContentIntent(pendingIntent);
+            QwasiNotificationManager.getInstance().onMessage(noteBuilder);
+        }
+    }
 }

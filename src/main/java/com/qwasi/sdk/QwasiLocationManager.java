@@ -61,6 +61,7 @@ public class QwasiLocationManager //extends IntentService
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
         instance = this;
+        mmanager = new GoogleApiClient.Builder(sharedApplication).addApi(LocationServices.API).build();
         qwasiBeacons = new QwasiBeacons();
     }
 
@@ -126,33 +127,6 @@ public class QwasiLocationManager //extends IntentService
     @Override
     public void onLocationChanged(Location location){
         android.util.Log.d(TAG, "On location changed");
-        if (mlastLocationEvent == null || location.distanceTo(mlastLocationEvent)
-                > Qwasi.MAX(Qwasi.LOCATION_EVENT_FILTER, Qwasi.UPDATE_FILTER(location.getSpeed(), Qwasi.locationEventFilter))){
-            data.put("lat", location.getLatitude());
-            data.put("lng", location.getLongitude());
-            postEvent(kEventLocationUpdate, data, defaultCallback);
-            mlastLocationEvent = location;
-        }
-        //if(mlastLocationUpdate == null || location.distanceTo(mlastLocationUpdadate)>
-        //        UPDATE_FILTER(location.distanceTo(mlastLocationUpdate))){
-        //    Witness.notify(location);
-        //    mlastLocationUpdate = location;
-        //}
-        //if (mlastLocationSync == null || location.distanceTo(mlastLocationSync)
-        //        > MAX(LOCATION_SYNC_FILTER, UPDATE_FILTER(location.getSpeed(), locationSyncFilter))){
-        //    fetchLocationsNear(location, new QwasiInterface() {
-        //        @Override
-        //        public void onSuccess(Object o) {
-        //
-        //        }
-        //
-        //        @Override
-        //        public void onFailure(QwasiError e) {
-        //            Witness.notify(new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorLocationSyncFailed, "Location Sync Failed"));
-        //        }
-        //    });
-        //    mlastLocationSync = location;
-        //}
         if (mLastLocation == null){
             mLastLocation = new QwasiLocation(location);
         }
@@ -165,15 +139,15 @@ public class QwasiLocationManager //extends IntentService
         Witness.notify(mLastLocation);
     }
 
-    private QwasiLocationManager backgroundManager(){
-        /*static QwasiLocationManager sharedInstance = null;
+    QwasiLocationManager backgroundManager(){  //todo is this needed as android doesn't have "background" manager
+        /*QwasiLocationManager sharedInstance = null;
         if(mactiveManager != null){
             return(mactiveManager);
         }*/
         return this;
     }
 
-    public Object initWithRequiredAuthorization(/*CLAuthstatus status*/){
+    public Object initWithRequiredAuthorization(/*CLAuthstatus status*/){//todo M? granular location?
         //return this.initWithLocationManager();
         return this;
     }
@@ -186,7 +160,6 @@ public class QwasiLocationManager //extends IntentService
                     .addApi(LocationServices.API)
                     .build();
         }
-        //beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getApplicationContext());
         return this;
     }
 
@@ -194,7 +167,6 @@ public class QwasiLocationManager //extends IntentService
         mmanager = manager;
         mmanager.registerConnectionCallbacks(this);
         mmanager.registerConnectionFailedListener(this);
-        //beaconManager = BeaconManager.getInstanceForApplication(sharedApplication.getApplicationContext());
         return this;
     }
 

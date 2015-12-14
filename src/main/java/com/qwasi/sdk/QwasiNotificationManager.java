@@ -136,4 +136,8 @@ public class QwasiNotificationManager{
         this.noteBuilder = builder;
         Witness.notify(data);
     }
+
+    void onMessage(NotificationCompat.Builder builder){
+        this.noteBuilder = builder;
+    }
 }
