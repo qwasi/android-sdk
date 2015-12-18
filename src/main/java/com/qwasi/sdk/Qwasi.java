@@ -1208,4 +1208,8 @@ public class Qwasi{
 
     static float UPDATE_FILTER(float Speed, float Filter)/*iOS inline function*/{return (Speed/PED_FILTER)*Filter;}
     static float MAX(float number_1, float number_2)/*iOS inline function*/{return number_1>number_2?number_1:number_2;}
+
+    public boolean isInForground(){
+        return qwasiAppManager.isApplicationInForeground();
+    }
 }
