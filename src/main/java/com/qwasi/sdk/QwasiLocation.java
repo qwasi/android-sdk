@@ -53,6 +53,7 @@ import io.hearty.witness.Witness;
  */
 
 public class QwasiLocation extends Location {
+    static Creator CREATOR;
     QwasiLocationType type; //package private
     QwasiLocationState state; //package private
     private double longitude;

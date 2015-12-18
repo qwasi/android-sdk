@@ -314,6 +314,7 @@ public class Qwasi{
 
          //if we didn't get a usertoken set it to be the phone number
         userToken = userToken== null?muserToken:userToken;
+        muserToken = userToken;
 
         Map<String, Object> info = new HashMap<>();
 
@@ -366,7 +367,7 @@ public class Qwasi{
                     }*/
                     Log.i(TAG, "Device Successfully Registered");
                     Witness.notify(mdeviceToken);
-                    qwasiInterface.onSuccess(o);
+                    qwasiInterface.onSuccess(mdeviceToken);
                 }
                 catch (JSONException e){
                     Log.wtf(TAG, "Malformed JsonObject response " + e.getMessage());
@@ -1096,7 +1097,7 @@ public class Qwasi{
         }
     }
 
-    public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface) throws  Exception{
+    public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface){
         if(mregistered) {
             Object payload = message.mpayload;
             //HashMap<String, Object> encrypted = new HashMap<>();
@@ -1106,8 +1107,13 @@ public class Qwasi{
                     payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
                 }
                 else if (payload instanceof String) {  //payload is plaintext
-                    encrypted = URLDecoder.decode((String) payload, "UTF-8");
-                    payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
+                    try {
+                        encrypted = URLDecoder.decode((String) payload, "UTF-8");
+                        payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
                 else  //message is silent
                     payload = "";
@@ -1153,7 +1159,7 @@ public class Qwasi{
         }
     }
 
-    public void  sendMessage(QwasiMessage message, String userToken)throws Exception{
+    public void  sendMessage(QwasiMessage message, String userToken){
         this.sendMessage(message, userToken, defaultCallback);
     }
 
