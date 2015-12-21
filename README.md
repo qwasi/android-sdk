@@ -26,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.0-5'
+        compile 'com.qwasi:QwasiSDK:2.1.0-10'
     }
 ```
 

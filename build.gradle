@@ -117,31 +117,32 @@ uploadArchives{
 			//this will be moving to the bamboo server.
 			/*beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
+
 			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-					{ authentication(userName: ossrhUsername, password:ossrhPassword) }
+					{ authentication(userName: ossrhUsername, password: ossrhPassword) }
 
 			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
-					{ authentication(userName:ossrhUsername , password: ossrhPassword ) }//*/
+					{ authentication(userName: ossrhUsername, password: ossrhPassword) }//*/
 
-			pom.project{
+			pom.project {
 				name 'QwasiSDK'
 				packaging 'jar'
 				description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
 				url "https://github.com/Qwasi"
-				scm{
+				scm {
 					connection 'scm:git:git@github.com:qwasi/android-sdk.git'
 					developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
 					url 'https://github.com/qwasi/android-sdk'
 				}
-				licenses{
-					license{
+				licenses {
+					license {
 						name 'MIT'
 						distribution 'repo'
 					}
 				}
 
-				developers{
-					developer{
+				developers {
+					developer {
 						id 'ccoulton'
 						name 'Charles Coulton'
 						email 'charles.coulton@qwasi.com'
@@ -152,8 +153,6 @@ uploadArchives{
 					}
 				}
 			}
-
 		}
-		//ivy{ url "file:///Users/ccoulton/QwasiSDK" }
 	}
 }
