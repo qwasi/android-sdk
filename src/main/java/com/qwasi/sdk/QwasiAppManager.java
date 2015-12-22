@@ -127,7 +127,6 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     }
 
     public boolean isApplicationInForeground(){
-        status = resumed>paused;
-        return status;
+        return resumed>paused;
     }
 }
