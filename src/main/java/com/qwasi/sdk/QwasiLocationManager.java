@@ -85,8 +85,9 @@ public class QwasiLocationManager //extends IntentService
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
-        instance = this;
+        //if (sharedApplication != null)
         mmanager = new GoogleApiClient.Builder(sharedApplication).addApi(LocationServices.API).build();
+        instance = this;
         qwasiBeacons = new QwasiBeacons();
     }
 

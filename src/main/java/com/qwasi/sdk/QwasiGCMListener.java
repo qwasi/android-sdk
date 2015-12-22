@@ -44,7 +44,7 @@ public class QwasiGCMListener extends GcmListenerService{
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            Intent intent = (getPackageManager().getLaunchIntentForPackage(getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            Intent intent = (getPackageManager().getLaunchIntentForPackage(getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
             NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
                     .setContentIntent(pendingIntent);
@@ -54,7 +54,6 @@ public class QwasiGCMListener extends GcmListenerService{
 
     public void onMessagePolled(){
         synchronized (this) {
-            Log.d("Test", "Breakpoint");
             Context baseContext = Qwasi.getMainActivity().getBaseContext();
             PackageManager manager = baseContext.getPackageManager();
             Intent intent = manager.getLaunchIntentForPackage(baseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
