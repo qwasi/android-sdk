@@ -12,7 +12,7 @@ import java.util.Date;
 
 /**
  * Created by ccoulton on 6/11/15.
- * For Qwasi Inc. for their Open source Android SDK example
+ * For Qwasi Inc. for the Open source Android SDK example
  // QwasiMessage.java
  //
  // Copyright (c) 2015-2016, Qwasi Inc (http://www.qwasi.com/)

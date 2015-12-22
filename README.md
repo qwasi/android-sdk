@@ -72,7 +72,7 @@ The default configuration file is part of the AndroidManifest.xml. You create an
         <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
         <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
         <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
-        <!--example gcm token would be "\ 335413682000", see note for reason-->
+        <!--example gcm token would be "\ 565941215451", see note for reason-->
         ...
     </application>
 ```
@@ -97,13 +97,13 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
     ...
         <!-- [Start GCMReciver] -->
         <receiver
-                    android:name="com.google.android.gms.gcm.GcmReceiver"
-                    android:exported="true"
-                    android:permission="com.google.android.c2dm.permission.SEND" >
-                    <intent-filter>
-                        <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-                    </intent-filter>
-                </receiver>
+            android:name="com.google.android.gms.gcm.GcmReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND" >
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
         <!-- [End GCMReciever]-->
         <!-- [Start Geofence Listener] -->
         <service
@@ -132,14 +132,14 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
 You can load a configuration from another property list by using:
 
 ```java
-    public QwasiConfig configWithFile(String path);
+    public QwasiConfig configWithFile(String full/file/path);
 ```
 
 Example:
 
 ```java
     QwasiConfig config = new QwasiConfig();
-    config.configWithFile("path to text file here");
+    config.configWithFile("full file path to text file here");
 ```
 
 ### Runtime Configuration
@@ -157,7 +157,7 @@ Example:
     QwasiConfig config = new QwasiConfig.configWithURL(url, "AppID string", "API String");
     qwasi.qwasiWithConfig(config);
 ```
-**Note: You should always check to make sure that the config that you have is valid with the .isValid() function**
+**Note: You should always check to make sure that the config that you have is valid with the .isValid() function, only checks if the config is fully instantated.**
 
 ## Event Emitters
 
@@ -233,7 +233,7 @@ Example:
     editor.putString("key" qwasi.getMDeviceToken);
     editor.apply();
     ...
-    }); //this is an asyncrous function.
+    }); //this is an Async function.
 ```
 
 **Note: other registerDevice functions exist for when you have more or less information about the user, or device.**
@@ -246,7 +246,7 @@ Example:
 ### User Tokens
 User tokens are basically your devices.
 Some developers use their customer id or loyalty id number, this allows you to address the devices with this token from the platform.
-These do not have to be unique and can be used to group devices under a single user token. The default is "".
+These do not have to be unique and can be used to group devices under a single user token. The default is the devices phone number if one is not provided.
 
 You can set the user token either via the `deviceRegister` call, or later via the Qwasi object.
 
@@ -271,7 +271,7 @@ Example:
     qwasi.unregisterDevice(qwasi.getMdeviceToken());
 ```
 
-As a general rule there is very little reason to do so, however if a user chooses to cancel their account or something like that would be the only reason.
+As a general rule there is very little reason to do so, however if a user chooses to cancel their account or remove a device that they no longer own etc.
 ###### SDK EVENT - N/A
 ###### SDK ERROR - `QWASIERRORDEVICEUNREGISTERFAILED`
 ###### API METHOD - `DEVICE.UNREGISTER`
@@ -283,8 +283,10 @@ Qwasi supports a simplified registration for push notifications. Once the device
 Example:
 
 ```java
-    qwasi.mpushEnabled = true;
-    qwasi.setPushEnabled();
+    qwasi.setPushEnabled(true);
+```
+or Better use case:
+```java
     //or more prefered as this this is async and if called directly after deviceregister
     qwasi.deviceRegister(null, new QwasiInterface(...
         setPushEnabled(Boolean, QwasiInterface);
@@ -316,7 +318,7 @@ Calling this in the UIThread so that you can check for messages.
 Example:
 
 ```java
-protected void onStart(){
+protected void onStart(){//onResume() would also work
     ...
     qwasi.fetchUnreadMessage(new QwasiInterface(){
     @Override
@@ -330,7 +332,7 @@ protected void onStart(){
 }
 ```
 
-This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness.
+This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness, which 
 **NOTE: Applications WILL NOT Recieve notifications if they are force closed!  This method allows you to retrieve messages sent while the user has had the application closed.**
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
