@@ -9,6 +9,7 @@ def packageJson = packageSluper.parse file('package.json')
 buildscript {
 	repositories {
 		jcenter()
+		mavenCentral()
 		maven{
 			url "https://plugins.gradle.org/m2/"
 		}
@@ -114,8 +115,8 @@ signing{
 uploadArchives{
 	repositories{
 		mavenDeployer {
-			repository(url: 'file:///Users/ccoulton/QwasiSDK')
-			/*//this will be moving to the bamboo server.
+			//repository(url: 'file:///Users/ccoulton/QwasiSDK')
+			//this will be moving to the bamboo server.
 			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 
