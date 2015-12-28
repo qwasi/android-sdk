@@ -22,7 +22,7 @@ allprojects{
     }
 }
 
-//apply from: 'deployment.gradle'
+apply from: 'deployment.gradle'
 apply plugin: 'com.moowork.grunt'
 apply plugin: 'com.android.library'
 

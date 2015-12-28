@@ -19,8 +19,8 @@ signing{
 uploadArchives{
     repositories{
         mavenDeployer {
-            //repository(url: 'file:///Users/ccoulton/QwasiSDK')
-            //this will be moving to the bamboo server.
+            repository(url: 'file:///Users/ccoulton/QwasiSDK')
+            /*//this will be moving to the bamboo server.
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 
@@ -28,7 +28,7 @@ uploadArchives{
                     { authentication(userName: ossrhUsername, password: ossrhPassword) }
 
             snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
-                    { authentication(userName: ossrhUsername, password: ossrhPassword) }
+                    { authentication(userName: ossrhUsername, password: ossrhPassword) }//*/
 
             pom.project {
                 name 'QwasiSDK'
