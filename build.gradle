@@ -1,10 +1,3 @@
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'maven-publish'
-import groovy.json.JsonSlurper
-def packageSluper = new JsonSlurper()
-def packageJson = packageSluper.parse file('package.json')
-
 //android support
 buildscript {
 	repositories {
@@ -29,14 +22,14 @@ allprojects{
     }
 }
 
-//apply plugin: 'com.google.gms.google-services'
+//apply from: 'deployment.gradle'
 apply plugin: 'com.moowork.grunt'
 apply plugin: 'com.android.library'
-apply plugin: 'io.codearte.nexus-staging'
+
 
 android {
 	compileSdkVersion 23
-	buildToolsVersion '23.0.0'
+	buildToolsVersion '23.0.2'
 	defaultConfig {
 		minSdkVersion 15
 		targetSdkVersion 23
@@ -75,10 +68,6 @@ sourceSets{
 	}
 }
 
-group = 'com.qwasi'
-archivesBaseName = packageJson.name
-version = packageJson.version
-
 task sourcesJar(type: Jar) {
 	from android.sourceSets.main.java.srcDirs
 	classifier = 'sources'
@@ -106,60 +95,4 @@ task javadocJar(type: Jar, dependsOn: androidJavadoc) {
 artifacts {
 	archives javadocJar
 	archives sourcesJar
-}
-
-signing{
-	sign configurations.archives
-}
-
-uploadArchives{
-	repositories{
-		mavenDeployer {
-			//repository(url: 'file:///Users/ccoulton/QwasiSDK')
-			//this will be moving to the bamboo server.
-			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-
-			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-					{ authentication(userName: ossrhUsername, password: ossrhPassword) }
-
-			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
-					{ authentication(userName: ossrhUsername, password: ossrhPassword) }//*/
-
-			pom.project {
-				name 'QwasiSDK'
-				packaging 'jar'
-				description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
-				url "https://github.com/Qwasi"
-				scm {
-					connection 'scm:git:git@github.com:qwasi/android-sdk.git'
-					developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
-					url 'https://github.com/qwasi/android-sdk'
-				}
-				licenses {
-					license {
-						name 'MIT'
-						distribution 'repo'
-					}
-				}
-
-				developers {
-					developer {
-						id 'ccoulton'
-						name 'Charles Coulton'
-						email 'charles.coulton@qwasi.com'
-					}
-					developer {
-						name 'Rob Rodriguez'
-						email 'rob.rodriguez@qwasi.com'
-					}
-					developer{
-						id 'qwasibuild'
-						name 'Qwasi Bamboo'
-						email 'support@qwasi.com'
-					}
-				}
-			}
-		}
-	}
 }
