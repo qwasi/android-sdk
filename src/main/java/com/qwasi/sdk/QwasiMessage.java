@@ -73,7 +73,7 @@ public class QwasiMessage{
             mpayloadType = data.get("payload_type").toString();
             mtags = data.has("tags")? data.getJSONArray("tags"): new JSONArray();
             fetched = data.has("fetched")&&data.getBoolean("fetched");
-            mencodedPayload = data.get("payload");
+            mencodedPayload = data.has("payload")?data.get("payload"):"";
             byte[] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
             try {
                 if (mpayloadType.equalsIgnoreCase("application/json")) {
