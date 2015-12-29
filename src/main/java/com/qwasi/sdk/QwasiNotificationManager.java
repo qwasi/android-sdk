@@ -114,9 +114,8 @@ public class QwasiNotificationManager{
                     int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
 
                     // Our version is outdated, get a new one
-                    if (registeredVersion != appVersion) {
+                    if (registeredVersion != appVersion)
                         registerForPushInBackground();
-                    }
                 }
             }
             catch (Exception e) {
