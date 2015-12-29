@@ -1168,37 +1168,37 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message)/*android default notification builder*/{
-        Uri defaultSoundUri = message.silent()?
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
-                null;
+        if (message != null) {
+            Uri defaultSoundUri = message.silent() ?
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
+                    null;
 
-        String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
-        if (qwasiNotificationManager.noteBuilder == null){
-            new QwasiGCMListener().onMessagePolled();
+            String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
+            if (qwasiNotificationManager.noteBuilder == null) {
+                new QwasiGCMListener().onMessagePolled();
+            }
+            NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
+                    .setSmallIcon(context.getApplicationInfo().icon)
+                    .setContentTitle(appName)
+                    .setContentText(message.malert)
+                    .setAutoCancel(true)
+                    .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
+                    .setSound(defaultSoundUri) //default sound
+                    ;
+            //configure expanded action
+            if (message.mpayloadType.contains("text")) { //text
+                noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+                //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
+            } else if (message.mpayloadType.contains("image")) { //image
+                Log.d(TAG, "Image");
+                //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
+            } else if (message.mpayloadType.contains("json")) {//application
+                Log.d(TAG, "App context");
+            }
+            NotificationManager noteMng = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            noteMng.notify(0, noteBuilder.build());
+            Witness.notify(message);
         }
-        NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
-                .setSmallIcon(context.getApplicationInfo().icon)
-                .setContentTitle(appName)
-                .setContentText(message.malert)
-                .setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
-                .setSound(defaultSoundUri) //default sound
-                ;
-        //configure expanded action
-        if (message.mpayloadType.contains("text")){ //text
-            noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-        }
-        else if(message.mpayloadType.contains("image")){ //image
-            Log.d(TAG, "Image");
-            //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-        }
-        else if(message.mpayloadType.contains("json")){//application
-            Log.d(TAG, "App context");
-        }
-        NotificationManager noteMng = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        noteMng.notify(0, noteBuilder.build());
-        Witness.notify(message);
     }
 
     static float UPDATE_FILTER(float Speed, float Filter)/*iOS inline function*/{return (Speed/PED_FILTER)*Filter;}

@@ -88,8 +88,7 @@ public class QwasiLocationManager //extends IntentService
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
-        //if (sharedApplication != null)
-        mmanager = new GoogleApiClient.Builder(sharedApplication).addApi(LocationServices.API).build();
+        init();
         instance = this;
         qwasiBeacons = new QwasiBeacons();
     }
@@ -181,13 +180,11 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public synchronized Object init(){
-        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(Qwasi.getContext()) == ConnectionResult.SUCCESS) {
-            mmanager = new GoogleApiClient.Builder(sharedApplication)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .addApi(LocationServices.API)
-                    .build();
-        }
+        mmanager = new GoogleApiClient.Builder(sharedApplication)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
         return this;
     }
 

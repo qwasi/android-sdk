@@ -11,11 +11,13 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import java.io.IOException;
+import java.util.jar.Manifest;
 
 import io.hearty.witness.Witness;
 
@@ -91,7 +93,7 @@ public class QwasiNotificationManager{
     }
 
     synchronized void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
-        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
+        if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
             // If we can find google play services, have the user download it?
             //GooglePlayServicesUtil.getErrorDialog();
             callbacks.onFailure(new QwasiError()
@@ -112,9 +114,8 @@ public class QwasiNotificationManager{
                     int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
 
                     // Our version is outdated, get a new one
-                    if (registeredVersion != appVersion) {
+                    if (registeredVersion != appVersion)
                         registerForPushInBackground();
-                    }
                 }
             }
             catch (Exception e) {
