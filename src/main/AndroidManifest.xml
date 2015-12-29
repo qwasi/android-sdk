@@ -27,7 +27,7 @@
     <meta-data android:name="apiKey" android:value="4734601123be56bcdf4494907b2aaa9e"/>
     <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
     <meta-data android:name="gcm_senderid" android:value="335413682000" />-->
-    <meta-data android:name="sdk_version" android:value="2.1.0"/>
+    <meta-data android:name="sdk_version" android:value="2.1.18"/>
 
     <application>
         <receiver android:name="org.altbeacon.beacon.startup.StartupBroadcastReceiver">

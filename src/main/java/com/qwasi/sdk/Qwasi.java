@@ -7,6 +7,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -15,7 +16,9 @@ import android.os.Build;
 import android.os.Bundle;
 
 import android.preference.PreferenceManager;
+import android.Manifest;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
@@ -209,14 +212,23 @@ public class Qwasi{
         if (qwasiNotificationManager.getPushToken() == null) {
             qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
+        String test;
+        if ((ContextCompat.checkSelfPermission(mainActivity, Manifest.permission.GET_ACCOUNTS)&
+                ContextCompat.checkSelfPermission(mainActivity, Manifest.permission.READ_PHONE_STATE))
+                == PackageManager.PERMISSION_GRANTED) {
+            Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
 
-        Account[] accounts = AccountManager.get(context).getAccountsByType("com.google");
+            deviceName = accounts.length > 0 ?
+                    accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")) : null;
 
-        deviceName = accounts.length > 0?
-                accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")): null;
+            test = preferences.getString("qwasi_user_token", ((TelephonyManager) context
+                    .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number());
+        }
+        else{
+            deviceName = "";
+            test = null;
+        }
 
-        String test = preferences.getString("qwasi_user_token", ((TelephonyManager) context
-                .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number());
         muserToken = test != null?test:"DROIDTOKEN";
         return this;
     }
@@ -344,27 +356,10 @@ public class Qwasi{
                     JSONObject result = (JSONObject) o;
                     mdeviceToken = result.getString("id");  //set our device token from the server
 
-                    //mchannels = (HashMap<String, Void>) result.get("channels");
-                    //grab the next key and unpack it.
                     JSONObject info = result.getJSONObject("application");
                     mapplicationName = info.get("name").toString();
 
-                    /*get the settings out Depercated
-                    if (info.has("settings")) {
-                        info = info.getJSONObject("settings");
-                        mpushEnabled = (Boolean) info.get("push_enabled");
-                        mlocationEnabled = (Boolean) info.get("location_enabled");
-                        meventsEnabled = (Boolean) info.get("events_enabled");
-                    }
-                    else{ //get this from the app?
-                        mpushEnabled = true;
-                        mlocationEnabled = true;
-                        meventsEnabled = true;
-                    }
-                    setLocationEnabled(mlocationEnabled);
-                    if (mlocationEnabled) {
-                        mlocationManager.mmanager.connect();
-                    }*/
+                    //ActivityCompat.requestPermissions(mainActivity, new String[]{});
                     Log.i(TAG, "Device Successfully Registered");
                     Witness.notify(mdeviceToken);
                     qwasiInterface.onSuccess(mdeviceToken);

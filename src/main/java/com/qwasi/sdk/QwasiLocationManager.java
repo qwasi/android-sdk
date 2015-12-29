@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -26,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.jar.Manifest;
 
 import io.hearty.witness.Witness;
 
@@ -96,16 +99,15 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public QwasiLocation getLastLocation(){
-        if (mLastLocation != null) {
-            return mLastLocation;
+        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (mLastLocation != null) {
+                return mLastLocation;
+            } else if (LocationServices.FusedLocationApi.getLastLocation(mmanager) != null) {
+                mLastLocation = QwasiLocation.initWithLocation(LocationServices.FusedLocationApi.getLastLocation(mmanager));
+                return mLastLocation;
+            }
         }
-        else if(LocationServices.FusedLocationApi.getLastLocation(mmanager)!=null){
-            mLastLocation = QwasiLocation.initWithLocation(LocationServices.FusedLocationApi.getLastLocation(mmanager));
-            return mLastLocation;
-        }
-        else{
-            return null;
-        }
+        return null;
     }
 
     public LocationRequest currentManager(){
@@ -198,13 +200,16 @@ public class QwasiLocationManager //extends IntentService
 
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
-        if (!mmanager.isConnected()) mmanager.connect();
-        else LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (!mmanager.isConnected()) mmanager.connect();
+            else
+                LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
 
-        if (sharedApplication instanceof BeaconConsumer){
-            qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
+            if (sharedApplication instanceof BeaconConsumer) {
+                qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
+            }
+            //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
         }
-        //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
     }
 
     public void stopLocationUpdates(){
@@ -232,7 +237,7 @@ public class QwasiLocationManager //extends IntentService
 
     public QwasiErrorCode startMoitoringLocation(QwasiLocation input){
         synchronized (this){
-            if (input != null) {
+            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
                 Witness.notify(input.toString());
                 locationsfetched.add(input.id);
                 mregionMap.put(input.id, input);
