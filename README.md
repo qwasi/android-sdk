@@ -26,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.0-10'
+        compile 'com.qwasi:QwasiSDK:2.1.18'
     }
 ```
 
@@ -102,6 +102,7 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name"your package name here"/>
             </intent-filter>
         </receiver>
         <!-- [End GCMReciever]-->
@@ -278,7 +279,7 @@ As a general rule there is very little reason to do so, however if a user choose
 
 ## Push Notifications
 
-Qwasi supports a simplified registration for push notifications. Once the device is registered, if mpushEnabled wasn't true set it and then, simply call the method:
+Qwasi supports a simplified registration for push notifications. Once the device is registered, you will need to call setPushEnabled, with the boolean of the state that you desire the push to be; true for using gcm, and false for polling:
  public void setPushEnabled(QwasiInterface), other versions of this method exist.
 Example:
 

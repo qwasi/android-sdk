@@ -502,9 +502,6 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
                     QwasiNotificationHandler = new Reporter() {
-                        /**
-                        * todo: since this isn't created set every time the app starts if this isn't called, figure out how to do that.
-                        * */
                         @Override
                         public void notifyEvent(Object o) {
                             HashMap<String, Object> results = new HashMap<>();
@@ -516,7 +513,7 @@ public class Qwasi{
 
                             String[] pairs = qwasi.split(Pattern.quote(","));
                             for (String pair : pairs) {
-                                String[] key = pair.split(":");
+                                String[] key = pair.split(Pattern.quote(":"), 2);
                                 results.put(key[0], key[1]);
                             }
                             String msgId = results.get("msg_id").toString();
@@ -527,7 +524,11 @@ public class Qwasi{
                                         fetchMessageForNotification(msgId, new QwasiInterface() {
                                             @Override
                                             public void onSuccess(Object o) {
-                                                sendNotification((QwasiMessage) o);
+                                                if (museLocalNotifications) {
+                                                    sendNotification((QwasiMessage) o);
+                                                }
+                                                else
+                                                    Witness.notify((QwasiMessage) o);
                                             }
 
                                             @Override
@@ -537,7 +538,10 @@ public class Qwasi{
                                         });
                                     } else {
                                         QwasiMessage message = mmessageCache.get(msgId);
-                                        sendNotification(message);
+                                        if (museLocalNotifications)
+                                            sendNotification(message);
+                                        else
+                                            Witness.notify(message);
                                     }
                                 }
                             } else {
