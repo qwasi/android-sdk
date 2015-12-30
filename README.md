@@ -102,6 +102,7 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name"your package name here"/>
             </intent-filter>
         </receiver>
         <!-- [End GCMReciever]-->
