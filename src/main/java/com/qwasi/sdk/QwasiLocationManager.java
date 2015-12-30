@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
@@ -88,7 +89,8 @@ public class QwasiLocationManager //extends IntentService
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
-        init();
+        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
+            init();
         instance = this;
         qwasiBeacons = new QwasiBeacons();
     }
@@ -119,8 +121,10 @@ public class QwasiLocationManager //extends IntentService
 
     @Override
     public void onConnectionSuspended(int i) {
-        mmanager.reconnect();
-        mstarted = false;
+        if (mmanager != null) {
+            mmanager.reconnect();
+            mstarted = false;
+        }
     }
 
     @Override
@@ -166,17 +170,16 @@ public class QwasiLocationManager //extends IntentService
         Witness.notify(mLastLocation);
     }
 
-    QwasiLocationManager backgroundManager(){  //todo is this needed as android doesn't have "background" manager
+    /*QwasiLocationManager backgroundManager(){  //todo is this needed as android doesn't have "background" manager
         /*QwasiLocationManager sharedInstance = null;
         if(mactiveManager != null){
             return(mactiveManager);
-        }*/
+        }
         return this;
-    }
+    }*/
 
-    public Object initWithRequiredAuthorization(/*CLAuthstatus status*/){//todo M? granular location?
-        //return this.initWithLocationManager();
-        return this;
+    public Object initWithRequiredAuthorization(){//todo M? granular location?
+        return this.init();
     }
 
     public synchronized Object init(){
@@ -202,9 +205,9 @@ public class QwasiLocationManager //extends IntentService
             else
                 LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
 
-            if (sharedApplication instanceof BeaconConsumer) {
+            if (sharedApplication instanceof BeaconConsumer)
                 qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
-            }
+
             //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
         }
     }

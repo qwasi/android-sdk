@@ -150,7 +150,7 @@ public class QwasiNotificationManager{
                 catch (PackageManager.NameNotFoundException e){
                     Log.d(TAG, "Name not found");
                 }
-                catch (IOException e){
+                catch (IOException e){  //todo see if this can be recovered with a non escaped number/stringthing
                     Log.d(TAG, "IOExecption");
                 }
                 mregistering = false;

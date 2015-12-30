@@ -278,7 +278,7 @@ As a general rule there is very little reason to do so, however if a user choose
 
 ## Push Notifications
 
-Qwasi supports a simplified registration for push notifications. Once the device is registered, if mpushEnabled wasn't true set it and then, simply call the method:
+Qwasi supports a simplified registration for push notifications. Once the device is registered, you will need to call setPushEnabled, with the boolean of the state that you desire the push to be; true for using gcm, and false for polling:
  public void setPushEnabled(QwasiInterface), other versions of this method exist.
 Example:
 

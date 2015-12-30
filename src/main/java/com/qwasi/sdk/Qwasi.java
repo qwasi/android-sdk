@@ -502,9 +502,6 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
                     QwasiNotificationHandler = new Reporter() {
-                        /**
-                        * todo: since this isn't created set every time the app starts if this isn't called, figure out how to do that.
-                        * */
                         @Override
                         public void notifyEvent(Object o) {
                             HashMap<String, Object> results = new HashMap<>();
