@@ -84,7 +84,7 @@ public class QwasiLocationManager //extends IntentService
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mupdateDistance) //how far can the device move
                 .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
+        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
             init();
         instance = this;
         qwasiBeacons = new QwasiBeacons();
@@ -95,7 +95,7 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public QwasiLocation getLastLocation(){
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (mLastLocation != null) {
                 return mLastLocation;
             } else if (LocationServices.FusedLocationApi.getLastLocation(mmanager) != null) {
@@ -195,7 +195,7 @@ public class QwasiLocationManager //extends IntentService
 
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (!mmanager.isConnected()) mmanager.connect();
             else
                 LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
@@ -232,7 +232,7 @@ public class QwasiLocationManager //extends IntentService
 
     public QwasiErrorCode startMoitoringLocation(QwasiLocation input){
         synchronized (this){
-            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
+            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
                 Witness.notify(input.toString());
                 locationsfetched.add(input.id);
                 mregionMap.put(input.id, input);

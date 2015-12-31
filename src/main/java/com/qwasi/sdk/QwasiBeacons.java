@@ -67,7 +67,7 @@ public class QwasiBeacons extends Service
     public QwasiBeacons() {
         super();
         mContext = Qwasi.getContext();
-        mMainAct = Qwasi.getMainActivity() instanceof  BeaconConsumer? (BeaconConsumer) Qwasi.mainActivity:null;
+        mMainAct = Qwasi.getMainActivity() instanceof  BeaconConsumer? (BeaconConsumer) Qwasi.sMainActivity:null;
         mMap = QwasiLocationManager.getInstance().mregionMap;
         mBeaconManager = BeaconManager.getInstanceForApplication(mContext);
         mBeaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
