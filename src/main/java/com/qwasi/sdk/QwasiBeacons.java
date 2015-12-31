@@ -68,7 +68,7 @@ public class QwasiBeacons extends Service
         super();
         mContext = Qwasi.getContext();
         mMainAct = Qwasi.getMainActivity() instanceof  BeaconConsumer? (BeaconConsumer) Qwasi.sMainActivity:null;
-        mMap = QwasiLocationManager.getInstance().mregionMap;
+        mMap = QwasiLocationManager.getInstance().regionMap;
         mBeaconManager = BeaconManager.getInstanceForApplication(mContext);
         mBeaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
         mParsers = mBeaconManager.getBeaconParsers();
@@ -102,7 +102,7 @@ public class QwasiBeacons extends Service
                 Log.d(TAG, "beacon found: "+beacon.getId1()+
                         " dist away"+beacon.getDistance()+
                         " QwasiID "+region.getUniqueId());
-                mMap.get(region.getUniqueId()).distance = beacon.getDistance();
+                mMap.get(region.getUniqueId()).mDistance = beacon.getDistance();
                 Witness.notify(mMap.get(region.getUniqueId()));
             }
         }

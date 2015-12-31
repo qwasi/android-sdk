@@ -43,21 +43,32 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class QwasiMessage{
+    @Deprecated
     public String malert;
+    public String alert;
+    @Deprecated
     public Date mtimestamp;
+    public Date timeStamp;
     public String messageId;
     public String application;
+    @Deprecated
     public String mpayloadType;
+    public String payloadType;
+    @Deprecated
     public Object mpayload;
+    public Object payload;
+    @Deprecated
     public JSONArray mtags;
+    public JSONArray tags;
     public Boolean selected;
     public Boolean fetched;
-    Object mencodedPayload;
+    Object mEncodedPayload;
     String TAG = "QwasiMessage";
 
     public QwasiMessage(){
         super();
-        mtags = new JSONArray();
+        tags = new JSONArray();
+        mtags = tags;
     }
 
     private QwasiMessage initWithData(Object input){
@@ -65,24 +76,30 @@ public class QwasiMessage{
             JSONObject data = (JSONObject) input;
             messageId = data.has("id")?data.getString("id"):"";
             application = data.has("application")?data.getString("application"):"";
-            malert = data.has("text")?data.getString("text"):"";
+            alert = data.has("text")?data.getString("text"):"";
+            malert = alert;
             selected = QwasiAppManager.getstatus();
             //dateformater = date
             //DateFormat dateFormatter = new DateFormat();
             //mtags = new JSONArray();
-            mtimestamp = new Date();
+            timeStamp = new Date();
+            mtimestamp = timeStamp;
 
-            mpayloadType = data.get("payload_type").toString();
-            mtags = data.has("tags")? data.getJSONArray("tags"): new JSONArray();
+            payloadType = data.get("payload_type").toString();
+            mpayloadType = payloadType;
+
+            tags = data.has("tags")? data.getJSONArray("tags"): new JSONArray();
+            mtags = tags;
+
             fetched = data.has("fetched")&&data.getBoolean("fetched");
-            mencodedPayload = data.has("payload")?data.get("payload"):"";
-            byte[] temp = Base64.decode(mencodedPayload.toString(), Base64.DEFAULT);
+            mEncodedPayload = data.has("payload")?data.get("payload"):"";
+            byte[] temp = Base64.decode(mEncodedPayload.toString(), Base64.DEFAULT);
             try {
-                if (mpayloadType.equalsIgnoreCase("application/json")) {
+                if (payloadType.equalsIgnoreCase("application/json")) {
                     //error?
-                    mpayload = new JSONObject(new String(temp, "UTF-8"));
-                } else if (mpayloadType.contains("text")) {
-                    mpayload = new String(temp, "UTF-8");
+                    payload = new JSONObject(new String(temp, "UTF-8"));
+                } else if (payloadType.contains("text")) {
+                    payload = new String(temp, "UTF-8");
                 }
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
@@ -107,27 +124,36 @@ public class QwasiMessage{
 
     public Object initWithAlert(String alert, JSONObject payload, String payloadtype, ArrayList<Object> tags){
         malert = alert;
+        this.alert = malert;
+
         mpayload = payload;
+        this.payload = mpayload;
+
         mpayloadType = payloadtype;
-        mtags = new JSONArray(tags);
-        mtimestamp = new Date();
-        if (mpayloadType == null) {
-            if (mpayload instanceof JSONObject){
-                mpayloadType = "application/json";
+        this.payloadType = mpayloadType;
+
+        this.tags = new JSONArray(tags);
+        mtags = this.tags;
+
+        timeStamp = new Date();
+        mtimestamp = timeStamp;
+        if (payloadType == null) {
+            if (this.payload instanceof JSONObject){
+                payloadType = "application/json";
             }
-            else if(mpayload instanceof String){
-                mpayloadType = "text/plain";
+            else if(this.payload instanceof String){
+                payloadType = "text/plain";
             }
         }
         return this;
     }
 
     public Boolean silent(){
-        malert = malert == null? "":malert;
-        return (malert.isEmpty());
+        alert = alert == null? "":alert;
+        return (alert.isEmpty());
     }
 
     public String description(){
-        return mpayload != null? mpayload.toString(): "";
+        return payload != null? payload.toString(): "";
     }
 }

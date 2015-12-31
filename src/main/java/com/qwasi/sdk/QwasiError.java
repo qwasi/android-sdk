@@ -87,6 +87,12 @@ public class QwasiError extends Throwable{
         return this;
     }
 
+    public  QwasiErrorCode getCode (){
+        return this.code;
+    }
+
+    public  Exception getError(){return this.error;}
+
     void setError(Exception e) {
         this.error = e;
     }

@@ -71,17 +71,17 @@ public class QwasiGeofencehandler extends IntentService {
             //Test that the reported transition was of interest.
             for (Geofence geofence : triggeringGeofences) {
                 QwasiLocation temp = QwasiLocationManager.getInstance().
-                        mregionMap.get(geofence.getRequestId());
+                        regionMap.get(geofence.getRequestId());
                 if (temp != null) {
                     if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
                         // Send notification and log the transition details.
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
+                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
                         Witness.notify(temp);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                         temp.exit();
                         Witness.notify(temp);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
+                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
                         temp.enter();
                     }
                 }

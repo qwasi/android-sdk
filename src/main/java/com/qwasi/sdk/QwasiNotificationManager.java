@@ -51,22 +51,22 @@ import java.io.IOException;
 import io.hearty.witness.Witness;
 
 public class QwasiNotificationManager{
-    private String mpushToken = "";
-    private Boolean mregistering;
+    private String mPushToken = "";
+    private Boolean mRegistering;
     private Context mContext;
     //PendingIntent mIntent;
-    NotificationCompat.Builder noteBuilder;
+    NotificationCompat.Builder mNoteBuilder;
     //final private Qwasi qwasi;
-    private String senderId;
+    private String mSenderId;
 
     private static QwasiNotificationManager instance;
     static final String TAG = "QwasiNotificationMngr";
 
     private QwasiNotificationManager(){
         super();
-        mregistering = false;
-        mpushToken = "";
-        senderId = "335413682000"; //default
+        mRegistering = false;
+        mPushToken = "";
+        mSenderId = "335413682000"; //default
         mContext = Qwasi.getContext();
         instance = this;
     }
@@ -80,15 +80,15 @@ public class QwasiNotificationManager{
      */
 
     public Boolean isRegistering() {
-        return mregistering;
+        return mRegistering;
     }
 
     public String getPushToken() {
-        return mpushToken;
+        return mPushToken;
     }
 
     void setPushToken(String pushToken) {
-        mpushToken = pushToken;
+        mPushToken = pushToken;
     }
 
     synchronized void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
@@ -104,8 +104,8 @@ public class QwasiNotificationManager{
             String token;
             token = sharedPreferences.getString("gcm_token", "");
             // We don't have a token so get a new one
-            if (token.isEmpty()&& !mregistering) {
-                mregistering = !mregistering;
+            if (token.isEmpty()&& !mRegistering) {
+                mRegistering = !mRegistering;
                 registerForPushInBackground();
             } else {
                 // check the version of the token
@@ -126,19 +126,19 @@ public class QwasiNotificationManager{
             public void run() {
                 String token;
                 try {
-                    mregistering = true;
+                    mRegistering = true;
                     ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
                     Log.d(TAG, "Attempting to Aquire new Token");
                     //Device Registering issue 11-4-15
-                    senderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
+                    mSenderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
                             appinfo.metaData.getString("gcm_senderid", "335413682000"): //get it
-                            senderId;  //or set to default, default also included in case android munges it
-                    Log.d(TAG, "Using SenderID: "+senderId);
+                            mSenderId;  //or set to default, default also included in case android munges it
+                    Log.d(TAG, "Using SenderID: "+mSenderId);
                     InstanceID iId = InstanceID.getInstance(mContext);
-                    token = iId.getToken(senderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
-                    mpushToken =!token.isEmpty()?token:"";
+                    token = iId.getToken(mSenderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
+                    mPushToken =!token.isEmpty()?token:"";
                     Log.d(TAG, "New GCM token acquired: " + token);
-                    Witness.notify(mregistering);
+                    Witness.notify(mRegistering);
                 }
                 catch (PackageManager.NameNotFoundException e){
                     Log.d(TAG, "Name not found");
@@ -146,17 +146,17 @@ public class QwasiNotificationManager{
                 catch (IOException e){  //todo see if this can be recovered with a non escaped number/stringthing
                     Log.d(TAG, "IOExecption");
                 }
-                mregistering = false;
+                mRegistering = false;
             }
         }).start();
     }
 
     void onMessage(NotificationCompat.Builder builder, Bundle data){
-        this.noteBuilder = builder;
+        this.mNoteBuilder = builder;
         Witness.notify(data);
     }
 
     void onMessage(NotificationCompat.Builder builder){
-        this.noteBuilder = builder;
+        this.mNoteBuilder = builder;
     }
 }

@@ -92,7 +92,7 @@ public class Qwasi{
     public QwasiLocationManager locationManager;
     @Deprecated
     public QwasiConfig mconfig;
-    protected QwasiConfig mConfig;
+    public QwasiConfig config;
     protected String muserToken;
     @Deprecated
     public Boolean mpushEnabled = false;
@@ -115,10 +115,10 @@ public class Qwasi{
     final String kEventLocationDwell    = "com.qwasi.event.location.dwell";
     final String kEventLocationExit     = "com.qwasi.event.location.exit";
     private QwasiLocation mlastLocationEvent, mlastLocationUpdate, mlastLocationSync = null;
-    Reporter QwasiNotificationHandler;
-    Reporter QwasiLocationHandler;
+    Reporter mQwasiNotificationHandler;
+    Reporter mQwasiLocationHandler;
     Reporter mPushTokenCallback;
-    String Version;
+    String mVersion;
 
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
@@ -142,11 +142,13 @@ public class Qwasi{
         this.networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         mQwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(sContext);
+        config = mconfig;
         mlocationManager = QwasiLocationManager.getInstance();
+        locationManager = mlocationManager;
         //mlocationManager.init();
         application.getApplication().registerActivityLifecycleCallbacks(mQwasiAppManager);
-        mconfig.configWithFile(); //default
-        if (mconfig.isValid()) this.initWithConfig(mconfig, "");
+        config.configWithFile(); //default
+        if (config.isValid()) this.initWithConfig(config, "");
         else Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
     }
 
@@ -167,7 +169,7 @@ public class Qwasi{
     }
 
     public String version()/*iOS 61*/{
-        return Version;
+        return mVersion;
     }
 
     public String getMdeviceToken(){
@@ -198,6 +200,7 @@ public class Qwasi{
     private synchronized Qwasi initWithConfig(QwasiConfig config, String deviceToken) /*ios*/ {
         if ((config != null)&&(config.isValid())) {
             mconfig = config;
+            this.config = mconfig;
             this.setConfig(config);
         }
         mLocationUpdateFilter= LOCATION_UPDATE_FILTER;
@@ -210,6 +213,7 @@ public class Qwasi{
 
         //are localNotifcations set
         museLocalNotifications = mPreferences.getBoolean("localNote", true);
+        useLocalNotifications = museLocalNotifications;
 
         mMessageCache = new HashMap<>();
 
@@ -251,7 +255,7 @@ public class Qwasi{
 
     @Deprecated
     public void setPushEnabled(final QwasiInterface callbacks){
-        setPushEnabled(mpushEnabled, callbacks);
+        setPushEnabled((mpushEnabled||pushEnabled), callbacks);
     }
 
     public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
@@ -261,10 +265,11 @@ public class Qwasi{
 
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
         mlocationEnabled = enabled;
-        Log.d(TAG, "setLocationEnabled"+mlocationEnabled.toString());
+        locationEnabled = enabled;
+        Log.d(TAG, "setLocationEnabled"+locationEnabled.toString());
         if (enabled){
-            mlocationManager = mlocationManager == null? QwasiLocationManager.getInstance():mlocationManager;
-            QwasiLocationHandler = new Reporter() {
+            locationManager = locationManager == null? QwasiLocationManager.getInstance():locationManager;
+            mQwasiLocationHandler = new Reporter() {
                 @Override
                 public void notifyEvent(Object o) {
                     Log.d(TAG, "LocationHandler");
@@ -294,22 +299,22 @@ public class Qwasi{
                     data.put("lat", location.getLatitude());
                     data.put("dwellTime", location.getDwellTime());
                     if (location.isTypeCoordinate()){
-                        QwasiLocation mLastLocation = mlocationManager.getLastLocation();
+                        QwasiLocation mLastLocation = locationManager.getLastLocation();
                         data.put("timestamp", System.currentTimeMillis() / 1000);
                         postEvent(kEventLocationUpdate, data, false);
                         fetchLocationsNear(mLastLocation);
                     }
-                    else if (location.AppID.equals(mAppId)){
-                        if(location.state == QwasiLocation.QwasiLocationState.QwasiLocationStateInside){
+                    else if (location.mAppId.equals(mAppId)){
+                        if(location.mState == QwasiLocation.QwasiLocationState.QwasiLocationStateInside){
                             postEvent(kEventLocationDwell, data, false); //post inside event;
                         }
                     }
                 }
             };
-            Witness.register(QwasiLocation.class, QwasiLocationHandler);
+            Witness.register(QwasiLocation.class, mQwasiLocationHandler);
         }
         else{
-            Witness.remove(QwasiLocation.class, QwasiLocationHandler);
+            Witness.remove(QwasiLocation.class, mQwasiLocationHandler);
         }
     }
 
@@ -342,7 +347,7 @@ public class Qwasi{
         deviceInfo.put("version", String.valueOf(Build.VERSION.RELEASE));  //systemversion
         deviceInfo.put("system", getVerboseVersionName()); //kitkat or w/e the codename is
         deviceInfo.put("model", Build.MANUFACTURER + " " + Build.MODEL);  //Samsung Then the actual device name
-        deviceInfo.put("sdkVersion", Version);  //set because that's what the sdk is currently
+        deviceInfo.put("sdkVersion", mVersion);  //set because that's what the sdk is currently
         //since JSONRPC2 on java reads from a Hashmap<string, object> easier to put it here
         //and since the JSONRPC2 doesn't format it how the server expects have to do some playing.
         info.put("info", deviceInfo);
@@ -359,6 +364,7 @@ public class Qwasi{
 
                     JSONObject info = result.getJSONObject("application");
                     mapplicationName = info.get("name").toString();
+                    applicationName = mapplicationName;
 
                     //ActivityCompat.requestPermissions(mainActivity, new String[]{});
                     Log.i(TAG, "Device Successfully Registered");
@@ -453,9 +459,11 @@ public class Qwasi{
                     mDeviceToken = "";
                     mRegistered = false;
                     mpushEnabled = false;
+                    pushEnabled = false;
                     mlocationEnabled = false;
-                    setLocationEnabled(mlocationEnabled);
-                    setPushEnabled(mpushEnabled);
+                    locationEnabled = mlocationEnabled;
+                    setLocationEnabled(locationEnabled);
+                    setPushEnabled(pushEnabled);
                     Log.i(TAG, "UnregisterDevice Success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
@@ -501,7 +509,7 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
-                    QwasiNotificationHandler = new Reporter() {
+                    mQwasiNotificationHandler = new Reporter() {
                         @Override
                         public void notifyEvent(Object o) {
                             HashMap<String, Object> results = new HashMap<>();
@@ -519,12 +527,13 @@ public class Qwasi{
                             String msgId = results.get("msg_id").toString();
                             String appId = results.get("app_id").toString();
                             if (!(msgId.isEmpty()) && !(appId.isEmpty())) {
-                                if (appId.equals(mconfig.mapplication)) {
+                                if (appId.equals(config.mapplication)||appId.equals(mconfig.mapplication)) {
                                     if ((mMessageCache.isEmpty()) || (!mMessageCache.containsKey(msgId))) {
                                         fetchMessageForNotification(msgId, new QwasiInterface() {
                                             @Override
                                             public void onSuccess(Object o) {
-                                                if (museLocalNotifications) {
+                                                useLocalNotifications = museLocalNotifications;
+                                                if (useLocalNotifications) {
                                                     sendNotification((QwasiMessage) o);
                                                 }
                                                 else
@@ -538,7 +547,8 @@ public class Qwasi{
                                         });
                                     } else {
                                         QwasiMessage message = mMessageCache.get(msgId);
-                                        if (museLocalNotifications) sendNotification(message);
+                                        useLocalNotifications = museLocalNotifications;
+                                        if (useLocalNotifications) sendNotification(message);
                                         else Witness.notify(message);
                                     }
                                 }
@@ -549,7 +559,8 @@ public class Qwasi{
                         }
                     };
                     mpushEnabled = true;
-                    Witness.register(Bundle.class, QwasiNotificationHandler);
+                    pushEnabled = mpushEnabled;
+                    Witness.register(Bundle.class, mQwasiNotificationHandler);
                     callback.onSuccess(mQwasiNotificationManager.getPushToken());
                     Witness.notify(mQwasiNotificationManager.getPushToken());
                 }
@@ -586,7 +597,8 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     Log.d(TAG, "Device unregistered for push success");
                     mpushEnabled = false;
-                    Witness.remove(Bundle.class, QwasiNotificationHandler);
+                    pushEnabled = mpushEnabled;
+                    Witness.remove(Bundle.class, mQwasiNotificationHandler);
                     callback.onSuccess(new QwasiError().
                             errorWithCode(QwasiErrorCode.QwasiErrorNone, "UnSet Push Token success"));
                 }
@@ -665,7 +677,7 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (museLocalNotifications) sendNotification(message);
+                    if (useLocalNotifications||museLocalNotifications) sendNotification(message);
                     else Witness.notify(message);
                     qwasiInterface.onSuccess(message);
                 }
@@ -748,7 +760,7 @@ public class Qwasi{
             place = place == null? QwasiLocation.initEmpty() : place;
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> near = new HashMap<>();
-            if (!place.empty) {
+            if (!place.mEmpty) {
                 near.put("lng", place.getLongitude());
                 near.put("lat", place.getLatitude());
                 near.put("radius", mLocationSyncFilter * 10);
@@ -764,7 +776,7 @@ public class Qwasi{
                     try {
                         positions = ((JSONObject) o).getJSONArray("value");
                         for (int index = 0; index < positions.length(); index++) {
-                            mlocationManager.startMoitoringLocation(
+                            locationManager.startMoitoringLocation(
                                     QwasiLocation.initWithLocationData(positions.getJSONObject(index)));
                         }
                         //mlocationManager.pruneLocations();
@@ -772,7 +784,7 @@ public class Qwasi{
                         Log.wtf(TAG, "malformed JSONArray");
                         e.printStackTrace();
                     }
-                    qwasiInterface.onSuccess(mlocationManager.mregionMap);
+                    qwasiInterface.onSuccess(locationManager.mregionMap);
                 }
 
                 @Override
@@ -1168,8 +1180,8 @@ public class Qwasi{
                     null;
 
             String appName = sContext.getPackageManager().getApplicationLabel(sContext.getApplicationInfo()).toString();
-            if (mQwasiNotificationManager.noteBuilder == null) new QwasiGCMListener().onMessagePolled();
-            NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.noteBuilder
+            if (mQwasiNotificationManager.mNoteBuilder == null) new QwasiGCMListener().onMessagePolled();
+            NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.mNoteBuilder
                     .setSmallIcon(sContext.getApplicationInfo().icon)
                     .setContentTitle(appName)
                     .setContentText(message.malert)

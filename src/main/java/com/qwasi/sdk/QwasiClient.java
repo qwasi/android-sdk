@@ -47,6 +47,7 @@ public class QwasiClient {
     private JSONRPCHttpClient mSession = null;
     //NetworkTask task;
     String TAG = "QwasiClient";
+
     public QwasiClient(){
         super();
         //task = new NetworkTask();
