@@ -1,18 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.IntentService;
-import android.content.Intent;
-import android.os.IBinder;
-import android.util.Log;
-
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.GeofencingEvent;
-
-import java.util.HashMap;
-import java.util.List;
-
-import io.hearty.witness.Witness;
-
 /**
  * Created by ccoulton on 8/20/15.
  * for Qwasi Technology's Android Open source project
@@ -43,6 +28,22 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.app.IntentService;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingEvent;
+
+import java.util.HashMap;
+import java.util.List;
+
+import io.hearty.witness.Witness;
+
 public class QwasiGeofencehandler extends IntentService {
     String TAG = "QwasiGeofence";
 

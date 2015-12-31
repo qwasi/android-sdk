@@ -1,38 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.os.Bundle;
-import android.os.RemoteException;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.util.Log;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.ErrorDialogFragment;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import com.google.android.gms.location.GeofencingRequest;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-
-import org.altbeacon.beacon.BeaconConsumer;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.jar.Manifest;
-
-import io.hearty.witness.Witness;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
@@ -63,6 +28,36 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package com.qwasi.sdk;
+
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.RemoteException;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.ErrorDialogFragment;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
+import org.altbeacon.beacon.BeaconConsumer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import io.hearty.witness.Witness;
 
 public class QwasiLocationManager //extends IntentService
         implements
@@ -206,7 +201,7 @@ public class QwasiLocationManager //extends IntentService
                 LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
 
             if (sharedApplication instanceof BeaconConsumer)
-                qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
+                qwasiBeacons.mBeaconManager.bind((BeaconConsumer) sharedApplication);
 
             //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
         }
@@ -217,7 +212,7 @@ public class QwasiLocationManager //extends IntentService
             LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
         mmanager.disconnect();
         if (sharedApplication instanceof BeaconConsumer) {
-            qwasiBeacons.beaconManager.unbind((BeaconConsumer) sharedApplication);
+            qwasiBeacons.mBeaconManager.unbind((BeaconConsumer) sharedApplication);
         }
         mstarted = false;
     }
@@ -255,11 +250,11 @@ public class QwasiLocationManager //extends IntentService
                 }
                 else if(input.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon){
                     try{
-                        qwasiBeacons.beaconManager.startRangingBeaconsInRegion(input.beacon);
-                        qwasiBeacons.beaconManager.startMonitoringBeaconsInRegion(input.beacon);
+                        qwasiBeacons.mBeaconManager.startRangingBeaconsInRegion(input.beacon);
+                        qwasiBeacons.mBeaconManager.startMonitoringBeaconsInRegion(input.beacon);
                     }
-                    catch (Exception e){
-                        Log.e("QwasiError", e.getMessage());
+                    catch (RemoteException e){
+                        Log.e("QwasiError", "Beaconconsumer issue, remoteException");
                     }
                 }
                 //else if is rfid?
@@ -280,8 +275,8 @@ public class QwasiLocationManager //extends IntentService
 
         else {
             try {
-                qwasiBeacons.beaconManager.stopRangingBeaconsInRegion(location.beacon);
-                qwasiBeacons.beaconManager.stopMonitoringBeaconsInRegion(location.beacon);
+                qwasiBeacons.mBeaconManager.stopRangingBeaconsInRegion(location.beacon);
+                qwasiBeacons.mBeaconManager.stopMonitoringBeaconsInRegion(location.beacon);
             }
             catch (RemoteException e){
                 Log.e("QwasiError", e.getMessage());

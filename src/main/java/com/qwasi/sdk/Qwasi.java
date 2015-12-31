@@ -1,40 +1,3 @@
-package com.qwasi.sdk;
-
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.media.RingtoneManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-
-import android.preference.PreferenceManager;
-import android.Manifest;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
-import android.telephony.TelephonyManager;
-import android.util.Base64;
-import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-import io.hearty.witness.Reporter;
-import io.hearty.witness.Witness;
-
 /**
  // Qwasi.Java
  //
@@ -63,36 +26,112 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package com.qwasi.sdk;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.media.RingtoneManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.Manifest;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
+import android.telephony.TelephonyManager;
+import android.util.Base64;
+import android.util.Log;
+
+import io.hearty.witness.Reporter;
+import io.hearty.witness.Witness;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class Qwasi{
     static final float LOCATION_EVENT_FILTER = 50.0f;
     static final float LOCATION_UPDATE_FILTER = 100.0f;
     static final float LOCATION_SYNC_FILTER = 200.0f;
     static final float PED_FILTER = 10.0f;
+    @Deprecated
     static Activity mainActivity;
+    static Activity sMainActivity;
+    @Deprecated
     static private Context context = null;
+    static private Context sContext = null;
+    @Deprecated
     SharedPreferences preferences;
+    SharedPreferences mPreferences;
+    @Deprecated
     private float locationSyncFilter;
+    private float mLocationSyncFilter;
     private boolean mregistered;
+    @Deprecated
     String AppID;
+    String mAppId; //android code style
+    @Deprecated
     float locationUpdatefilter;
+    float mLocationUpdateFilter;
+    @Deprecated
     float locationEventFilter;
+    float mLocationEventFilter;
+    @Deprecated
     QwasiAppManager qwasiAppManager = null; //package accessable
+    QwasiAppManager mQwasiAppManager;
+    @Deprecated
     private QwasiNotificationManager qwasiNotificationManager= null;
+    private QwasiNotificationManager mQwasiNotificationManager = null;
     public String deviceName = null;
+    @Deprecated
     public String mapplicationName = null;
+    public String applicationName = null;
+    @Deprecated
     private String mdeviceToken = null;
+    private String mDeviceToken;
+    @Deprecated
     private QwasiClient mclient = null;
+    private QwasiClient mClient;
     public NetworkInfo networkInfo;
+    @Deprecated
     private Map<String, Void> mchannels;
+    private Map<String, Void> mChannels;
+    @Deprecated
     private HashMap<String, QwasiMessage> mmessageCache;
+    private HashMap<String, QwasiMessage> mMessageCache;
+    @Deprecated
     public QwasiLocationManager mlocationManager;
+    public QwasiLocationManager locationManager;
+    @Deprecated
     public QwasiConfig mconfig;
+    protected QwasiConfig mConfig;
     protected String muserToken;
+    @Deprecated
     public Boolean mpushEnabled = false;
+    public Boolean pushEnabled;
+    @Deprecated
     public Boolean mlocationEnabled = false;
+    public Boolean locationEnabled;
+    @Deprecated
     public Boolean meventsEnabled = false;
+    public Boolean eventsEnabled;
+    @Deprecated
     public Boolean museLocalNotifications; //apple only?
+    public Boolean useLocalNotifications;
     String TAG = "Qwasi";
 
     //event tags
@@ -110,9 +149,7 @@ public class Qwasi{
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
         public void onSuccess(Object o) { //should recieve QwasiMessage, or QwasiError
-            if(o instanceof QwasiMessage){
-                Log.i("DefaultCallback", ((QwasiMessage) o).description());
-            } //ignore QwasiError since it's only NoError
+            if(o instanceof QwasiMessage) Log.i("DefaultCallback", ((QwasiMessage) o).description());//ignore QwasiError since it's only NoError
         }
 
         @Override
@@ -135,11 +172,8 @@ public class Qwasi{
         //mlocationManager.init();
         application.getApplication().registerActivityLifecycleCallbacks(qwasiAppManager);
         mconfig.configWithFile(); //default
-        if (mconfig.isValid()) {
-            this.initWithConfig(mconfig, "");
-        } else {
-            Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
-        }
+        if (mconfig.isValid()) this.initWithConfig(mconfig, "");
+        else Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
     }
 
     static public Activity getMainActivity(){return mainActivity;}
@@ -209,9 +243,7 @@ public class Qwasi{
         //check if we have a gcm token already so we don't use too much data
         qwasiNotificationManager.setPushToken(preferences.getString("gcm_token", null));
 
-        if (qwasiNotificationManager.getPushToken() == null) {
-            qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
-        }
+        if (qwasiNotificationManager.getPushToken() == null) qwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         String test;
         if ((ContextCompat.checkSelfPermission(mainActivity, Manifest.permission.GET_ACCOUNTS)&
                 ContextCompat.checkSelfPermission(mainActivity, Manifest.permission.READ_PHONE_STATE))
@@ -223,8 +255,7 @@ public class Qwasi{
 
             test = preferences.getString("qwasi_user_token", ((TelephonyManager) context
                     .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number());
-        }
-        else{
+        } else{
             deviceName = "";
             test = null;
         }
@@ -250,12 +281,8 @@ public class Qwasi{
     }
 
     public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
-        if (pushEnabled){
-            registerForNotifications(callbacks);
-        }
-        else {
-            unregisterForNotifications(callbacks);
-        }
+        if (pushEnabled) registerForNotifications(callbacks);
+        else unregisterForNotifications(callbacks);
     }
 
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
@@ -279,7 +306,7 @@ public class Qwasi{
                         mlastLocationEvent = location;
                     }
                     if(mlastLocationUpdate == null || location.distanceTo(mlastLocationUpdate)>
-                            UPDATE_FILTER(speed, location.distanceTo(mlastLocationUpdate))){
+                            UPDATE_FILTER(speed, location.distanceTo(mlastLocationUpdate))) {
                         mlastLocationUpdate = location;
                     }
                     if (mlastLocationSync == null || location.distanceTo(mlastLocationSync)
@@ -489,8 +516,7 @@ public class Qwasi{
                 }
             };
             Witness.register(Boolean.class, mPushTokenCallback);
-        }
-        else if (mregistered){
+        } else if (mregistered){
             Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = qwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
@@ -528,7 +554,7 @@ public class Qwasi{
                                                     sendNotification((QwasiMessage) o);
                                                 }
                                                 else
-                                                    Witness.notify((QwasiMessage) o);
+                                                    Witness.notify(o);
                                             }
 
                                             @Override
@@ -538,10 +564,8 @@ public class Qwasi{
                                         });
                                     } else {
                                         QwasiMessage message = mmessageCache.get(msgId);
-                                        if (museLocalNotifications)
-                                            sendNotification(message);
-                                        else
-                                            Witness.notify(message);
+                                        if (museLocalNotifications) sendNotification(message);
+                                        else Witness.notify(message);
                                     }
                                 }
                             } else {
@@ -667,10 +691,8 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mmessageCache.put(message.messageId, message);
-                    if (museLocalNotifications)
-                        sendNotification(message);
-                    else
-                        Witness.notify(message);
+                    if (museLocalNotifications) sendNotification(message);
+                    else Witness.notify(message);
                     qwasiInterface.onSuccess(message);
                 }
 
@@ -749,9 +771,7 @@ public class Qwasi{
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mregistered) {
             //if (mlocationEnabled) {
-                if (place == null){
-                    place = QwasiLocation.initEmpty();
-                }
+            place = place == null? QwasiLocation.initEmpty() : place;
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> near = new HashMap<>();
             if (!place.empty) {
@@ -862,9 +882,7 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Unsubcribe from channel Success");
-                    if (mchannels.containsKey(channel)){
-                        mchannels.remove(channel);
-                    }
+                    if (mchannels.containsKey(channel)) mchannels.remove(channel);
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
                 }
@@ -1102,20 +1120,18 @@ public class Qwasi{
             //HashMap<String, Object> encrypted = new HashMap<>();
             String encrypted;
             if (payload != null){
-                if (payload instanceof JSONObject){
-                    payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
-                }
+                if (payload instanceof JSONObject) payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
                 else if (payload instanceof String) {  //payload is plaintext
                     try {
                         encrypted = URLDecoder.decode((String) payload, "UTF-8");
                         payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
                     }
-                    catch (Exception e){
+                    catch (UnsupportedEncodingException e){
                         e.printStackTrace();
+                        Log.e(TAG, "Decoding failed");
                     }
                 }
-                else  //message is silent
-                    payload = "";
+                else payload = ""; //message is silent
             //throw an error, get the data if the data is null, or the error isn't print error
             //set payload to the JSONData
             }
@@ -1178,27 +1194,20 @@ public class Qwasi{
                     null;
 
             String appName = context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
-            if (qwasiNotificationManager.noteBuilder == null) {
-                new QwasiGCMListener().onMessagePolled();
-            }
+            if (qwasiNotificationManager.noteBuilder == null) new QwasiGCMListener().onMessagePolled();
             NotificationCompat.Builder noteBuilder = qwasiNotificationManager.noteBuilder
                     .setSmallIcon(context.getApplicationInfo().icon)
                     .setContentTitle(appName)
                     .setContentText(message.malert)
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
-                    .setSound(defaultSoundUri) //default sound
-                    ;
+                    .setSound(defaultSoundUri); //default sound;
             //configure expanded action
-            if (message.mpayloadType.contains("text")) { //text
-                noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-                //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-            } else if (message.mpayloadType.contains("image")) { //image
-                Log.d(TAG, "Image");
-                //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-            } else if (message.mpayloadType.contains("json")) {//application
-                Log.d(TAG, "App context");
-            }
+            if (message.mpayloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
+            else if (message.mpayloadType.contains("image")) Log.d(TAG, "Image");
+            //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
+            else if (message.mpayloadType.contains("json")) Log.d(TAG, "App context");
             NotificationManager noteMng = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             noteMng.notify(0, noteBuilder.build());
             Witness.notify(message);

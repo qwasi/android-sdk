@@ -1,15 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
-import android.util.Log;
-
-import com.google.android.gms.gcm.GcmListenerService;
-
 /**
  * Created by ccoulton on 8/20/15.
  * as part Qwasi Technogoly for their Android Open Source Project
@@ -40,6 +28,18 @@ import com.google.android.gms.gcm.GcmListenerService;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
+
+package com.qwasi.sdk;
+
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
+
+import com.google.android.gms.gcm.GcmListenerService;
+
 public class QwasiGCMListener extends GcmListenerService{
     @Override
     public void onMessageReceived(String from, final Bundle data) {

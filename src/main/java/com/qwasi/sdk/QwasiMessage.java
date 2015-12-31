@@ -1,15 +1,3 @@
-package com.qwasi.sdk;
-
-import android.util.Base64;
-import android.util.Log;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.Date;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -40,6 +28,20 @@ import java.util.Date;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.util.Base64;
+import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Date;
+
 public class QwasiMessage{
     public String malert;
     public Date mtimestamp;
@@ -82,8 +84,9 @@ public class QwasiMessage{
                 } else if (mpayloadType.contains("text")) {
                     mpayload = new String(temp, "UTF-8");
                 }
-            } catch (Exception e) {
+            } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
+                Log.e(TAG, "Payload Encoding not supported");
             }
             //Log.d(TAG, mpayload.toString());
             return this;

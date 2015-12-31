@@ -1,26 +1,3 @@
-package com.qwasi.sdk;
-
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-
-import android.os.Bundle;
-import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
-import android.util.Log;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
-
-import java.io.IOException;
-import java.util.jar.Manifest;
-
-import io.hearty.witness.Witness;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -51,6 +28,28 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
+import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+import com.google.android.gms.iid.InstanceID;
+
+import java.io.IOException;
+
+import io.hearty.witness.Witness;
+
 public class QwasiNotificationManager{
     private String mpushToken = "";
     private Boolean mregistering;
@@ -100,28 +99,22 @@ public class QwasiNotificationManager{
                     .errorWithCode(QwasiErrorCode.QwasiErrorPushNotEnabled, "Google play not enabled"));
         }
         else {
-            try {
-                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                String token;
-                token = sharedPreferences.getString("gcm_token", "");
-                // We don't have a token so get a new one
-                if (token.isEmpty()&& !mregistering) {
-                    mregistering = !mregistering;
-                    registerForPushInBackground();
-                } else {
-                    // check the version of the token
-                    int appVersion = sharedPreferences.getInt("AppVersion", 0);
-                    int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
 
-                    // Our version is outdated, get a new one
-                    if (registeredVersion != appVersion)
-                        registerForPushInBackground();
-                }
-            }
-            catch (Exception e) {
-                Log.e("QwasiError", "Problem registering" + e.getMessage());
-                callbacks.onFailure(new QwasiError()
-                        .errorWithCode(QwasiErrorCode.QwasiErrorPushRegistrationFailed, "problem with registering"));
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+            String token;
+            token = sharedPreferences.getString("gcm_token", "");
+            // We don't have a token so get a new one
+            if (token.isEmpty()&& !mregistering) {
+                mregistering = !mregistering;
+                registerForPushInBackground();
+            } else {
+                // check the version of the token
+                int appVersion = sharedPreferences.getInt("AppVersion", 0);
+                int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
+
+                // Our version is outdated, get a new one
+                if (registeredVersion != appVersion)
+                    registerForPushInBackground();
             }
         }
         callbacks.onSuccess(this.getPushToken());
