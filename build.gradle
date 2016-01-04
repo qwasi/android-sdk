@@ -18,11 +18,13 @@ buildscript {
 allprojects{
     repositories{
 		jcenter()
-		//maven{url "file:///Users/ccoulton/qwasijson"}
     }
 }
 
-//apply from: 'deployment.gradle'
+task dist{
+	apply from: 'deployment.gradle'
+}
+
 apply plugin: 'com.moowork.grunt'
 apply plugin: 'com.android.library'
 
