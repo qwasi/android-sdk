@@ -44,9 +44,9 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ## Gradle Dependencies
 
 ```groovy
- 'com.google.android.gms:play-services-gcm:7.5.0'
- 'com.google.android.gms:play-services-location:7.5.0'
- 'com.qwasi:QwasiJSON:1.0.1'  //forces legacy libraries for marshmallow
+ 'com.google.android.gms:play-services-gcm:8.4.0'
+ 'com.google.android.gms:play-services-location:8.4.0'
+ 'com.qwasi:QwasiJSON:1.0.4'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
