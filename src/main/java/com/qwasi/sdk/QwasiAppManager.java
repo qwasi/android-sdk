@@ -74,7 +74,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityDestroyed(Activity activity){
-        mSharedApplication.mlocationManager.stopLocationUpdates();
+        mSharedApplication.locationManager.stopLocationUpdates();
     }
 
     @Override
@@ -85,9 +85,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
         ++mResumed;
-        if (QwasiLocationManager.getInstance().mmanager !=null) {
-            if (!mSharedApplication.mlocationManager.mmanager.isConnected())
-                mSharedApplication.mlocationManager.mmanager.connect();
+        if (QwasiLocationManager.getInstance().manager !=null) {
+            if (!mSharedApplication.locationManager.manager.isConnected())
+                mSharedApplication.locationManager.manager.connect();
         }
     }
 
@@ -95,7 +95,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     public void onActivityPaused(Activity activity){
         android.util.Log.d(TAG, "ActivityPaused");
         ++mPaused;
-        mSharedApplication.mlocationManager.mmanager.disconnect();
+        mSharedApplication.locationManager.manager.disconnect();
         android.util.Log.w(TAG, "application is in foreground: " + isApplicationInForeground());
     }
 
@@ -116,7 +116,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<>();
         event = mSharedApplication.kEventApplicationState;
         data.put("", "");
-        mSharedApplication.mlocationManager.mmanager.disconnect();
+        mSharedApplication.locationManager.manager.disconnect();
         if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
         }

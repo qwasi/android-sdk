@@ -88,8 +88,8 @@ public class QwasiLocationManager //extends IntentService
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mUpdateDistance) //how far can the device move
                 .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
-        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
-            init();
+        //if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
+        //    init();
         mInstance = this;
         qwasiBeacons = new QwasiBeacons();
     }
@@ -99,7 +99,7 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public QwasiLocation getLastLocation(){
-        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (mLastLocation != null) {
                 return mLastLocation;
             } else if (LocationServices.FusedLocationApi.getLastLocation(mmanager) != null) {
@@ -202,7 +202,7 @@ public class QwasiLocationManager //extends IntentService
 
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
-        if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (!mmanager.isConnected()||!manager.isConnected()){
                 manager = mmanager;
                 manager.connect();
@@ -246,7 +246,7 @@ public class QwasiLocationManager //extends IntentService
 
     public QwasiErrorCode startMoitoringLocation(QwasiLocation input){
         synchronized (this){
-            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
+            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
                 Witness.notify(input.toString());
                 mLocationsFetched.add(input.id);
                 mregionMap.put(input.id, input);
@@ -254,21 +254,17 @@ public class QwasiLocationManager //extends IntentService
                     GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
                     builder.addGeofence(input.mRegion);
 
-                    if (mmanager.isConnected()||manager.isConnected()) {
+                    if (mmanager.isConnected() || manager.isConnected()) {
                         manager = mmanager;
                         LocationServices.GeofencingApi.addGeofences(manager, builder.build(), getGeoPendingIntent());
-                    }
-
-                    else {
+                    } else {
                         manager.connect();
                     }
-                }
-                else if(input.mType == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon){
-                    try{
+                } else if (input.mType == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon) {
+                    try {
                         qwasiBeacons.mBeaconManager.startRangingBeaconsInRegion(input.mBeacon);
                         qwasiBeacons.mBeaconManager.startMonitoringBeaconsInRegion(input.mBeacon);
-                    }
-                    catch (RemoteException e){
+                    } catch (RemoteException e) {
                         Log.e("QwasiError", "Beaconconsumer issue, remoteException");
                     }
                 }

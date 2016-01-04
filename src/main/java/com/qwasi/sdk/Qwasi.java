@@ -68,7 +68,7 @@ public class Qwasi{
     static final float LOCATION_UPDATE_FILTER = 100.0f;
     static final float LOCATION_SYNC_FILTER = 200.0f;
     static final float PED_FILTER = 10.0f;
-    static Activity sMainActivity;
+    //static Activity sMainActivity;
     static private Context sContext = null;
     SharedPreferences mPreferences;
     private float mLocationSyncFilter;
@@ -135,7 +135,7 @@ public class Qwasi{
 
     public Qwasi(Activity application)/*public constructor iOS 46*/ {
         this.mClient = new QwasiClient();
-        sMainActivity = application;
+        //sMainActivity = application;
         mChannels = new HashMap<>();
         sContext = application.getApplicationContext();
         this.mQwasiAppManager = new QwasiAppManager(this);
@@ -152,7 +152,7 @@ public class Qwasi{
         else Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
     }
 
-    static public Activity getMainActivity(){return sMainActivity;}
+   // static public Activity getMainActivity(){return sMainActivity;}
 
     static public Context getContext(){ return sContext; } //return application context
 
@@ -223,8 +223,8 @@ public class Qwasi{
 
         if (mQwasiNotificationManager.getPushToken() == null) mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         String test;
-        if ((ContextCompat.checkSelfPermission(sMainActivity, Manifest.permission.GET_ACCOUNTS)&
-                ContextCompat.checkSelfPermission(sMainActivity, Manifest.permission.READ_PHONE_STATE))
+        if ((ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)&
+                ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE))
                 == PackageManager.PERMISSION_GRANTED) {
             Account[] accounts = AccountManager.get(sContext).getAccountsByType("com.google");
 

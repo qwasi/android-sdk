@@ -54,7 +54,7 @@ public class QwasiGCMListener extends GcmListenerService{
 
     public void onMessagePolled(){
         synchronized (this) {
-            Context baseContext = Qwasi.getMainActivity().getBaseContext();
+            Context baseContext = Qwasi.getContext();
             PackageManager manager = baseContext.getPackageManager();
             Intent intent = manager.getLaunchIntentForPackage(baseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             PendingIntent pendingIntent = PendingIntent.getActivity(baseContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
