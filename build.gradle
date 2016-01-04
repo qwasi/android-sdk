@@ -105,6 +105,10 @@ archivesBaseName = packageJson.name
 version = packageJson.version
 File configFile = file('./')
 
+signing {
+	sign configurations.archives
+}
+
 uploadArchives{
 	repositories{
 		mavenDeployer {
