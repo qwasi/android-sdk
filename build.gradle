@@ -14,6 +14,7 @@ buildscript {
 
 	dependencies {
 		classpath 'com.moowork.gradle:gradle-grunt-plugin:0.11'
+		classpath 'com.github.dcendents:android-maven-gradle-plugin:1.3'
 		classpath 'io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3'
 		classpath 'com.android.tools.build:gradle:1.5.0'
 	}
@@ -28,8 +29,8 @@ allprojects{
 apply plugin: 'com.moowork.grunt'
 apply plugin: 'com.android.library'
 apply plugin: 'signing'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
+apply plugin: 'com.github.dcendents.android-maven'
+//apply plugin: 'maven-publish'
 apply plugin: 'io.codearte.nexus-staging'
 
 android {
@@ -107,6 +108,7 @@ File configFile = file('./')
 uploadArchives{
 	repositories{
 		mavenDeployer {
+			String filePath = "file://"+configFile.absolutePath
 			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
@@ -153,10 +155,6 @@ uploadArchives{
 	}
 }
 
-publishToMavenLocal{
-	repositories{
-		maven {
-			url configFile.absolutePath
-		}
-	}
+install{
+	repositories.mavenLocal().url = "file:/"+configFile.absolutePath
 }
