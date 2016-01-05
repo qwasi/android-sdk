@@ -1,38 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.Activity;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.os.Bundle;
-import android.os.RemoteException;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.util.Log;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.ErrorDialogFragment;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import com.google.android.gms.location.GeofencingRequest;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-
-import org.altbeacon.beacon.BeaconConsumer;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.jar.Manifest;
-
-import io.hearty.witness.Witness;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for their Open source Android SDK example
@@ -63,44 +28,78 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package com.qwasi.sdk;
+
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.RemoteException;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.ErrorDialogFragment;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+
+import org.altbeacon.beacon.BeaconConsumer;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import io.hearty.witness.Witness;
 
 public class QwasiLocationManager //extends IntentService
         implements
         GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
-    private Context sharedApplication;
-    boolean mstarted = false;
-    long mupdateDistance = 100; //10 meter
-    long mupdateInterval =1800000; //30 minutes in milliseconds;
+    private Context mSharedApplication;
+    boolean mStarted = false;
+    long mUpdateDistance = 100; //10 meter
+    long mUpdateInterval =1800000; //30 minutes in milliseconds;
+    @Deprecated
     public GoogleApiClient mmanager = null;
+    public GoogleApiClient manager = mmanager;
+    @Deprecated
     public HashMap<String, QwasiLocation> mregionMap = new HashMap<>();
+    public HashMap<String, QwasiLocation> regionMap = mregionMap;
     QwasiLocation mLastLocation = null;
-    protected LocationRequest mactiveManager = LocationRequest.create();
-    private static String TAG = "QwasiLocationManager";
+    protected LocationRequest mActiveManager = LocationRequest.create();
+    static String TAG = "QwasiLocationManager";
     public QwasiBeacons qwasiBeacons;
-    private static QwasiLocationManager instance;
-    List<String> locationsfetched = new ArrayList<>();
+    private static QwasiLocationManager mInstance;
+    List<String> mLocationsFetched = new ArrayList<>();
 
     private QwasiLocationManager(){
         //super(TAG);
-        sharedApplication = Qwasi.getContext();
-        mactiveManager.setInterval(mupdateInterval/10) //3 minute updates
+        mSharedApplication = Qwasi.getContext();
+        mActiveManager.setInterval(mUpdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setSmallestDisplacement(mupdateDistance) //how far can the device move
-                .setMaxWaitTime(mupdateInterval); //30 minutes max to get an update
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
-            init();
-        instance = this;
+                .setSmallestDisplacement(mUpdateDistance) //how far can the device move
+                .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
+        //if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
+        //    init();
+        mInstance = this;
         qwasiBeacons = new QwasiBeacons();
     }
 
     public static synchronized QwasiLocationManager getInstance(){
-        return instance == null?new QwasiLocationManager():instance;
+        return mInstance == null?new QwasiLocationManager():mInstance;
     }
 
     public QwasiLocation getLastLocation(){
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             if (mLastLocation != null) {
                 return mLastLocation;
             } else if (LocationServices.FusedLocationApi.getLastLocation(mmanager) != null) {
@@ -112,18 +111,18 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public LocationRequest currentManager(){
-        return (mactiveManager);
+        return (mActiveManager);
     }
 
     public LocationRequest foregroundManager(){
-        return mactiveManager != null? mactiveManager:null;
+        return mActiveManager != null? mActiveManager:null;
     }
 
     @Override
     public void onConnectionSuspended(int i) {
         if (mmanager != null) {
             mmanager.reconnect();
-            mstarted = false;
+            mStarted = false;
         }
     }
 
@@ -131,10 +130,11 @@ public class QwasiLocationManager //extends IntentService
     public void onConnectionFailed(ConnectionResult connectionResult) {
         if (connectionResult.hasResolution()){
             try{//needs main activity
-                connectionResult.startResolutionForResult((Activity)sharedApplication, 1001);
+                connectionResult.startResolutionForResult((Activity)mSharedApplication, 1001);
             }
             catch(Exception e){
-                mmanager.connect();
+                manager = mmanager;
+                manager.connect();
             }
         }
         else{
@@ -143,16 +143,16 @@ public class QwasiLocationManager //extends IntentService
             arguments.putInt("dialog_error", connectionResult.getErrorCode());
             diagFrag.setArguments(arguments);
         }
-        mstarted = false;
+        mStarted = false;
     }
 
     @Override
     public void onConnected(Bundle bundle){
-        mstarted = mmanager.isConnected();
-        if (mstarted)
+        mStarted = manager.isConnected();
+        if (mStarted)
             startLocationUpdates();
         else
-            mmanager.reconnect();
+            manager.reconnect();
     }
 
     @Override
@@ -161,7 +161,7 @@ public class QwasiLocationManager //extends IntentService
         if (mLastLocation == null){
             mLastLocation = new QwasiLocation(location);
         }
-        else if (location.distanceTo(mLastLocation)< mupdateDistance){  //if it hasn't been 100m
+        else if (location.distanceTo(mLastLocation)< mUpdateDistance){  //if it hasn't been 100m
             return;
         }
         else {
@@ -183,83 +183,89 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public synchronized Object init(){
-        mmanager = new GoogleApiClient.Builder(sharedApplication)
+        mmanager = new GoogleApiClient.Builder(mSharedApplication)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+        manager = mmanager;
         return this;
     }
 
     public synchronized Object initWithGoogleApi(GoogleApiClient manager){
         mmanager = manager;
-        mmanager.registerConnectionCallbacks(this);
-        mmanager.registerConnectionFailedListener(this);
+        this.manager = mmanager;
+        this.manager.registerConnectionCallbacks(this);
+        this.manager.registerConnectionFailedListener(this);
         return this;
     }
 
     public void startLocationUpdates(){
         Log.i(TAG, "Start LocationUpdates");
-        if (ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            if (!mmanager.isConnected()) mmanager.connect();
+        if (ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (!mmanager.isConnected()||!manager.isConnected()){
+                manager = mmanager;
+                manager.connect();
+            }
             else
-                LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mactiveManager, this); //foreground
+                LocationServices.FusedLocationApi.requestLocationUpdates(mmanager, mActiveManager, this); //foreground
 
-            if (sharedApplication instanceof BeaconConsumer)
-                qwasiBeacons.beaconManager.bind((BeaconConsumer) sharedApplication);
+            if (mSharedApplication instanceof BeaconConsumer)
+                qwasiBeacons.mBeaconManager.bind((BeaconConsumer) mSharedApplication);
 
             //mresult = LocationServices.FusedLocationApi.requestLocationUpdates(mmanager,mactiveManager, mintent); //background
         }
     }
 
     public void stopLocationUpdates(){
-        if(mmanager.isConnected())
-            LocationServices.FusedLocationApi.removeLocationUpdates(mmanager, this);
-        mmanager.disconnect();
-        if (sharedApplication instanceof BeaconConsumer) {
-            qwasiBeacons.beaconManager.unbind((BeaconConsumer) sharedApplication);
+        if(mmanager.isConnected()||manager.isConnected()){
+            manager = mmanager;
+            LocationServices.FusedLocationApi.removeLocationUpdates(manager, this);
         }
-        mstarted = false;
+        manager = mmanager;
+        manager.disconnect();
+        if (mSharedApplication instanceof BeaconConsumer) {
+            qwasiBeacons.mBeaconManager.unbind((BeaconConsumer) mSharedApplication);
+        }
+        mStarted = false;
     }
 
     void pruneLocations(){ // FIXME:make this remove locations with no app id
         //this is for removing of old locations that didn't come back as valid from the last fetch
-        Iterator<String> stringIterator = mregionMap.keySet().iterator();
-        while(stringIterator.hasNext() && (locationsfetched.size() != mregionMap.size())){
+        regionMap = mregionMap;
+        Iterator<String> stringIterator = regionMap.keySet().iterator();
+        while(stringIterator.hasNext() && (mLocationsFetched.size() != regionMap.size())){
             String current = stringIterator.next();
-            if(!locationsfetched.contains(current)) {
+            if(!mLocationsFetched.contains(current)) {
                 //if the regionmap has a location key not in the latest fetch
-                this.stopMonitoringLocation(mregionMap.get(current));
+                this.stopMonitoringLocation(regionMap.get(current));
             }
         }
-        locationsfetched.clear(); //so that next time locations are fetched we don't maintain old ones
+        mLocationsFetched.clear(); //so that next time locations are fetched we don't maintain old ones
     }
 
     public QwasiErrorCode startMoitoringLocation(QwasiLocation input){
         synchronized (this){
-            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.mainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
+            if (input != null &&(ContextCompat.checkSelfPermission(Qwasi.getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)) {
                 Witness.notify(input.toString());
-                locationsfetched.add(input.id);
+                mLocationsFetched.add(input.id);
                 mregionMap.put(input.id, input);
-                if (input.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
+                if (input.mType == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
                     GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
-                    builder.addGeofence(input.region);
+                    builder.addGeofence(input.mRegion);
 
-                    if (mmanager.isConnected()) {
-                        LocationServices.GeofencingApi.addGeofences(mmanager, builder.build(), getGeoPendingIntent());
+                    if (mmanager.isConnected() || manager.isConnected()) {
+                        manager = mmanager;
+                        LocationServices.GeofencingApi.addGeofences(manager, builder.build(), getGeoPendingIntent());
+                    } else {
+                        manager.connect();
                     }
-
-                    else {
-                        mmanager.connect();
-                    }
-                }
-                else if(input.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon){
-                    try{
-                        qwasiBeacons.beaconManager.startRangingBeaconsInRegion(input.beacon);
-                        qwasiBeacons.beaconManager.startMonitoringBeaconsInRegion(input.beacon);
-                    }
-                    catch (Exception e){
-                        Log.e("QwasiError", e.getMessage());
+                } else if (input.mType == QwasiLocation.QwasiLocationType.QwasiLocationTypeBeacon) {
+                    try {
+                        qwasiBeacons.mBeaconManager.startRangingBeaconsInRegion(input.mBeacon);
+                        qwasiBeacons.mBeaconManager.startMonitoringBeaconsInRegion(input.mBeacon);
+                    } catch (RemoteException e) {
+                        Log.e("QwasiError", "Beaconconsumer issue, remoteException");
                     }
                 }
                 //else if is rfid?
@@ -274,26 +280,28 @@ public class QwasiLocationManager //extends IntentService
 
     public void stopMonitoringLocation(QwasiLocation location){
 
-        if (location.type == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
-            LocationServices.GeofencingApi.removeGeofences(mmanager, Collections.singletonList(location.id));
+        if (location.mType == QwasiLocation.QwasiLocationType.QwasiLocationTypeGeofence) {
+            manager = mmanager;
+            LocationServices.GeofencingApi.removeGeofences(manager, Collections.singletonList(location.id));
         }
 
         else {
             try {
-                qwasiBeacons.beaconManager.stopRangingBeaconsInRegion(location.beacon);
-                qwasiBeacons.beaconManager.stopMonitoringBeaconsInRegion(location.beacon);
+                qwasiBeacons.mBeaconManager.stopRangingBeaconsInRegion(location.mBeacon);
+                qwasiBeacons.mBeaconManager.stopMonitoringBeaconsInRegion(location.mBeacon);
             }
             catch (RemoteException e){
                 Log.e("QwasiError", e.getMessage());
             }
         }
         Witness.notify("Location stop moitoring" + location.toString());
-        mregionMap.remove(location.id);
+        regionMap = mregionMap;
+        regionMap.remove(location.id);
     }
 
     private PendingIntent getGeoPendingIntent(){
-        Intent intent = new Intent(sharedApplication, QwasiGeofencehandler.class);
-        sharedApplication.getSystemService(Context.LOCATION_SERVICE);
-        return PendingIntent.getService(sharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent intent = new Intent(mSharedApplication, QwasiGeofencehandler.class);
+        mSharedApplication.getSystemService(Context.LOCATION_SERVICE);
+        return PendingIntent.getService(mSharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 }

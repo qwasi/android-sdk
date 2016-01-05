@@ -1,17 +1,3 @@
-package com.qwasi.sdk;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-
-import com.qwasi.QwasiJson.jsonrpc.JSONRPCException;
-import com.qwasi.QwasiJson.jsonrpc.JSONRPCHttpClient;
-
-import java.util.Map;
-
-import android.util.Log;
-
-import org.json.JSONObject;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -42,12 +28,26 @@ import org.json.JSONObject;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.util.Log;
+
+import com.qwasi.QwasiJson.jsonrpc.JSONRPCException;
+import com.qwasi.QwasiJson.jsonrpc.JSONRPCHttpClient;
+
+import org.json.JSONObject;
+
+import java.util.Map;
+import java.net.URL;
+
 public class QwasiClient {
-    URL server = null;
-    QwasiSession session;
-    private JSONRPCHttpClient msession = null;
+    URL mServer = null;
+    QwasiSession mQwasiSession;
+    private JSONRPCHttpClient mSession = null;
     //NetworkTask task;
     String TAG = "QwasiClient";
+
     public QwasiClient(){
         super();
         //task = new NetworkTask();
@@ -59,15 +59,10 @@ public class QwasiClient {
 
     private QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager){
         if (config.murl != null){
-            try{
-                this.session = new QwasiSession(config, Manager);
-                server = new URL(config.murl.toString());
-                //connection = (HttpURLConnection) server.openConnection();
-                msession = new JSONRPCHttpClient(server.toString(),session.headers);
-            }
-            catch (MalformedURLException e){
-                Log.d(TAG, e.getMessage());
-            }
+            this.mQwasiSession = new QwasiSession(config, Manager);
+            mServer = config.murl;
+            //connection = (HttpURLConnection) server.openConnection();
+            mSession = new JSONRPCHttpClient(mServer.toString(),mQwasiSession.mHeaders);
         }
         return this;
     }
@@ -79,7 +74,7 @@ public class QwasiClient {
                 Log.d(TAG, "invoking API "+method+", with params: "+parms.toString());
                 JSONObject jsonparms = new JSONObject(parms);
                 try {
-                    JSONObject response = msession.callJSONObject(method, jsonparms);
+                    JSONObject response = mSession.callJSONObject(method, jsonparms);
                     Log.d(TAG, method + " successful");
                     callbacks.onSuccess(response);
                 }
@@ -100,7 +95,7 @@ public class QwasiClient {
                 Log.d(TAG, "invoking API "+method+", with parms: "+parms.toString());
                 JSONObject jsonparms = new JSONObject(parms);
                 try{
-                    msession.call(method, jsonparms);
+                    mSession.call(method, jsonparms);
                     Log.d(TAG, method + " successful");
                     callbacks.onSuccess(null);
                 }

@@ -1,23 +1,3 @@
-package com.qwasi.sdk;
-
-import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-
-import android.util.Log;
-
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -48,15 +28,42 @@ import java.nio.charset.Charset;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+
+import android.util.Log;
+
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
+
 public class QwasiConfig{
+    @Deprecated
     public URL murl = null;
+    public URL url = murl;
+    @Deprecated
     public String mapplication = "";
+    public String application = mapplication;
+    @Deprecated
     public String mkey = "";
-    private Context sharedApplication;
+    public String key = mkey;
+    private Context mSharedApplication;
     String TAG = "QwasiConfig";
 
     public QwasiConfig(Context context){
-        sharedApplication = context;
+        mSharedApplication = context;
     }
 
     public QwasiConfig configWithFile(){
@@ -91,7 +98,9 @@ public class QwasiConfig{
             }
             else{ //read from the xml file
                 //set up new application info w/  Application.packageManager.getApplicationInfo("application name", get the meta data)
-                ApplicationInfo applicationInfo = sharedApplication.getPackageManager().getApplicationInfo(sharedApplication.getPackageName(), PackageManager.GET_META_DATA);
+                PackageManager packageManager = mSharedApplication.getPackageManager();
+                ApplicationInfo applicationInfo = packageManager
+                        .getApplicationInfo(mSharedApplication.getPackageName(), PackageManager.GET_META_DATA);
                 if((applicationInfo.metaData != null)&&(!applicationInfo.metaData.isEmpty())){  //make sure we have meta data to parse
                     //start looking for key values
                     if(applicationInfo.metaData.containsKey("apiKey")){  //is and apikey value present
@@ -136,37 +145,37 @@ public class QwasiConfig{
     }
 
     private QwasiConfig initWithURL(URL input, String App, String Key){
-        this.murl = input;
-
-        if (murl == null){
+        murl = input;
+        url = murl;
+        if (url == null){
             try {
-                murl = new URL("https://api.qwasi.com/v1:8000");
+                url = new URL("https://api.qwasi.com/v1:8000");
             }
             catch (MalformedURLException e){
                 System.err.println("Malformed URL Exeption: "+e.getMessage());
             }
         }
 
-        this.mapplication = App;
-
-        if (mapplication == null){
-            mapplication = "INVAILD_APP_ID";
+        mapplication = App;
+        application = mapplication;
+        if (application == null){
+            application = "INVAILD_APP_ID";
         }
 
-        this.mkey = Key;
-
-        if (mkey == null){
-            mkey = "INVAILD_API_KEY";
+        mkey = Key;
+        key = mkey;
+        if (key == null){
+            key = "INVAILD_API_KEY";
         }
         return this;
     }
 
     public boolean isValid(){
 
-        return!((murl == null)|| //if url is null
-                ((mapplication == null) || //or if application is null, or (it's empty or invalid)
-                        (mapplication.equalsIgnoreCase("")|| mapplication.equalsIgnoreCase("INVAILD_APP_ID")))||
-                ((mkey == null) || //or if key is null, or it's empty or invalid
-                        (mkey.equalsIgnoreCase("")|| mkey.equalsIgnoreCase("INVAILD_API_KEY"))));
+        return!((url == null)|| //if url is null
+                ((application == null) || //or if application is null, or (it's empty or invalid)
+                        (application.equalsIgnoreCase("")|| application.equalsIgnoreCase("INVAILD_APP_ID")))||
+                ((key == null) || //or if key is null, or it's empty or invalid
+                        (key.equalsIgnoreCase("")|| key.equalsIgnoreCase("INVAILD_API_KEY"))));
     }
 }

@@ -30,6 +30,13 @@ You must also include the SDK into the dependencies.
     }
 ```
 
+Local installation is also possiable, using github
+```sh
+    git clone github.com/qwasi/android-sdk.git QwasiSDK
+    gradle clean build install 
+```
+This will put the local maven repo into your git repo under the com folder.
+
 ## License
 
 Qwasi is available under the MIT license. See the LICENSE file for more info.
