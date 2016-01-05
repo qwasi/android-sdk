@@ -43,6 +43,7 @@ import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.gcm.GcmReceiver;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
@@ -50,11 +51,10 @@ import java.io.IOException;
 
 import io.hearty.witness.Witness;
 
-public class QwasiNotificationManager{
+public class QwasiNotificationManager extends GcmReceiver{
     private String mPushToken = "";
     private Boolean mRegistering;
-    private Context mContext;
-    //PendingIntent mIntent;
+    static Context mContext;
     NotificationCompat.Builder mNoteBuilder;
     //final private Qwasi qwasi;
     private String mSenderId;
@@ -74,10 +74,6 @@ public class QwasiNotificationManager{
     public static QwasiNotificationManager getInstance(){
         return instance != null?instance:new QwasiNotificationManager();
     }
-
-    /**
-     * Public constructor to be accessed from Qwasi
-     */
 
     public Boolean isRegistering() {
         return mRegistering;
@@ -153,10 +149,19 @@ public class QwasiNotificationManager{
 
     void onMessage(NotificationCompat.Builder builder, Bundle data){
         this.mNoteBuilder = builder;
+        Log.d(TAG, this.toString());
         Witness.notify(data);
     }
 
     void onMessage(NotificationCompat.Builder builder){
         this.mNoteBuilder = builder;
+    }
+
+    @Override
+    public String toString(){
+        String output = super.toString()+'\n';
+        output += "context: " + (mContext != null?mContext.toString():"null")+'\n';
+        output += "pushtoken: "+ (!mPushToken.isEmpty()?mPushToken:"empty")+'\n';
+        return output;
     }
 }

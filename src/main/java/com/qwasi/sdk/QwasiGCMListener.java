@@ -50,7 +50,6 @@ public class QwasiGCMListener extends GcmListenerService{
             NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
                     .setContentIntent(pendingIntent);
             QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
-            Log.d("Message Recieved", "qwasiGCMlistenerRECIEVE");
         }
     }
 
