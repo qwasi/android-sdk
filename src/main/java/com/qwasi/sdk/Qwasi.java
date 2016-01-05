@@ -31,6 +31,7 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -68,7 +69,7 @@ public class Qwasi{
     static final float LOCATION_UPDATE_FILTER = 100.0f;
     static final float LOCATION_SYNC_FILTER = 200.0f;
     static final float PED_FILTER = 10.0f;
-    //static Activity sMainActivity;
+    static Application sMainApplication;
     static private Context sContext = null;
     SharedPreferences mPreferences;
     private float mLocationSyncFilter;
@@ -133,20 +134,20 @@ public class Qwasi{
         }
     };
 
-    public Qwasi(Activity application)/*public constructor iOS 46*/ {
-        this.mClient = new QwasiClient();
-        //sMainActivity = application;
+    public Qwasi(Application application)/*public constructor iOS 46*/ {
+        mClient = new QwasiClient();
+        sMainApplication = application;
         mChannels = new HashMap<>();
         sContext = application.getApplicationContext();
-        this.mQwasiAppManager = new QwasiAppManager(this);
-        this.networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        mQwasiAppManager = new QwasiAppManager(this);
+        networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         mQwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(sContext);
         config = mconfig;
         mlocationManager = QwasiLocationManager.getInstance();
         locationManager = mlocationManager;
         //mlocationManager.init();
-        application.getApplication().registerActivityLifecycleCallbacks(mQwasiAppManager);
+        application.registerActivityLifecycleCallbacks(mQwasiAppManager);
         config.configWithFile(); //default
         if (config.isValid()) this.initWithConfig(config, "");
         else Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
@@ -242,9 +243,9 @@ public class Qwasi{
         return this;
     }
 
-    public synchronized void setConfig(QwasiConfig config)/*iOS 95*/{
-        this.mconfig = config;
-        mAppId = config.mapplication;
+    public synchronized void setConfig(QwasiConfig iconfig)/*iOS 95*/{
+        config = iconfig;
+        mAppId = iconfig.mapplication;
         mClient = mClient.clientWithConfig(config, this);
         mRegistered = false;
     }
