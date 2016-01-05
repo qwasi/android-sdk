@@ -111,7 +111,6 @@ signing {
 uploadArchives{
 	repositories{
 		mavenDeployer {
-			String filePath = "file://"+configFile.absolutePath
 			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
 			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
@@ -160,4 +159,39 @@ uploadArchives{
 
 install{
 	repositories.mavenLocal().url = "file:/"+configFile.absolutePath
+	repositories.mavenInstaller.pom*.project {
+			name 'QwasiSDK'
+			packaging 'jar'
+			description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
+			url "https://github.com/Qwasi"
+			scm {
+				connection 'scm:git:git@github.com:qwasi/android-sdk.git'
+				developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
+				url 'https://github.com/qwasi/android-sdk'
+			}
+			licenses {
+				license {
+					name 'MIT'
+					distribution 'repo'
+				}
+			}
+
+			developers {
+				developer {
+					id 'ccoulton'
+					name 'Charles Coulton'
+					email 'charles.coulton@qwasi.com'
+				}
+				developer {
+					name 'Rob Rodriguez'
+					email 'rob.rodriguez@qwasi.com'
+				}
+				developer {
+					id 'qwasibuild'
+					name 'Qwasi Bamboo'
+					email 'support@qwasi.com'
+				}
+			}
+		}
+
 }
