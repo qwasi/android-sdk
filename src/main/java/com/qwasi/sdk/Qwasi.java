@@ -1174,26 +1174,23 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message)/*android default notification builder*/{
-        if (message != null) {
-            Uri defaultSoundUri = message.silent() ?
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
-                    null;
-
+        if ((message != null) && (!message.silent())) {
+            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             String appName = sContext.getPackageManager().getApplicationLabel(sContext.getApplicationInfo()).toString();
             if (mQwasiNotificationManager.mNoteBuilder == null) new QwasiGCMListener().onMessagePolled();
             NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.mNoteBuilder
                     .setSmallIcon(sContext.getApplicationInfo().icon)
                     .setContentTitle(appName)
-                    .setContentText(message.malert)
+                    .setContentText(message.alert)
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
                     .setSound(defaultSoundUri); //default sound;
             //configure expanded action
-            if (message.mpayloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            if (message.payloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
             //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-            else if (message.mpayloadType.contains("image")) Log.d(TAG, "Image");
+            else if (message.payloadType.contains("image")) Log.d(TAG, "Image");
             //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-            else if (message.mpayloadType.contains("json")) Log.d(TAG, "App context");
+            else if (message.payloadType.contains("json")) Log.d(TAG, "App context");
             NotificationManager noteMng = (NotificationManager) sContext.getSystemService(Context.NOTIFICATION_SERVICE);
             noteMng.notify(0, noteBuilder.build());
             Witness.notify(message);
