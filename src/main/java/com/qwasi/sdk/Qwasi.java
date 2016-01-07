@@ -95,7 +95,7 @@ public class Qwasi{
     @Deprecated
     public QwasiConfig mconfig;
     public QwasiConfig config;
-    protected String muserToken;
+    protected String mUserToken;
     @Deprecated
     public Boolean mpushEnabled = false;
     public Boolean pushEnabled;
@@ -228,7 +228,7 @@ public class Qwasi{
         mRegistered = mPreferences.getBoolean("registered", false);
 
         //are localNotifcations set
-        museLocalNotifications = mPreferences.getBoolean("localNote", true);
+        museLocalNotifications = mPreferences.getBoolean("QwasiLocalNote", true);
         useLocalNotifications = museLocalNotifications;
 
         mMessageCache = new HashMap<>();
@@ -254,7 +254,7 @@ public class Qwasi{
             deviceName = "";
         }
 
-        muserToken = !test.isEmpty()?test:"DROIDTOKEN";
+        mUserToken = !test.isEmpty()?test:"DROIDTOKEN";
         mQwasiNotificationManager.addQwasi(this);
         return this;
     }
@@ -348,8 +348,8 @@ public class Qwasi{
         name = name == null? deviceName:name;
 
          //if we didn't get a usertoken set it to be the phone number
-        userToken = userToken== null?muserToken:userToken;
-        muserToken = userToken;
+        userToken = userToken== null?mUserToken:userToken;
+        mUserToken = userToken;
 
         Map<String, Object> info = new HashMap<>();
 
@@ -436,16 +436,16 @@ public class Qwasi{
     }
 
     public synchronized String getUserToken(){
-        return muserToken;
+        return mUserToken;
     }
 
     public synchronized void setUserToken(String userToken)/*iOS 381*/{
-        muserToken = userToken;
+        mUserToken = userToken;
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
 
             parms.put("id", mDeviceToken);
-            parms.put("user_token", muserToken);
+            parms.put("user_token", mUserToken);
             mClient.invokeNotification("device.set_user_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
@@ -694,8 +694,11 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (useLocalNotifications||museLocalNotifications) sendNotification(message);
-                    else Witness.notify(message);
+                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotifications(message);
+                    else {
+                        new QwasiGCMListener().onQwasiMessage(message);
+                        Witness.notify(message);
+                    }
                     qwasiInterface.onSuccess(message);
                 }
 
@@ -991,7 +994,7 @@ public class Qwasi{
     public synchronized void setMemberValue(Object value, String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("key",key);
             parms.put("value", value);
             mClient.invokeMethod("member.set", parms, new QwasiInterface() {
@@ -1021,7 +1024,7 @@ public class Qwasi{
     public synchronized void memberValueForKey(String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("key", key);
             mClient.invokeMethod("member.get", parms, new QwasiInterface() {
                 @Override
@@ -1051,7 +1054,7 @@ public class Qwasi{
     public synchronized void memberSetUserName(String userName, String password, String currentPass, final QwasiInterface qwasiInterface){
         if (mRegistered){
             final Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("username", userName);
             parms.put("password", password);
             parms.put("current", currentPass);
