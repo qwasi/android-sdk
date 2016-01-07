@@ -31,32 +31,40 @@
 
 package com.qwasi.sdk;
 
+import android.annotation.TargetApi;
+import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.gcm.GcmReceiver;
 import com.google.android.gms.gcm.GoogleCloudMessaging;
 import com.google.android.gms.iid.InstanceID;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import io.hearty.witness.Witness;
 
 public class QwasiNotificationManager{
     private String mPushToken = "";
     private Boolean mRegistering;
-    private Context mContext;
-    //PendingIntent mIntent;
+    private String mPackageName = null;
+    Context mContext;
     NotificationCompat.Builder mNoteBuilder;
-    //final private Qwasi qwasi;
+    private HashMap<String, Qwasi> qwasi = new HashMap<>();
     private String mSenderId;
 
     private static QwasiNotificationManager instance;
@@ -68,6 +76,7 @@ public class QwasiNotificationManager{
         mPushToken = "";
         mSenderId = "335413682000"; //default
         mContext = Qwasi.getContext();
+        //mPackageName = mContext.getPackageName();
         instance = this;
     }
 
@@ -75,9 +84,9 @@ public class QwasiNotificationManager{
         return instance != null?instance:new QwasiNotificationManager();
     }
 
-    /**
-     * Public constructor to be accessed from Qwasi
-     */
+    /*package*/ void addQwasi(Qwasi input){
+        qwasi.put(input.config.application, input);
+    }
 
     public Boolean isRegistering() {
         return mRegistering;
@@ -131,7 +140,7 @@ public class QwasiNotificationManager{
                     Log.d(TAG, "Attempting to Aquire new Token");
                     //Device Registering issue 11-4-15
                     mSenderId = appinfo.metaData.containsKey("gcm_senderid")? //has senderid in manifest
-                            appinfo.metaData.getString("gcm_senderid", "335413682000"): //get it
+                            (String) appinfo.metaData.get("gcm_senderid"): //get it
                             mSenderId;  //or set to default, default also included in case android munges it
                     Log.d(TAG, "Using SenderID: "+mSenderId);
                     InstanceID iId = InstanceID.getInstance(mContext);

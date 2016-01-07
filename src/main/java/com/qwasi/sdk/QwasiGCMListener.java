@@ -31,14 +31,23 @@
 
 package com.qwasi.sdk;
 
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 import com.google.android.gms.gcm.GcmListenerService;
+
+import java.util.HashMap;
+
+import io.hearty.witness.Witness;
 
 public class QwasiGCMListener extends GcmListenerService{
     @Override
@@ -48,7 +57,10 @@ public class QwasiGCMListener extends GcmListenerService{
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
             NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
                     .setContentIntent(pendingIntent);
-            QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
+            //QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
+            sendNotification(pendingIntent, data);
+            //Witness.notify(data);
+            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data.getString("qwasi")).putExtra("from", from));
         }
     }
 
@@ -61,6 +73,28 @@ public class QwasiGCMListener extends GcmListenerService{
             NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(baseContext)
                     .setContentIntent(pendingIntent);
             QwasiNotificationManager.getInstance().onMessage(noteBuilder);
+        }
+    }
+
+    private void onQwasiMessage(QwasiMessage msg) {
+
+    }
+
+    private void sendNotification(PendingIntent pendingIntent, final Bundle data){
+        String alert = data.getString("collapse_key","");
+        if (!alert.contains("do_not_collapse")){
+            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            String appName = getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
+                    .setSmallIcon(getApplicationInfo().icon)
+                    .setContentIntent(pendingIntent)
+                    .setContentTitle(appName)
+                    .setContentText(alert)
+                    .setAutoCancel(true)
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setSound(defaultSoundUri);
+            NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            noteMng.notify(1, noteBuilder.build());
         }
     }
 }

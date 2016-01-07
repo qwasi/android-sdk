@@ -31,9 +31,11 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.RingtoneManager;
@@ -68,7 +70,7 @@ public class Qwasi{
     static final float LOCATION_UPDATE_FILTER = 100.0f;
     static final float LOCATION_SYNC_FILTER = 200.0f;
     static final float PED_FILTER = 10.0f;
-    //static Activity sMainActivity;
+    static Application sMainApplication;
     static private Context sContext = null;
     SharedPreferences mPreferences;
     private float mLocationSyncFilter;
@@ -86,7 +88,7 @@ public class Qwasi{
     private QwasiClient mClient = null;
     public NetworkInfo networkInfo;
     private Map<String, Void> mChannels;
-    private HashMap<String, QwasiMessage> mMessageCache;
+    HashMap<String, QwasiMessage> mMessageCache;
     @Deprecated
     public QwasiLocationManager mlocationManager;
     public QwasiLocationManager locationManager;
@@ -106,6 +108,7 @@ public class Qwasi{
     @Deprecated
     public Boolean museLocalNotifications; //apple only?
     public Boolean useLocalNotifications;
+    static private Qwasi instance;
     String TAG = "Qwasi";
 
     //event tags
@@ -133,25 +136,35 @@ public class Qwasi{
         }
     };
 
-    public Qwasi(Activity application)/*public constructor iOS 46*/ {
-        this.mClient = new QwasiClient();
-        //sMainActivity = application;
+    Qwasi (Application application){
+
+        mClient = new QwasiClient();
+        sMainApplication = application;
         mChannels = new HashMap<>();
         sContext = application.getApplicationContext();
-        this.mQwasiAppManager = new QwasiAppManager(this);
-        this.networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+        mQwasiAppManager = new QwasiAppManager(this);
+        networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         mQwasiNotificationManager = QwasiNotificationManager.getInstance();
         mconfig = new QwasiConfig(sContext);
         config = mconfig;
         mlocationManager = QwasiLocationManager.getInstance();
         locationManager = mlocationManager;
         //mlocationManager.init();
-        application.getApplication().registerActivityLifecycleCallbacks(mQwasiAppManager);
+        application.registerActivityLifecycleCallbacks(mQwasiAppManager);
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(sContext);
         config.configWithFile(); //default
-        if (config.isValid()) this.initWithConfig(config, "");
+        if (config.isValid()) initWithConfig(config, "");
         else Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
+        instance = this;
     }
 
+    public static Qwasi getInstance(Application application){ //[DROID-43] Activity dependacy removed
+        if (instance == null){
+            application.getApplicationContext().startService(new Intent(application.getApplicationContext(), QwasiService.class));
+            return new Qwasi(application);
+        }
+        return instance;
+    }
    // static public Activity getMainActivity(){return sMainActivity;}
 
     static public Context getContext(){ return sContext; } //return application context
@@ -190,10 +203,10 @@ public class Qwasi{
             case Build.VERSION_CODES.LOLLIPOP:  //21    5.0 11.6
             case Build.VERSION_CODES.LOLLIPOP_MR1: //22 5.1 .8
                 return "Android Lollipop";
-            case Build.VERSION_CODES.M:
+            case Build.VERSION_CODES.M: //23
                 return "Android Marshmellow";
             default:
-                return "Android Unknown";   //21&22  12.4%
+                return "Android Unknown";   //24+ or other
         }
     }
 
@@ -206,9 +219,12 @@ public class Qwasi{
         mLocationUpdateFilter= LOCATION_UPDATE_FILTER;
         mLocationEventFilter = LOCATION_EVENT_FILTER;
         mLocationSyncFilter = LOCATION_SYNC_FILTER;
-        mDeviceToken = deviceToken;
 
-        mPreferences = PreferenceManager.getDefaultSharedPreferences(sContext);
+        if (((deviceToken == null) || (deviceToken.isEmpty())) &&
+                (mPreferences.contains("QwasiDeviceToken"))){
+            mDeviceToken = mPreferences.getString("QwasiDeviceToken", null);
+        } else mDeviceToken = deviceToken;  //use what was provided
+
         mRegistered = mPreferences.getBoolean("registered", false);
 
         //are localNotifcations set
@@ -221,30 +237,31 @@ public class Qwasi{
         //check if we have a gcm token already so we don't use too much data
         mQwasiNotificationManager.setPushToken(mPreferences.getString("gcm_token", null));
 
-        if (mQwasiNotificationManager.getPushToken() == null) mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
-        String test;
-        if ((ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)&
-                ContextCompat.checkSelfPermission(sContext, Manifest.permission.READ_PHONE_STATE))
+        if (mQwasiNotificationManager.getPushToken() == null){
+            mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
+        }
+
+        String test = "";
+        if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)
                 == PackageManager.PERMISSION_GRANTED) {
             Account[] accounts = AccountManager.get(sContext).getAccountsByType("com.google");
 
             deviceName = accounts.length > 0 ?
                     accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")) : null;
 
-            test = mPreferences.getString("qwasi_user_token", ((TelephonyManager) sContext
-                    .getSystemService(Context.TELEPHONY_SERVICE)).getLine1Number());
+            test = mPreferences.getString("qwasi_user_token", "");
         } else{
             deviceName = "";
-            test = null;
         }
 
-        muserToken = test != null?test:"DROIDTOKEN";
+        muserToken = !test.isEmpty()?test:"DROIDTOKEN";
+        mQwasiNotificationManager.addQwasi(this);
         return this;
     }
 
-    public synchronized void setConfig(QwasiConfig config)/*iOS 95*/{
-        this.mconfig = config;
-        mAppId = config.mapplication;
+    public synchronized void setConfig(QwasiConfig iconfig)/*iOS 95*/{
+        config = iconfig;
+        mAppId = iconfig.mapplication;
         mClient = mClient.clientWithConfig(config, this);
         mRegistered = false;
     }
@@ -365,9 +382,9 @@ public class Qwasi{
                     JSONObject info = result.getJSONObject("application");
                     mapplicationName = info.get("name").toString();
                     applicationName = mapplicationName;
-
                     //ActivityCompat.requestPermissions(mainActivity, new String[]{});
                     Log.i(TAG, "Device Successfully Registered");
+                    mPreferences.edit().putString("QwasiDeviceToken", mDeviceToken).apply();
                     Witness.notify(mDeviceToken);
                     qwasiInterface.onSuccess(mDeviceToken);
                 }
@@ -1174,26 +1191,23 @@ public class Qwasi{
     }
 
     private void sendNotification(QwasiMessage message)/*android default notification builder*/{
-        if (message != null) {
-            Uri defaultSoundUri = message.silent() ?
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION) :
-                    null;
-
+        if ((message != null) && (!message.silent())) {
+            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             String appName = sContext.getPackageManager().getApplicationLabel(sContext.getApplicationInfo()).toString();
             if (mQwasiNotificationManager.mNoteBuilder == null) new QwasiGCMListener().onMessagePolled();
             NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.mNoteBuilder
                     .setSmallIcon(sContext.getApplicationInfo().icon)
                     .setContentTitle(appName)
-                    .setContentText(message.malert)
+                    .setContentText(message.alert)
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
                     .setSound(defaultSoundUri); //default sound;
             //configure expanded action
-            if (message.mpayloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            if (message.payloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
             //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-            else if (message.mpayloadType.contains("image")) Log.d(TAG, "Image");
+            else if (message.payloadType.contains("image")) Log.d(TAG, "Image");
             //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-            else if (message.mpayloadType.contains("json")) Log.d(TAG, "App context");
+            else if (message.payloadType.contains("json")) Log.d(TAG, "App context");
             NotificationManager noteMng = (NotificationManager) sContext.getSystemService(Context.NOTIFICATION_SERVICE);
             noteMng.notify(0, noteBuilder.build());
             Witness.notify(message);
