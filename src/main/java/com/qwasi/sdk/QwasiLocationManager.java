@@ -218,14 +218,16 @@ public class QwasiLocationManager //extends IntentService
     }
 
     public void stopLocationUpdates(){
-        if(mmanager.isConnected()||manager.isConnected()){
+        if((manager!=null)&&(mmanager!= null)){
+            if((mmanager.isConnected()||manager.isConnected())){
+                manager = mmanager;
+                LocationServices.FusedLocationApi.removeLocationUpdates(manager, this);
+            }
             manager = mmanager;
-            LocationServices.FusedLocationApi.removeLocationUpdates(manager, this);
-        }
-        manager = mmanager;
-        manager.disconnect();
-        if (mSharedApplication instanceof BeaconConsumer) {
-            qwasiBeacons.mBeaconManager.unbind((BeaconConsumer) mSharedApplication);
+            manager.disconnect();
+            if (mSharedApplication instanceof BeaconConsumer) {
+                qwasiBeacons.mBeaconManager.unbind((BeaconConsumer) mSharedApplication);
+            }
         }
         mStarted = false;
     }
