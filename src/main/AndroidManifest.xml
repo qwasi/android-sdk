@@ -17,7 +17,6 @@
     <!--uses-permission android:name="com.qwasi.sdk.permission.C2D_MESSAGE" /-->
     <!--Notifications -->
     <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/> <!--Dangerous-->
     <!--Location dangerous-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="ANDROID.PERMISSION.ACCESS_LOCATION_EXTRA_COMMANDS"/>
@@ -46,7 +45,11 @@
             android:enabled="true"
             android:exported="false"
             />
-
+        <service android:name=".QwasiService">
+            <intent-filter>
+                <action android:name="com.qwasi.sdk.QwasiService.RECEIVE"/>
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
