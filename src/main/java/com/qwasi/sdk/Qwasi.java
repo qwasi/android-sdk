@@ -158,7 +158,7 @@ public class Qwasi{
         instance = this;
     }
 
-    public static Qwasi getInstance(Application application){
+    public static Qwasi getInstance(Application application){ //[DROID-43] Activity dependacy removed
         if (instance == null){
             application.getApplicationContext().startService(new Intent(application.getApplicationContext(), QwasiService.class));
             return new Qwasi(application);
