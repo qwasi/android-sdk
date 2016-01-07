@@ -26,9 +26,16 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.0-10'
+        compile 'com.qwasi:QwasiSDK:2.1.18'
     }
 ```
+
+Local installation is also possiable, using github
+```sh
+    git clone github.com/qwasi/android-sdk.git QwasiSDK
+    gradle clean build install 
+```
+This will put the local maven repo into your git repo under the com folder.
 
 ## License
 
@@ -37,9 +44,9 @@ Qwasi is available under the MIT license. See the LICENSE file for more info.
 ## Gradle Dependencies
 
 ```groovy
- 'com.google.android.gms:play-services-gcm:7.5.0'
- 'com.google.android.gms:play-services-location:7.5.0'
- 'com.qwasi:QwasiJSON:1.0.1'  //forces legacy libraries for marshmallow
+ 'com.google.android.gms:play-services-gcm:8.4.0'
+ 'com.google.android.gms:play-services-location:8.4.0'
+ 'com.qwasi:QwasiJSON:1.0.4'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
 ```
 
@@ -50,17 +57,19 @@ The Qwasi objects will need to be instantiated with the application Context.  Th
 to handle setting up all the other objects it relies on.
 
 ```java
-  Qwasi qwasi = new Qwasi(this);
+  Qwasi qwasi = Qwasi.getInstance();
 ```
 
 ## Library Configuration `QwasiConfig`
 
-By default, the QwasiConfig will attempt to configure with basic information from the androidmanifest.xml tags. If a custom file is desired  it will need to be passed with its path and extension. The Qwasi Object attempts this by default when it is initialized.
+By default, the QwasiConfig will attempt to configure with basic information from the SharedPreferences, and then from Manifest tags. If a custom file is desired  it will need to be passed with its path and extension. The Qwasi Object attempts this by default when it is initialized.
 
 ```java
   QwasiConfig config = new QwasiConfig(Context);
   config.configWithFile();
 ```
+
+**Note: When a custom config is created and used it's saved to the preferences using QwasiAppId, QwasiApiKey, and QwasiUrl.**
 
 ### Default Configuration
 
@@ -72,7 +81,7 @@ The default configuration file is part of the AndroidManifest.xml. You create an
         <meta-data android:name="apiKey" android:value="your qwasi api key here"/>
         <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
         <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
-        <!--example gcm token would be "\ 565941215451", see note for reason-->
+        <!--example gcm token would be "\ NumericalString", see note for reason-->
         ...
     </application>
 ```
@@ -102,6 +111,7 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name"your package name here"/>
             </intent-filter>
         </receiver>
         <!-- [End GCMReciever]-->
@@ -123,6 +133,12 @@ Also if you wish to use the default QwasiNotificationManager, QwasiLocationManag
         <!-- [START Beacon Listener] -->
         <service android:name="com.qwasi.sdk.QwasiBeacons" android:enabled="true"/>
         <!-- [END Beacon Listener] -->
+        <!-- [START QwasiSevice] enables tracking of messages when app is closed--> 
+        <service android:name="com.qwasi.sdk.QwasiService">
+            <intent-filter>
+                <action android:name="com.qwasi.sdk.QwasiService.RECEIVE"/>
+            </intent-filter>
+        </service>
     ...
     </application>
 ```
@@ -149,6 +165,8 @@ You can create a runtime configuration object on the fly using:
 ```java
     public QwasiConfig configWithURL(URL, String, String)
 ```
+
+As of 2.1.19, runtime configurations will be saved to your SharedPreferences in the Defaultconfig
 
 Example:
 
@@ -215,6 +233,7 @@ Example:
         }
     });
 ```
+**Note: Several functions will return QwasiErrorNone in the onSuccess method, be aware of this; setPushEnabled(false) is one.**
 
 ## Device Registration
 ### Device Tokens
@@ -278,7 +297,7 @@ As a general rule there is very little reason to do so, however if a user choose
 
 ## Push Notifications
 
-Qwasi supports a simplified registration for push notifications. Once the device is registered, if mpushEnabled wasn't true set it and then, simply call the method:
+Qwasi supports a simplified registration for push notifications. Once the device is registered, you will need to call setPushEnabled, with the boolean of the state that you desire the push to be; true for using gcm, and false for polling:
  public void setPushEnabled(QwasiInterface), other versions of this method exist.
 Example:
 
@@ -341,7 +360,7 @@ This method will not generate a notification, if local notifications are not ena
 
 ### Handling Incoming Messages
 
-Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  They proceed to pass an PendingIntent, and the Bundle to QwasiNotificationManager.onMessage.  At which point the bundle is Emitted to the Qwasi Objects.
+Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed. 
 Example:
 
 ```java
@@ -351,7 +370,7 @@ Example:
     }
 ```
 
-By default, messages recieved will be passed to the Notification manager and on to the proper Qwasi Object and posted to the As a Notification.
+By default, messages will be displayed using the label in your manifest, and the collapse key from the notification, if the message is silent then no notification is built. However it will send send these messages off to be parsed, and fetched by the QwasiService.
 
 Notifications generated in this manner will create a PendingIntent that will launch the app, for this functionality to work correctly please set your exported for the launch activity to true, and include the following code into your onCreate
 
