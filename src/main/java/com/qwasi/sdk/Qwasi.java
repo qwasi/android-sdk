@@ -108,6 +108,7 @@ public class Qwasi{
     @Deprecated
     public Boolean museLocalNotifications; //apple only?
     public Boolean useLocalNotifications;
+    /*package*/ Boolean mHasClosedUnread;
     static private Qwasi instance;
     String TAG = "Qwasi";
 
@@ -149,7 +150,6 @@ public class Qwasi{
         config = mconfig;
         mlocationManager = QwasiLocationManager.getInstance();
         locationManager = mlocationManager;
-        //mlocationManager.init();
         application.registerActivityLifecycleCallbacks(mQwasiAppManager);
         mPreferences = PreferenceManager.getDefaultSharedPreferences(sContext);
         config.configWithFile(); //default
@@ -226,13 +226,12 @@ public class Qwasi{
         } else mDeviceToken = deviceToken;  //use what was provided
 
         mRegistered = mPreferences.getBoolean("registered", false);
-
         //are localNotifcations set
         museLocalNotifications = mPreferences.getBoolean("QwasiLocalNote", true);
         useLocalNotifications = museLocalNotifications;
 
-        mMessageCache = new HashMap<>();
-
+        mMessageCache = mMessageCache == null? new HashMap<String, QwasiMessage>():mMessageCache;
+        mHasClosedUnread = mHasClosedUnread == null? false:mHasClosedUnread;
         //if we have a device token saved already use it.
         //check if we have a gcm token already so we don't use too much data
         mQwasiNotificationManager.setPushToken(mPreferences.getString("gcm_token", null));
@@ -682,6 +681,16 @@ public class Qwasi{
 
     public synchronized void fetchUnreadMessage(final QwasiInterface qwasiInterface){
         if(mRegistered) {
+            if (( !mMessageCache.isEmpty() ) && mHasClosedUnread ) {
+                for (QwasiMessage message : mMessageCache.values()) {
+                    if (message.mClosedMessage) {
+                        Witness.notify(message);
+                        message.mClosedMessage = false;
+                        return;
+                    }
+                }
+            mHasClosedUnread = false;
+            }
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> options = new HashMap<>();
             options.put("fetch", String.valueOf(true));
@@ -954,6 +963,7 @@ public class Qwasi{
     public void deviceValueForKey(String key) {
         this.deviceValueForKey(key, defaultCallback); //default
     }
+
     //device.get
     public synchronized void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
         if (mRegistered){

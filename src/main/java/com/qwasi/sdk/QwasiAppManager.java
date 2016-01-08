@@ -36,6 +36,7 @@ package com.qwasi.sdk;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
+import android.util.Log;
 
 import java.util.HashMap;
 
@@ -74,6 +75,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityDestroyed(Activity activity){
+        mSharedApplication.mPreferences.edit().putString("QwasiStopped", "").apply();
         mSharedApplication.locationManager.stopLocationUpdates();
     }
 
@@ -102,6 +104,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle outState){
+        if (isApplicationStopped()){
+            outState.putString("ClosedMessages", mSharedApplication.mMessageCache.toString());
+        }
         android.util.Log.d(TAG, "SaveInstanceState");
     }
 
@@ -109,11 +114,13 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     public void onActivityStarted(Activity activity){
         android.util.Log.d(TAG, "ActivityStarted");
         ++mStarted;
+        if (mSharedApplication.mPreferences.contains("QwasiStopped")) {
+            mSharedApplication.mPreferences.edit().remove("QwasiStopped").apply();
+        }
     }
 
     @Override
     public void onActivityStopped(Activity activity){
-        ++mStopped;
         data = new HashMap<>();
         event = mSharedApplication.kEventApplicationState;
         data.put("", "");
@@ -129,7 +136,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     }
 
     public boolean isApplicationStopped(){
-        return (mStarted > mStopped);
+        return (mSharedApplication.mPreferences.contains("QwasiStopped"));
     }
 
     public boolean isApplicationInForeground(){
