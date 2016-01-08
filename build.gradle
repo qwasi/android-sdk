@@ -157,9 +157,13 @@ uploadArchives{
 	}
 }
 
+
+
+
 install{
 	repositories.mavenLocal().url = "file:/"+configFile.absolutePath
-	repositories.mavenInstaller.pom*.project {
+	repositories.mavenInstaller{
+		pom.project {
 			name 'QwasiSDK'
 			packaging 'jar'
 			description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
@@ -186,12 +190,13 @@ install{
 					name 'Rob Rodriguez'
 					email 'rob.rodriguez@qwasi.com'
 				}
-				developer {
+				developer{
 					id 'qwasibuild'
 					name 'Qwasi Bamboo'
 					email 'support@qwasi.com'
 				}
 			}
 		}
+	}
 
 }

@@ -47,11 +47,11 @@ public class QwasiService extends Service {
     private Qwasi mQwasi;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, final Intent intent) {
             String action = intent.getAction();
             String qwasi = intent.getStringExtra("qwasi");
-            Log.d("QwasiService", ""+mQwasi.mMessageCache.size());
-            Log.d("QwasiService", mQwasi.config.application+mQwasi.config.key+mQwasi.config.url.getHost());
+            Log.d("QwasiService", "" + mQwasi.mMessageCache.size());
+            Log.d("QwasiService", mQwasi.config.application + mQwasi.config.key + mQwasi.config.url.getHost());
             if (mQwasi.config.isValid()){
                 Log.d("QwasiService", "config is valid");
                 HashMap<String, Object> results = new HashMap<>();
@@ -72,8 +72,9 @@ public class QwasiService extends Service {
                                 @Override
                                 public void onSuccess(Object o) {
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                                    mQwasi.mMessageCache.put(msgId, (QwasiMessage)o);
                                     Witness.notify(o);
+                                    if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                                    else new QwasiGCMListener().onQwasiMessage((QwasiMessage) o);
                                 }
 
                                 @Override
@@ -84,7 +85,9 @@ public class QwasiService extends Service {
                         } else {
                             QwasiMessage message = mQwasi.mMessageCache.get(msgId);
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                            Witness.notify(message);
+                            Witness.notify(message); //when app is open
+                            if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                            else new QwasiGCMListener().onQwasiMessage(message);
                         }
                     }
                 }

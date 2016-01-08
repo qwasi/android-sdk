@@ -98,9 +98,11 @@ public class QwasiMessage{
                 if (payloadType.equalsIgnoreCase("application/json")) {
                     //error?
                     payload = new JSONObject(new String(temp, "UTF-8"));
+
                 } else if (payloadType.contains("text")) {
                     payload = new String(temp, "UTF-8");
                 }
+                mpayload = payload;
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
                 Log.e(TAG, "Payload Encoding not supported");

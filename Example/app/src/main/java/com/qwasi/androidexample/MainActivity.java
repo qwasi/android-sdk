@@ -32,11 +32,11 @@ public class MainActivity extends AppCompatActivity {
         final SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         String name = preferences.getString("name", null);
         String userToken = preferences.getString("userToken", null);
-        qwasi = new Qwasi(this);
+        qwasi = Qwasi.getInstance(getApplication());
         qwasi.qwasiWithConfig(null);
         //log = (EditText) findViewById(R.id.log);
         final Qwasi value = qwasi;
-        qwasi.registerDevice(preferences.getString("deviceToken", null), name, userToken, new Qwasi.QwasiInterface() {
+        qwasi.registerDevice(preferences.getString("QwasiDeviceToken", null), name, userToken, new Qwasi.QwasiInterface() {
             @Override
             public void onSuccess(Object o) {
                 preferences.edit().putString("deviceToken", qwasi.getMdeviceToken()).apply();
@@ -80,14 +80,6 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
     }
 
     @Override
