@@ -50,50 +50,78 @@ import java.util.HashMap;
 import io.hearty.witness.Witness;
 
 public class QwasiGCMListener extends GcmListenerService{
+    private Context mBaseContext;
+    private PackageManager mPM;
+    private Intent mDefaultIntent;
+    private PendingIntent mDefaultPendingIntent;
+    private Uri mDefaultSoundUri;
+
+    public QwasiGCMListener(){
+        mBaseContext = Qwasi.getContext();
+        mPM = mBaseContext.getPackageManager();
+        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+        mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+    }
+
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            Intent intent = (getPackageManager().getLaunchIntentForPackage(getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
-                    .setContentIntent(pendingIntent);
-            //QwasiNotificationManager.getInstance().onMessage(noteBuilder, data);
-            sendNotification(pendingIntent, data);
-            //Witness.notify(data);
-            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data.getString("qwasi")).putExtra("from", from));
+            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data.getString("qwasi")).putExtra("from", from).putExtra("data",data));
         }
     }
 
+    @Deprecated
     public void onMessagePolled(){
         synchronized (this) {
-            Context baseContext = Qwasi.getContext();
-            PackageManager manager = baseContext.getPackageManager();
-            Intent intent = manager.getLaunchIntentForPackage(baseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            PendingIntent pendingIntent = PendingIntent.getActivity(baseContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(baseContext)
-                    .setContentIntent(pendingIntent);
-            QwasiNotificationManager.getInstance().onMessage(noteBuilder);
         }
     }
 
-    private void onQwasiMessage(QwasiMessage msg) {
+    /**
+     * Override this function to dictate logic when useLocalNotifications is set false
+     * @param msg
+     */
+    protected void onQwasiMessage(QwasiMessage msg) {
 
     }
 
-    private void sendNotification(PendingIntent pendingIntent, final Bundle data){
+    /**
+     * for uselocalNotifications default
+     */
+    /*package*/ void sendNotification(final Bundle data){
         String alert = data.getString("collapse_key","");
         if (!alert.contains("do_not_collapse")){
-            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            String appName = getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(this)
-                    .setSmallIcon(getApplicationInfo().icon)
-                    .setContentIntent(pendingIntent)
+            String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(Qwasi.getContext())
+                    .setSmallIcon(mBaseContext.getApplicationInfo().icon)
+                    .setContentIntent(mDefaultPendingIntent)
                     .setContentTitle(appName)
                     .setContentText(alert)
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_ALL)
-                    .setSound(defaultSoundUri);
-            NotificationManager noteMng = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    .setSound(mDefaultSoundUri);
+            NotificationManager noteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            noteMng.notify(1, noteBuilder.build());
+        }
+    }
+
+    /**
+     * used from inside the SDK to send fetched unreadmessages.
+     * @param message
+     */
+    void sendNotifications(final QwasiMessage message){
+        String alert = message.alert;
+        if (!alert.contains("do_not_collapse")){
+            String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(mBaseContext)
+                    .setSmallIcon(mBaseContext.getApplicationInfo().icon)
+                    .setContentIntent(mDefaultPendingIntent)
+                    .setContentTitle(appName)
+                    .setContentText(alert)
+                    .setAutoCancel(true)
+                    .setDefaults(Notification.DEFAULT_ALL)
+                    .setSound(mDefaultSoundUri);
+            NotificationManager noteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
             noteMng.notify(1, noteBuilder.build());
         }
     }

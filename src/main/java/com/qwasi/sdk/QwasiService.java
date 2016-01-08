@@ -47,13 +47,11 @@ public class QwasiService extends Service {
     private Qwasi mQwasi;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, final Intent intent) {
             String action = intent.getAction();
             String qwasi = intent.getStringExtra("qwasi");
-            Log.d("QwasiService", ""+mQwasi.mMessageCache.size());
-            Log.d("QwasiService", mQwasi.config.application+mQwasi.config.key+mQwasi.config.url.getHost());
+            Log.d("QwasiService", "" + mQwasi.mMessageCache.size());
             if (mQwasi.config.isValid()){
-                Log.d("QwasiService", "config is valid");
                 HashMap<String, Object> results = new HashMap<>();
                 qwasi = qwasi.replaceAll(Pattern.quote("}"), "")
                         .replaceAll(Pattern.quote("{"), "")
@@ -71,9 +69,15 @@ public class QwasiService extends Service {
                             mQwasi.fetchMessageForNotification(msgId, new Qwasi.QwasiInterface() {
                                 @Override
                                 public void onSuccess(Object o) {
+                                    QwasiMessage message = (QwasiMessage) o;
+                                    if (mQwasi.mQwasiAppManager.isApplicationStopped()) {
+                                        mQwasi.mHasClosedUnread = true;
+                                        message.mClosedMessage = true;
+                                    }
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                                    mQwasi.mMessageCache.put(msgId, (QwasiMessage)o);
-                                    Witness.notify(o);
+                                    Witness.notify(message);
+                                    if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                                    else new QwasiGCMListener().onQwasiMessage(message);
                                 }
 
                                 @Override
@@ -84,7 +88,9 @@ public class QwasiService extends Service {
                         } else {
                             QwasiMessage message = mQwasi.mMessageCache.get(msgId);
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                            Witness.notify(message);
+                            Witness.notify(message); //when app is open
+                            if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                            else new QwasiGCMListener().onQwasiMessage(message);
                         }
                     }
                 }
@@ -98,12 +104,17 @@ public class QwasiService extends Service {
 
     @Override
     public int onStartCommand(Intent input, int flag, int stuff){
-        Log.d("QWASIService", "started");
         mQwasi = Qwasi.getInstance(getApplication());
-        Log.d("QWASIService", mQwasi.toString());
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
         return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy(){
+        if (mQwasi.mQwasiAppManager.isApplicationStopped()){
+            Log.e("QwasiService", "closed destroyed");
+        }
     }
 }

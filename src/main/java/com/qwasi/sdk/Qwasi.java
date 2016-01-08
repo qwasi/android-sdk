@@ -95,7 +95,7 @@ public class Qwasi{
     @Deprecated
     public QwasiConfig mconfig;
     public QwasiConfig config;
-    protected String muserToken;
+    protected String mUserToken;
     @Deprecated
     public Boolean mpushEnabled = false;
     public Boolean pushEnabled;
@@ -108,6 +108,7 @@ public class Qwasi{
     @Deprecated
     public Boolean museLocalNotifications; //apple only?
     public Boolean useLocalNotifications;
+    /*package*/ Boolean mHasClosedUnread;
     static private Qwasi instance;
     String TAG = "Qwasi";
 
@@ -149,7 +150,6 @@ public class Qwasi{
         config = mconfig;
         mlocationManager = QwasiLocationManager.getInstance();
         locationManager = mlocationManager;
-        //mlocationManager.init();
         application.registerActivityLifecycleCallbacks(mQwasiAppManager);
         mPreferences = PreferenceManager.getDefaultSharedPreferences(sContext);
         config.configWithFile(); //default
@@ -226,13 +226,12 @@ public class Qwasi{
         } else mDeviceToken = deviceToken;  //use what was provided
 
         mRegistered = mPreferences.getBoolean("registered", false);
-
         //are localNotifcations set
-        museLocalNotifications = mPreferences.getBoolean("localNote", true);
+        museLocalNotifications = mPreferences.getBoolean("QwasiLocalNote", true);
         useLocalNotifications = museLocalNotifications;
 
-        mMessageCache = new HashMap<>();
-
+        mMessageCache = mMessageCache == null? new HashMap<String, QwasiMessage>():mMessageCache;
+        mHasClosedUnread = mHasClosedUnread == null? false:mHasClosedUnread;
         //if we have a device token saved already use it.
         //check if we have a gcm token already so we don't use too much data
         mQwasiNotificationManager.setPushToken(mPreferences.getString("gcm_token", null));
@@ -254,7 +253,7 @@ public class Qwasi{
             deviceName = "";
         }
 
-        muserToken = !test.isEmpty()?test:"DROIDTOKEN";
+        mUserToken = !test.isEmpty()?test:"DROIDTOKEN";
         mQwasiNotificationManager.addQwasi(this);
         return this;
     }
@@ -348,8 +347,8 @@ public class Qwasi{
         name = name == null? deviceName:name;
 
          //if we didn't get a usertoken set it to be the phone number
-        userToken = userToken== null?muserToken:userToken;
-        muserToken = userToken;
+        userToken = userToken== null?mUserToken:userToken;
+        mUserToken = userToken;
 
         Map<String, Object> info = new HashMap<>();
 
@@ -436,16 +435,16 @@ public class Qwasi{
     }
 
     public synchronized String getUserToken(){
-        return muserToken;
+        return mUserToken;
     }
 
     public synchronized void setUserToken(String userToken)/*iOS 381*/{
-        muserToken = userToken;
+        mUserToken = userToken;
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
 
             parms.put("id", mDeviceToken);
-            parms.put("user_token", muserToken);
+            parms.put("user_token", mUserToken);
             mClient.invokeNotification("device.set_user_token", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
@@ -682,6 +681,16 @@ public class Qwasi{
 
     public synchronized void fetchUnreadMessage(final QwasiInterface qwasiInterface){
         if(mRegistered) {
+            if (( !mMessageCache.isEmpty() ) && mHasClosedUnread ) {
+                for (QwasiMessage message : mMessageCache.values()) {
+                    if (message.mClosedMessage) {
+                        Witness.notify(message);
+                        message.mClosedMessage = false;
+                        return;
+                    }
+                }
+            mHasClosedUnread = false;
+            }
             HashMap<String, Object> parms = new HashMap<>();
             HashMap<String, Object> options = new HashMap<>();
             options.put("fetch", String.valueOf(true));
@@ -694,8 +703,11 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (useLocalNotifications||museLocalNotifications) sendNotification(message);
-                    else Witness.notify(message);
+                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotifications(message);
+                    else {
+                        new QwasiGCMListener().onQwasiMessage(message);
+                        Witness.notify(message);
+                    }
                     qwasiInterface.onSuccess(message);
                 }
 
@@ -951,6 +963,7 @@ public class Qwasi{
     public void deviceValueForKey(String key) {
         this.deviceValueForKey(key, defaultCallback); //default
     }
+
     //device.get
     public synchronized void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
@@ -991,7 +1004,7 @@ public class Qwasi{
     public synchronized void setMemberValue(Object value, String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("key",key);
             parms.put("value", value);
             mClient.invokeMethod("member.set", parms, new QwasiInterface() {
@@ -1021,7 +1034,7 @@ public class Qwasi{
     public synchronized void memberValueForKey(String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
             Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("key", key);
             mClient.invokeMethod("member.get", parms, new QwasiInterface() {
                 @Override
@@ -1051,7 +1064,7 @@ public class Qwasi{
     public synchronized void memberSetUserName(String userName, String password, String currentPass, final QwasiInterface qwasiInterface){
         if (mRegistered){
             final Map<String, Object> parms = new HashMap<>();
-            parms.put("id", muserToken);
+            parms.put("id", mUserToken);
             parms.put("username", userName);
             parms.put("password", password);
             parms.put("current", currentPass);
