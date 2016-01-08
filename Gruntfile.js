@@ -7,7 +7,7 @@ module.exports = function(grunt) {
     	var package = grunt.file.readJSON('package.json');
         var semver = semverUtils.parse(package.version);
 	
-	return (semver.release.indexOf('SNAPSHOT') === -1);
+	return (semver.release.indexOf('beta') === -1);
     }
 
     grunt.initConfig({
@@ -38,7 +38,7 @@ module.exports = function(grunt) {
 		tagMessage: 'Version %VERSION%',
 		push: true,
 		pushTo: 'origin',
-		prereleaseName: isRelease() ? '' : 'SNAPSHOT',
+		prereleaseName: isRelease() ? '' : 'beta',
 		gitDescribeOptions: '--tags --always --abbrev=1 --dirty=-d',
 		globalReplace: false
 	    }
