@@ -63,12 +63,14 @@ public class QwasiMessage{
     public Boolean selected;
     public Boolean fetched;
     Object mEncodedPayload;
+    Boolean mClosedMessage;
     String TAG = "QwasiMessage";
 
     public QwasiMessage(){
         super();
         tags = new JSONArray();
         mtags = tags;
+        mClosedMessage = false;
     }
 
     private QwasiMessage initWithData(Object input){

@@ -63,6 +63,7 @@ public class QwasiGCMListener extends GcmListenerService{
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
+
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
