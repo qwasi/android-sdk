@@ -26,7 +26,7 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.18'
+        compile 'com.qwasi:QwasiSDK:2.1.19-2'
     }
 ```
 
@@ -42,9 +42,10 @@ This will put the local maven repo into your git repo under the com folder.
 Qwasi is available under the MIT license. See the LICENSE file for more info.
 
 ## Gradle Dependencies
+These are the dependencies the library uses they are not required to include in your project.
 
 ```groovy
- 'com.google.android.gms:play-services-gcm:8.4.0'
+ 'com.google.android.gms:play-services-gcm:8.4.0' 
  'com.google.android.gms:play-services-location:8.4.0'
  'com.qwasi:QwasiJSON:1.0.4'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
@@ -351,7 +352,7 @@ protected void onStart(){//onResume() would also work
 }
 ```
 
-This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness, which 
+This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness. 
 **NOTE: Applications WILL NOT Recieve notifications if they are force closed!  This method allows you to retrieve messages sent while the user has had the application closed.**
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
@@ -360,17 +361,17 @@ This method will not generate a notification, if local notifications are not ena
 
 ### Handling Incoming Messages
 
-Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed. 
+Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, by disabling local notifications and overloading onQwasiMessage,this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed.
 Example:
 
 ```java
     @Override
     public void onMessageReceived(String from, final Bundle data){
-        //build intent and pas
+        //build intent and pass
     }
 ```
 
-By default, messages will be displayed using the label in your manifest, and the collapse key from the notification, if the message is silent then no notification is built. However it will send send these messages off to be parsed, and fetched by the QwasiService.
+By default, messages will be displayed using the label in your manifest, and the collapse key from the notification, if the message is silent then no notification is built. However it will send send these messages off to be parsed, and fetched by the QwasiService.  Custom notifications and logic for notifications can be used with extending this class, and saving QwasiLocalNote to your application's default preferences.
 
 Notifications generated in this manner will create a PendingIntent that will launch the app, for this functionality to work correctly please set your exported for the launch activity to true, and include the following code into your onCreate
 
