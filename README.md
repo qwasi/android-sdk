@@ -30,7 +30,7 @@ You must also include the SDK into the dependencies.
     }
 ```
 
-Local installation is also possiable, using github
+Local installation is also avaiable, using Github
 ```sh
     git clone github.com/qwasi/android-sdk.git QwasiSDK
     gradle clean build install 
@@ -100,7 +100,7 @@ The SDK also uses several permissions, include these permissions in order to use
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 ```
 
-Also if you wish to use the default QwasiNotificationManager, QwasiLocationManager, to handle Location and Notifications these will needed to be added to the AndroidManifest as well
+Also if you wish to use the default QwasiGCMReciever, QwasiGeoFence, Beacon Service, and Closed app notifications these will needed to be declared in your application.
 
 ```xml
     <application...>
@@ -158,6 +158,7 @@ Example:
     QwasiConfig config = new QwasiConfig();
     config.configWithFile("full file path to text file here");
 ```
+**Note: This action will save this customized configuration into your shared preferences such that the SDK, can communcate with the API server when your app is closed.**
 
 ### Runtime Configuration
 
@@ -242,6 +243,7 @@ Example:
 Every device that engages with Qwasi SDK requires a unique device token. This token will be stored by the Qwasi object when it is instantiated, and passed to the server when a device is registered or push is enabled.
 There are many registerDevice overloads defined in Qwasi.java, the simplest and most useful is:
 public void registerDevice(String deviceToken, String userToken), when this function calls it's interface's onSuccess, it also broadcasts an event of the devicetoken as a String.
+Saving your registration status and device token to your sharedPrefences default will allow the Qwasi Service fetch and parse messages while the app is closed.
 Example:
 
 ```java
@@ -250,7 +252,8 @@ Example:
     String deviceToken = preferences.getString("key value", default value);
     qwasi.registerDevice(deviceToken, USER_TOKEN, new QwasiInterface({...
     SharedPreferences.Editor editor = preferences.edit(); 
-    editor.putString("key" qwasi.getMDeviceToken);
+    editor.putString("QwasiDeviceToken", qwasi.getMDeviceToken);
+    editor.putBoolean("registered", true);
     editor.apply();
     ...
     }); //this is an Async function.
@@ -266,13 +269,17 @@ Example:
 ### User Tokens
 User tokens are basically your devices.
 Some developers use their customer id or loyalty id number, this allows you to address the devices with this token from the platform.
-These do not have to be unique and can be used to group devices under a single user token. The default is the devices phone number if one is not provided.
+These do not have to be unique and can be used to group devices under a single user token. This object now uses standard setters and getters.
 
 You can set the user token either via the `deviceRegister` call, or later via the Qwasi object.
 
 Example:
-    qwasi.muserToken = "My User Token";
-If the device has not been registered the user token will be updated when registration is called, otherwise it will simply use the device.set_user_token API call.
+
+```java
+    qwasi.setUserToken("usertoken");
+```
+
+If the device has not been registered the user token will be updated when registration is called, otherwise it will simply use the device.set_user_token API call.  
 ###### SDK EVENT - N/A
 ###### SDK ERROR - `QWASIERRORSETUSERTOKENFAILED`
 ###### API METHOD - `DEVICE.SET_USER_TOKEN`
