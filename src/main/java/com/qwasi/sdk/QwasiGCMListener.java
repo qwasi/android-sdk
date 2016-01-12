@@ -109,7 +109,7 @@ public class QwasiGCMListener extends GcmListenerService{
      * used from inside the SDK to send fetched unreadmessages.
      * @param message
      */
-    void sendNotifications(final QwasiMessage message){
+    void sendNotification(final QwasiMessage message){
         String alert = message.alert;
         if (!alert.contains("do_not_collapse")){
             String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
