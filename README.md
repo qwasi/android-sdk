@@ -211,7 +211,7 @@ Inline Example:
     };
 ```
 
-**Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
+**Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.  Make sure that Reporter objects aren't scoped locally.**
 
 ## Interface `QwasiInterface`
 
@@ -360,7 +360,7 @@ protected void onStart(){//onResume() would also work
 ```
 
 This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness. 
-**NOTE: Applications WILL NOT Recieve notifications if they are force closed!  This method allows you to retrieve messages sent while the user has had the application closed.**
+**NOTE: This method allows you to retrieve messages sent while the user has had the application closed.**
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`
