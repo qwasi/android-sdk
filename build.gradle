@@ -28,7 +28,7 @@ allprojects{
 //apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.android.library'
 apply plugin: 'signing'
-apply plugin: 'maven'
+apply plugin: 'com.github.dcendents.android-maven'
 //apply plugin: 'maven-publish'
 apply plugin: 'io.codearte.nexus-staging'
 
@@ -103,11 +103,51 @@ group = 'com.qwasi'
 archivesBaseName = packageJson.name
 version = packageJson.version
 File configFile = file('./')
+File mavenInstall = file(System.getProperty('user.home')+'/.m2/repository/com/qwasi/QwasiSDK/'+version.toString())
 
 signing {
 	sign configurations.archives
 }
 
+ext.mavenPomConfig = {
+	pom.artifactId = archivesBaseName
+	pom.whenConfigured {pom ->
+		pom.project {
+			name 'QwasiSDK'
+			packaging 'jar'
+			description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
+			url "https://github.com/Qwasi"
+			scm {
+				connection 'scm:git:git@github.com:qwasi/android-sdk.git'
+				developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
+				url 'https://github.com/qwasi/android-sdk'
+			}
+			licenses {
+				license {
+					name 'MIT'
+					distribution 'repo'
+				}
+			}
+
+			developers {
+				developer {
+					id 'ccoulton'
+					name 'Charles Coulton'
+					email 'charles.coulton@qwasi.com'
+				}
+				developer {
+					name 'Rob Rodriguez'
+					email 'rob.rodriguez@qwasi.com'
+				}
+				developer{
+					id 'qwasibuild'
+					name 'Qwasi Bamboo'
+					email 'support@qwasi.com'
+				}
+			}
+		}
+	}
+}
 
 uploadArchives{
 	repositories{
@@ -119,45 +159,24 @@ uploadArchives{
 
 			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
 					{ authentication(userName: ossrhUsername, password: ossrhPassword) }
-			pom.project {
-				name 'QwasiSDK'
-				packaging 'jar'
-				description 'SDK for accessing Qwasi\'s backend api for mixed method broadcasts'
-				url "https://github.com/Qwasi"
-				scm {
-					connection 'scm:git:git@github.com:qwasi/android-sdk.git'
-					developerConnection 'scm:git:git@github.com:qwasi/android-sdk.git'
-					url 'https://github.com/qwasi/android-sdk'
-				}
-				licenses {
-					license {
-						name 'MIT'
-						distribution 'repo'
-					}
-				}
+		}
+		mavenPomConfig
+	}
+}
 
-				developers {
-					developer {
-						id 'ccoulton'
-						name 'Charles Coulton'
-						email 'charles.coulton@qwasi.com'
-					}
-					developer {
-						name 'Rob Rodriguez'
-						email 'rob.rodriguez@qwasi.com'
-					}
-					developer{
-						id 'qwasibuild'
-						name 'Qwasi Bamboo'
-						email 'support@qwasi.com'
-					}
-				}
-			}
+install{
+	repositories{
+		mavenLocal().url = 'file://'+configFile.absolutePath
+		mavenInstaller {
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			mavenPomConfig
 		}
 	}
 }
 
-task install(dependsOn: uploadArchives){
-	uploadArchives.repositories.mavenDeployer.repository(url:"file://"+configFile.absolutePath)
-	uploadArchives
+task copyInstallPom(type:Copy,dependsOn:install){
+	from mavenInstall.absolutePath
+	into configFile.absolutePath+'/com/qwasi/QwasiSDK/'+version
 }
+
+install.finalizedBy copyInstallPom

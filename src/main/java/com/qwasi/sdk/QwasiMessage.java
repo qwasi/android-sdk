@@ -160,4 +160,6 @@ public class QwasiMessage{
     public String description(){
         return payload != null? payload.toString(): "";
     }
+
+    public Boolean getmClosedMessage(){return  mClosedMessage;}
 }
