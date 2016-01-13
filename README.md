@@ -83,6 +83,8 @@ The default configuration file is part of the AndroidManifest.xml. You create an
         <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
         <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
         <!--example gcm token would be "\ NumericalString", see note for reason-->
+        <meta-data android:name="GCMListener" android:value="custom.Gcmlistner"/>
+        <!--please include your custom GCMListener class path here"/>
         ...
     </application>
 ```
@@ -369,6 +371,7 @@ This method will not generate a notification, if local notifications are not ena
 ### Handling Incoming Messages
 
 Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, by disabling local notifications and overloading onQwasiMessage,this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed.
+In order to use a customized GCMListener, please subclass QwasiGCMListener, include the onQwasiMessage method and include the path with package name in your manifest.
 Example:
 
 ```java
