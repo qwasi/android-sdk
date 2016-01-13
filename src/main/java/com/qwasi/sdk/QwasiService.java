@@ -30,14 +30,18 @@
  */
 package com.qwasi.sdk;
 
+import android.app.Application;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
@@ -45,6 +49,10 @@ import io.hearty.witness.Witness;
 
 public class QwasiService extends Service {
     private Qwasi mQwasi;
+    private Class mCustomListener;
+    private Method mOnQwasiMessage;
+    private String mListenerName;
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
@@ -77,7 +85,18 @@ public class QwasiService extends Service {
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
                                     if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                                    else new QwasiGCMListener().onQwasiMessage(message);
+                                    else
+                                        try {
+                                            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
+                                        }
+                                        catch (IllegalAccessException e) {
+                                            Log.e("QwasiService", "Illegal access Exception, constuctor not public");
+                                        }
+                                        catch (InstantiationException e){
+                                            e.printStackTrace();
+                                        }catch (InvocationTargetException e){
+                                            e.printStackTrace();
+                                        }
                                 }
 
                                 @Override
@@ -90,7 +109,10 @@ public class QwasiService extends Service {
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                             Witness.notify(message); //when app is open
                             if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                            else new QwasiGCMListener().onQwasiMessage(message);
+                            else {
+                                Application app = getApplication();
+                                Log.d("tag", "stuff");
+                            }
                         }
                     }
                 }
@@ -108,6 +130,21 @@ public class QwasiService extends Service {
         IntentFilter filter = new IntentFilter();
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
+        try {
+            mListenerName = getPackageManager()
+                    .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
+                    .metaData.getString("GCMListener");
+            mCustomListener = Class.forName(mListenerName);
+            mOnQwasiMessage = mCustomListener.getDeclaredMethod("onQwasiMessage", QwasiMessage.class);
+        }catch (PackageManager.NameNotFoundException e){
+            Log.e("QwasiService", "Packagename "+getPackageName()+" not found");
+            e.printStackTrace();
+        }catch (ClassNotFoundException e){
+            Log.e("QwasiService", "Custom GCMListener with Classname: "+mListenerName+" Not found");
+            e.printStackTrace();
+        }catch (NoSuchMethodException e){
+            Log.e("QwasiService", "Custom GCMListener has no method onQwasiMessage");
+        }
         return START_STICKY;
     }
 

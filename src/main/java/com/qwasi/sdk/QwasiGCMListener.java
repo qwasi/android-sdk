@@ -1,6 +1,5 @@
 /**
  * Created by ccoulton on 8/20/15.
- * as part Qwasi Technogoly for their Android Open Source Project
  // QwasiGCMListener.java
  //
  // Copyright (c) 2015-2016, Qwasi Inc (http://www.qwasi.com/)
@@ -59,11 +58,14 @@ public class QwasiGCMListener extends GcmListenerService{
     public QwasiGCMListener(){
         mBaseContext = Qwasi.getContext();
         mPM = mBaseContext.getPackageManager();
-        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
 
+    /**
+     * creates a broadcast for the QwasiService to handle
+     */
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
@@ -82,7 +84,7 @@ public class QwasiGCMListener extends GcmListenerService{
      * @param msg
      */
     protected void onQwasiMessage(QwasiMessage msg) {
-
+        Log.d("QwasiGCM", "Custom Config used");
     }
 
     /**
@@ -109,7 +111,7 @@ public class QwasiGCMListener extends GcmListenerService{
      * used from inside the SDK to send fetched unreadmessages.
      * @param message
      */
-    void sendNotification(final QwasiMessage message){
+    /*Package*/ void sendNotification(final QwasiMessage message){
         String alert = message.alert;
         if (!alert.contains("do_not_collapse")){
             String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();

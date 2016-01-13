@@ -109,6 +109,8 @@ public class Qwasi{
     /*package*/ Boolean mHasClosedUnread;
     static private Qwasi instance;
     String TAG = "Qwasi";
+    // TODO: 1/13/16 add static strings for setting flags 
+    static public String SETTINGS;
 
     //event tags
     final String kEventApplicationState = "com.qwasi.event.application.state";
@@ -122,6 +124,9 @@ public class Qwasi{
     Reporter mPushTokenCallback;
     String mVersion;
 
+    /**
+     * Default interface for overloaded methods that where not provided a interface by the developer
+     */
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
         public void onSuccess(Object o) { //should recieve QwasiMessage, or QwasiError
@@ -135,6 +140,10 @@ public class Qwasi{
         }
     };
 
+    /**
+     * Constructor attempts to set up a basic Qwasi object with default settings.
+     * @param application  needed for some functionality though out the sdk such that it is required.
+     */
     Qwasi (Application application){
 
         mClient = new QwasiClient();
@@ -156,7 +165,10 @@ public class Qwasi{
         instance = this;
     }
 
-    public static Qwasi getInstance(Application application){ //[DROID-43] Activity dependacy removed
+    /**
+     * Provides a public interface to get at the shared Qwasi Object.  Creates one if one doesn't exist, and starts the service such that closed operation can work.
+     */
+    public static Qwasi getInstance(Application application){
         if (instance == null){
             application.getApplicationContext().startService(new Intent(application.getApplicationContext(), QwasiService.class));
             return new Qwasi(application);
@@ -168,10 +180,15 @@ public class Qwasi{
 
     static public Context getContext(){ return sContext; } //return application context
 
+    /**
+     * public custom setup function with custom configuration.
+     */
     public Qwasi qwasiWithConfig(QwasiConfig config, String deviceToken){
         return(initWithConfig(config, deviceToken));
     }
 
+    /** public configuration function without a device token, new installs that have yet to have a device token
+     * */
     public Qwasi qwasiWithConfig(QwasiConfig config) /*ios 57*/{
         return(initWithConfig(config, ""));
     }
