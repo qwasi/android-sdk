@@ -154,7 +154,6 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     /**
      * macro for if the application in foreground.
-     * todo: refactor to static?
      */
     public boolean isApplicationInForeground(){
         return mResumed>mPaused;

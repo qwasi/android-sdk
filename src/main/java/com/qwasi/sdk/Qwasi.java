@@ -814,6 +814,11 @@ public class Qwasi{
         this.postEvent(event, data, false);
     }
 
+    /**
+     * fetches a list of application nearby locations to track with the device, these locations
+     * can include but are not limited to Geofences and Beacons; defined within the AIM application.
+     * @param place
+     */
     public void fetchLocationsNear(QwasiLocation place){
        this.fetchLocationsNear(place, defaultCallback);
     }
@@ -883,6 +888,11 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Subscribes the device to a message grouping/channel such that if any message is posted to
+     * it a copy of that message will be delievered to that device
+     * @param channel
+     */
     public void subscribeToChannel(String channel){
         this.subscribeToChannel(channel, defaultCallback);
     }
@@ -921,6 +931,11 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Unsubcribes from a Channel that the device is subscribed to.  Will no longer receive
+     * push/messages for that channel
+     * @param channel
+     */
     public void unsubscribeFromChannel(String channel){
         this.unsubscribeFromChannel(channel, defaultCallback);
     }
@@ -1038,6 +1053,11 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Setter functions for member record values
+     * @param value
+     * @param key
+     */
     public synchronized void setMemberValue(Object value, String key){
         setMemberValue(value, key, defaultCallback);
     }
@@ -1068,6 +1088,10 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Getter functions for Value in the member record on the server
+     * @param key
+     */
     public synchronized void memberValueForKey(String key){
         memberValueForKey(key, defaultCallback);
     }
@@ -1098,6 +1122,10 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Member/UserCentric functionality, allows for storage of username on server in device/user
+     * record.
+     */
     public synchronized void memberSetUserName(String userName, String password, String currentPass){
         this.memberSetUserName(userName, password, currentPass,defaultCallback);
     }
@@ -1136,6 +1164,10 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Member Authentication function, allows users to authenticate a device such that moving to
+     * a user based system rather than a device centric one.
+     */
     public synchronized void memberAuthUser(String userName, String password){
         this.memberAuthUser(userName, password, defaultCallback);
     }
@@ -1171,6 +1203,10 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Send message to other user/self, not typically used but would allow for 2 way communication
+     * between applications/users.
+     */
     public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface){
         if(mRegistered) {
             Object payload = message.mpayload != null?
