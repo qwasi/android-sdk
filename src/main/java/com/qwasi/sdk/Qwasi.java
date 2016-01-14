@@ -30,7 +30,6 @@ package com.qwasi.sdk;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.app.Activity;
 import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -48,7 +47,6 @@ import android.preference.PreferenceManager;
 import android.Manifest;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
-import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -111,6 +109,8 @@ public class Qwasi{
     /*package*/ Boolean mHasClosedUnread;
     static private Qwasi instance;
     String TAG = "Qwasi";
+    // TODO: 1/13/16 add static strings for setting flags 
+    static public String SETTINGS;
 
     //event tags
     final String kEventApplicationState = "com.qwasi.event.application.state";
@@ -124,6 +124,9 @@ public class Qwasi{
     Reporter mPushTokenCallback;
     String mVersion;
 
+    /**
+     * Default interface for overloaded methods that where not provided a interface by the developer
+     */
     private QwasiInterface defaultCallback = new QwasiInterface() {
         @Override
         public void onSuccess(Object o) { //should recieve QwasiMessage, or QwasiError
@@ -137,6 +140,10 @@ public class Qwasi{
         }
     };
 
+    /**
+     * Constructor attempts to set up a basic Qwasi object with default settings.
+     * @param application  needed for some functionality though out the sdk such that it is required.
+     */
     Qwasi (Application application){
 
         mClient = new QwasiClient();
@@ -158,21 +165,30 @@ public class Qwasi{
         instance = this;
     }
 
-    public static Qwasi getInstance(Application application){ //[DROID-43] Activity dependacy removed
+    /**
+     * Provides a public interface to get at the shared Qwasi Object.  Creates one if one doesn't exist, and starts the service such that closed operation can work.
+     */
+    public static Qwasi getInstance(Application application){
         if (instance == null){
             application.getApplicationContext().startService(new Intent(application.getApplicationContext(), QwasiService.class));
             return new Qwasi(application);
         }
         return instance;
     }
-   // static public Activity getMainActivity(){return sMainActivity;}
+
+    static public Application getsMainApplication(){return sMainApplication;}
 
     static public Context getContext(){ return sContext; } //return application context
 
+    /**
+     * public custom setup function with custom configuration.
+     */
     public Qwasi qwasiWithConfig(QwasiConfig config, String deviceToken){
         return(initWithConfig(config, deviceToken));
     }
 
+    /** public configuration function without a device token, new installs that have yet to have a device token
+     * */
     public Qwasi qwasiWithConfig(QwasiConfig config) /*ios 57*/{
         return(initWithConfig(config, ""));
     }
@@ -190,31 +206,31 @@ public class Qwasi{
     }
 
     String getVerboseVersionName()/*Android Verbose Version *Android only**/{
-        switch(Build.VERSION.SDK_INT){
+        switch(Build.VERSION.SDK_INT){ //updated 1/4/16
             case Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1: //15 min version 2.0.3
-                return "Android Ice_Cream Sandwich";  //5.1
-            case Build.VERSION_CODES.JELLY_BEAN: //16 4.1  14.7%
-            case Build.VERSION_CODES.JELLY_BEAN_MR1: //17  17.5%
-            case Build.VERSION_CODES.JELLY_BEAN_MR2: //18  5.2%
+                return "Android Ice_Cream Sandwich";  //5.1 2.7%
+            case Build.VERSION_CODES.JELLY_BEAN: //16 4.1  9.0%
+            case Build.VERSION_CODES.JELLY_BEAN_MR1: //17  12.2%
+            case Build.VERSION_CODES.JELLY_BEAN_MR2: //18  3.5%
                 return "Android Jellybean";
-            case Build.VERSION_CODES.KITKAT: //19 4.4      39.2 min version 2.1
+            case Build.VERSION_CODES.KITKAT: //19 4.4      36.1 min version 2.1
             case Build.VERSION_CODES.KITKAT_WATCH: //20
                 return "Android KitKat";
-            case Build.VERSION_CODES.LOLLIPOP:  //21    5.0 11.6
-            case Build.VERSION_CODES.LOLLIPOP_MR1: //22 5.1 .8
+            case Build.VERSION_CODES.LOLLIPOP:  //21    5.0 16.9
+            case Build.VERSION_CODES.LOLLIPOP_MR1: //22 5.1  15.7
                 return "Android Lollipop";
-            case Build.VERSION_CODES.M: //23
-                return "Android Marshmellow";
+            case Build.VERSION_CODES.M: //23  .7
+                return "Android Marshmallow";
             default:
                 return "Android Unknown";   //24+ or other
         }
     }
 
-    private synchronized Qwasi initWithConfig(QwasiConfig config, String deviceToken) /*ios*/ {
+    private synchronized Qwasi initWithConfig(QwasiConfig iconfig, String deviceToken) /*ios*/ {
         if ((config != null)&&(config.isValid())) {
-            mconfig = config;
-            this.config = mconfig;
-            this.setConfig(config);
+            mconfig = iconfig;
+            config = mconfig;
+            setConfig(config);
         }
         mLocationUpdateFilter= LOCATION_UPDATE_FILTER;
         mLocationEventFilter = LOCATION_EVENT_FILTER;
@@ -550,10 +566,12 @@ public class Qwasi{
                                             public void onSuccess(Object o) {
                                                 useLocalNotifications = museLocalNotifications;
                                                 if (useLocalNotifications) {
-                                                    sendNotification((QwasiMessage) o);
+                                                    new QwasiGCMListener().sendNotification((QwasiMessage) o);
                                                 }
-                                                else
+                                                else {
+                                                    new QwasiGCMListener().onQwasiMessage((QwasiMessage)o);
                                                     Witness.notify(o);
+                                                }
                                             }
 
                                             @Override
@@ -564,8 +582,11 @@ public class Qwasi{
                                     } else {
                                         QwasiMessage message = mMessageCache.get(msgId);
                                         useLocalNotifications = museLocalNotifications;
-                                        if (useLocalNotifications) sendNotification(message);
-                                        else Witness.notify(message);
+                                        if (useLocalNotifications) new QwasiGCMListener().sendNotification(message);
+                                        else{
+                                            new QwasiGCMListener().onQwasiMessage(message);
+                                            Witness.notify(message);
+                                        }
                                     }
                                 }
                             } else {
@@ -703,7 +724,7 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotifications(message);
+                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotification(message);
                     else {
                         new QwasiGCMListener().onQwasiMessage(message);
                         Witness.notify(message);
@@ -813,7 +834,7 @@ public class Qwasi{
                         Log.wtf(TAG, "malformed JSONArray");
                         e.printStackTrace();
                     }
-                    qwasiInterface.onSuccess(locationManager.mregionMap);
+                    qwasiInterface.onSuccess(locationManager.regionMap);
                 }
 
                 @Override
@@ -1132,7 +1153,11 @@ public class Qwasi{
 
     public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface){
         if(mRegistered) {
-            Object payload = message.mpayload;
+            Object payload = message.mpayload != null?
+                    message.mpayload == message.payload?
+                            message.payload:
+                            message.mpayload
+                    :message.payload;
             //HashMap<String, Object> encrypted = new HashMap<>();
             String encrypted;
             if (payload != null){
@@ -1203,6 +1228,7 @@ public class Qwasi{
         void onFailure(QwasiError e);
     }
 
+    @Deprecated
     private void sendNotification(QwasiMessage message)/*android default notification builder*/{
         if ((message != null) && (!message.silent())) {
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);

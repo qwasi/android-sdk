@@ -26,11 +26,11 @@ You must also include the SDK into the dependencies.
 
 ```groovy
     dependencies{
-        compile 'com.qwasi:QwasiSDK:2.1.18'
+        compile 'com.qwasi:QwasiSDK:2.1.19-2'
     }
 ```
 
-Local installation is also possiable, using github
+Local installation is also avaiable, using Github
 ```sh
     git clone github.com/qwasi/android-sdk.git QwasiSDK
     gradle clean build install 
@@ -42,9 +42,10 @@ This will put the local maven repo into your git repo under the com folder.
 Qwasi is available under the MIT license. See the LICENSE file for more info.
 
 ## Gradle Dependencies
+These are the dependencies the library uses they are not required to include in your project.
 
 ```groovy
- 'com.google.android.gms:play-services-gcm:8.4.0'
+ 'com.google.android.gms:play-services-gcm:8.4.0' 
  'com.google.android.gms:play-services-location:8.4.0'
  'com.qwasi:QwasiJSON:1.0.4'  //forces legacy libraries for marshmallow
  'org.altbeacon:android-beacon-library:2.3.5'
@@ -82,6 +83,8 @@ The default configuration file is part of the AndroidManifest.xml. You create an
         <meta-data android:name="apiUrl" android:value="your qwasi url here"/>
         <meta-data android:name="gcm_senderid" android:value="gcm app id for tokens"/>
         <!--example gcm token would be "\ NumericalString", see note for reason-->
+        <meta-data android:name="GCMListener" android:value="custom.Gcmlistner"/>
+        <!--please include your custom GCMListener class path here"/>
         ...
     </application>
 ```
@@ -99,7 +102,7 @@ The SDK also uses several permissions, include these permissions in order to use
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
 ```
 
-Also if you wish to use the default QwasiNotificationManager, QwasiLocationManager, to handle Location and Notifications these will needed to be added to the AndroidManifest as well
+Also if you wish to use the default QwasiGCMReciever, QwasiGeoFence, Beacon Service, and Closed app notifications these will needed to be declared in your application.
 
 ```xml
     <application...>
@@ -157,6 +160,7 @@ Example:
     QwasiConfig config = new QwasiConfig();
     config.configWithFile("full file path to text file here");
 ```
+**Note: This action will save this customized configuration into your shared preferences such that the SDK, can communcate with the API server when your app is closed.**
 
 ### Runtime Configuration
 
@@ -209,7 +213,7 @@ Inline Example:
     };
 ```
 
-**Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.**
+**Note: The object types that you register for are the object types that will be returned in the Object for notifyEvent, the QwasiNotificationManager notifies with a QwasiMessage.  Make sure that Reporter objects aren't scoped locally.**
 
 ## Interface `QwasiInterface`
 
@@ -241,6 +245,7 @@ Example:
 Every device that engages with Qwasi SDK requires a unique device token. This token will be stored by the Qwasi object when it is instantiated, and passed to the server when a device is registered or push is enabled.
 There are many registerDevice overloads defined in Qwasi.java, the simplest and most useful is:
 public void registerDevice(String deviceToken, String userToken), when this function calls it's interface's onSuccess, it also broadcasts an event of the devicetoken as a String.
+Saving your registration status and device token to your sharedPrefences default will allow the Qwasi Service fetch and parse messages while the app is closed.
 Example:
 
 ```java
@@ -249,7 +254,8 @@ Example:
     String deviceToken = preferences.getString("key value", default value);
     qwasi.registerDevice(deviceToken, USER_TOKEN, new QwasiInterface({...
     SharedPreferences.Editor editor = preferences.edit(); 
-    editor.putString("key" qwasi.getMDeviceToken);
+    editor.putString("QwasiDeviceToken", qwasi.getMDeviceToken);
+    editor.putBoolean("registered", true);
     editor.apply();
     ...
     }); //this is an Async function.
@@ -265,13 +271,17 @@ Example:
 ### User Tokens
 User tokens are basically your devices.
 Some developers use their customer id or loyalty id number, this allows you to address the devices with this token from the platform.
-These do not have to be unique and can be used to group devices under a single user token. The default is the devices phone number if one is not provided.
+These do not have to be unique and can be used to group devices under a single user token. This object now uses standard setters and getters.
 
 You can set the user token either via the `deviceRegister` call, or later via the Qwasi object.
 
 Example:
-    qwasi.muserToken = "My User Token";
-If the device has not been registered the user token will be updated when registration is called, otherwise it will simply use the device.set_user_token API call.
+
+```java
+    qwasi.setUserToken("usertoken");
+```
+
+If the device has not been registered the user token will be updated when registration is called, otherwise it will simply use the device.set_user_token API call.  
 ###### SDK EVENT - N/A
 ###### SDK ERROR - `QWASIERRORSETUSERTOKENFAILED`
 ###### API METHOD - `DEVICE.SET_USER_TOKEN`
@@ -351,8 +361,8 @@ protected void onStart(){//onResume() would also work
 }
 ```
 
-This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness, which 
-**NOTE: Applications WILL NOT Recieve notifications if they are force closed!  This method allows you to retrieve messages sent while the user has had the application closed.**
+This method will not generate a notification, if local notifications are not enabled. It will also Send a QwasiMessage Event over Witness. 
+**NOTE: This method allows you to retrieve messages sent while the user has had the application closed.**
 
 ###### SDK EVENT - "MESSAGE" (OPTIONAL)
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`
@@ -360,17 +370,18 @@ This method will not generate a notification, if local notifications are not ena
 
 ### Handling Incoming Messages
 
-Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed. 
+Messages come in from GCM and are passed to the GCMListener registered in the Manifest.  This listener can be extend for custom notification handling, by disabling local notifications and overloading onQwasiMessage,this Listener interfaces indirectly with the QwasiService to fetch and cache messages when the application is closed.
+In order to use a customized GCMListener, please subclass QwasiGCMListener, include the onQwasiMessage method and include the path with package name in your manifest.
 Example:
 
 ```java
     @Override
     public void onMessageReceived(String from, final Bundle data){
-        //build intent and pas
+        //build intent and pass
     }
 ```
 
-By default, messages will be displayed using the label in your manifest, and the collapse key from the notification, if the message is silent then no notification is built. However it will send send these messages off to be parsed, and fetched by the QwasiService.
+By default, messages will be displayed using the label in your manifest, and the collapse key from the notification, if the message is silent then no notification is built. However it will send send these messages off to be parsed, and fetched by the QwasiService.  Custom notifications and logic for notifications can be used with extending this class, and saving QwasiLocalNote to your application's default preferences.
 
 Notifications generated in this manner will create a PendingIntent that will launch the app, for this functionality to work correctly please set your exported for the launch activity to true, and include the following code into your onCreate
 

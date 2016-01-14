@@ -28,7 +28,7 @@ allprojects{
 //apply plugin: 'com.google.gms.google-services'
 apply plugin: 'com.android.library'
 apply plugin: 'signing'
-apply plugin: 'maven'
+apply plugin: 'com.github.dcendents.android-maven'
 //apply plugin: 'maven-publish'
 apply plugin: 'io.codearte.nexus-staging'
 
@@ -103,19 +103,21 @@ group = 'com.qwasi'
 archivesBaseName = packageJson.name
 version = packageJson.version
 File configFile = file('./')
+File mavenInstall = file(System.getProperty('user.home')+'/.m2/repository/com/qwasi/QwasiSDK/'+version.toString())
 
 signing {
 	sign configurations.archives
 }
 
+//uploadArchives.repositories.mavenDeployer mavenPomConfig
 
 uploadArchives{
 	repositories{
 		mavenDeployer {
 			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-					{ authentication(userName: ossrhUsername, password: ossrhPassword) }
+			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2" )
+				{ authentication(userName: ossrhUsername, password: ossrhPassword) }
 
 			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots")
 					{ authentication(userName: ossrhUsername, password: ossrhPassword) }
@@ -157,7 +159,19 @@ uploadArchives{
 	}
 }
 
-task install(dependsOn: uploadArchives){
-	uploadArchives.repositories.mavenDeployer.repository(url:"file://"+configFile.absolutePath)
-	uploadArchives
+install{
+	repositories{
+		mavenLocal().url = 'file://'+configFile.absolutePath
+		mavenInstaller {
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			//mavenPomConfig
+		}
+	}
 }
+
+task copyInstallPom(type:Copy,dependsOn:install){
+	from mavenInstall.absolutePath
+	into configFile.absolutePath+'/com/qwasi/QwasiSDK/'+version
+}
+
+install.finalizedBy copyInstallPom
