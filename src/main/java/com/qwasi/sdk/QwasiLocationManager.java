@@ -59,8 +59,7 @@ import java.util.List;
 
 import io.hearty.witness.Witness;
 
-public class QwasiLocationManager //extends IntentService
-        implements
+public class QwasiLocationManager implements
         GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
@@ -82,14 +81,11 @@ public class QwasiLocationManager //extends IntentService
     List<String> mLocationsFetched = new ArrayList<>();
 
     private QwasiLocationManager(){
-        //super(TAG);
         mSharedApplication = Qwasi.getContext();
         mActiveManager.setInterval(mUpdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mUpdateDistance) //how far can the device move
                 .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
-        //if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
-        //    init();
         mInstance = this;
         qwasiBeacons = new QwasiBeacons();
     }

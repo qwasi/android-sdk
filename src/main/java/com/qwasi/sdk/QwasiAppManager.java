@@ -35,7 +35,9 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.util.HashMap;
@@ -64,6 +66,7 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         }
     });
 
+    //refactor me?
     static synchronized boolean getstatus(){
         return status;
     }
@@ -119,6 +122,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         }
     }
 
+    /**
+     * allows for the ablity to know when the application to have been stopped.
+     */
     @Override
     public void onActivityStopped(Activity activity){
         data = new HashMap<>();
@@ -131,14 +137,25 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         }
     }
 
+    /**
+     * Function macro to clean up issue of if the locationManager hasn't been set up.
+     */
     private boolean managerNull(){
-        return mSharedApplication.locationManager.manager == null;
+        return QwasiLocationManager.getInstance().manager == null;
     }
 
-    public boolean isApplicationStopped(){
-        return (mSharedApplication.mPreferences.contains("QwasiStopped"));
+    /**
+     * Macro to deterimine if the app has been closed
+     * @return
+     */
+    static public boolean isApplicationStopped(){
+        return (PreferenceManager.getDefaultSharedPreferences(Qwasi.getContext()).contains("QwasiStopped"));
     }
 
+    /**
+     * macro for if the application in foreground.
+     * todo: refactor to static?
+     */
     public boolean isApplicationInForeground(){
         return mResumed>mPaused;
     }

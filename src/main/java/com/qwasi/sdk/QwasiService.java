@@ -30,13 +30,13 @@
  */
 package com.qwasi.sdk;
 
-import android.app.Application;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -49,17 +49,19 @@ import io.hearty.witness.Witness;
 
 public class QwasiService extends Service {
     private Qwasi mQwasi;
-    private Class mCustomListener;
-    private Method mOnQwasiMessage;
-    private String mListenerName;
+    static Class<?> mCustomListener;
+    static Method mOnQwasiMessage;
+    static private String mListenerName;
+    static private String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMListener";
+    static String TAG = "QwasiService";
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
             String action = intent.getAction();
             String qwasi = intent.getStringExtra("qwasi");
-            Log.d("QwasiService", "" + mQwasi.mMessageCache.size());
             if (mQwasi.config.isValid()){
+                //todo move this back to Qwasi?
                 HashMap<String, Object> results = new HashMap<>();
                 qwasi = qwasi.replaceAll(Pattern.quote("}"), "")
                         .replaceAll(Pattern.quote("{"), "")
@@ -85,18 +87,7 @@ public class QwasiService extends Service {
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
                                     if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                                    else
-                                        try {
-                                            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
-                                        }
-                                        catch (IllegalAccessException e) {
-                                            Log.e("QwasiService", "Illegal access Exception, constuctor not public");
-                                        }
-                                        catch (InstantiationException e){
-                                            e.printStackTrace();
-                                        }catch (InvocationTargetException e){
-                                            e.printStackTrace();
-                                        }
+                                    else SendtoCustom(message);
                                 }
 
                                 @Override
@@ -109,16 +100,25 @@ public class QwasiService extends Service {
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                             Witness.notify(message); //when app is open
                             if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                            else {
-                                Application app = getApplication();
-                                Log.d("tag", "stuff");
-                            }
+                            else SendtoCustom(message);
                         }
                     }
                 }
             }
         }
     };
+
+    public static void SendtoCustom(QwasiMessage message){
+        try {
+            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
+        }catch (IllegalAccessException e) {
+            Log.e(TAG, "Illegal access Exception, constuctor not public");
+        }catch (InstantiationException e){
+            Log.e(TAG, "Trouble instantiation of: "+mListenerName);
+        }catch (InvocationTargetException e){
+            Log.e(TAG, "Trouble calling onQwasiMessage of: " + mListenerName);
+        }
+    }
 
     public IBinder onBind(Intent intent){
         return null;
@@ -131,19 +131,22 @@ public class QwasiService extends Service {
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
         try {
-            mListenerName = getPackageManager()
-                    .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData.getString("GCMListener");
+            Bundle metaData = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
+            mListenerName = metaData != null? //if not null
+                    metaData.containsKey("GCMListener")? //and contains the key we want
+                            metaData.getString("GCMListener") //get the key
+                            :DEFAULT_GCM
+                    :DEFAULT_GCM; //or set to default
             mCustomListener = Class.forName(mListenerName);
-            mOnQwasiMessage = mCustomListener.getDeclaredMethod("onQwasiMessage", QwasiMessage.class);
+            mOnQwasiMessage = mCustomListener.getMethod("onQwasiMessage", QwasiMessage.class);
         }catch (PackageManager.NameNotFoundException e){
-            Log.e("QwasiService", "Packagename "+getPackageName()+" not found");
+            Log.e(TAG, "Packagename "+getPackageName()+" not found");
             e.printStackTrace();
         }catch (ClassNotFoundException e){
-            Log.e("QwasiService", "Custom GCMListener with Classname: "+mListenerName+" Not found");
+            Log.e(TAG, "Custom GCMListener with Classname: "+mListenerName+" Not found");
             e.printStackTrace();
         }catch (NoSuchMethodException e){
-            Log.e("QwasiService", "Custom GCMListener has no method onQwasiMessage");
+            Log.e(TAG, "Custom GCMListener has no method onQwasiMessage");
         }
         return START_STICKY;
     }
@@ -151,7 +154,7 @@ public class QwasiService extends Service {
     @Override
     public void onDestroy(){
         if (mQwasi.mQwasiAppManager.isApplicationStopped()){
-            Log.e("QwasiService", "closed destroyed");
+            Log.e(TAG, "closed destroyed");
         }
     }
 }

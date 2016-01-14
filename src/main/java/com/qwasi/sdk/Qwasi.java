@@ -45,6 +45,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.Manifest;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Base64;
@@ -108,9 +109,11 @@ public class Qwasi{
     public Boolean useLocalNotifications;
     /*package*/ Boolean mHasClosedUnread;
     static private Qwasi instance;
-    String TAG = "Qwasi";
-    // TODO: 1/13/16 add static strings for setting flags 
-    static public String SETTINGS;
+    final String TAG = "Qwasi";
+    final static public String QWASI_REGISTERED = "registered";
+    final static public String QWASI_DEVICE_TOKEN = " QwasiDeviceToken";
+    final static public String QWASI_LOCAL_NOTE = "QwasiLocalNote";
+    final static public String QWASI_GCM_TOKEN = "gcm_token";
 
     //event tags
     final String kEventApplicationState = "com.qwasi.event.application.state";
@@ -119,7 +122,6 @@ public class Qwasi{
     final String kEventLocationDwell    = "com.qwasi.event.location.dwell";
     final String kEventLocationExit     = "com.qwasi.event.location.exit";
     private QwasiLocation mlastLocationEvent, mlastLocationUpdate, mlastLocationSync = null;
-    Reporter mQwasiNotificationHandler;
     Reporter mQwasiLocationHandler;
     Reporter mPushTokenCallback;
     String mVersion;
@@ -176,22 +178,13 @@ public class Qwasi{
         return instance;
     }
 
+    /**
+     * getters
+     * @return
+     */
     static public Application getsMainApplication(){return sMainApplication;}
 
     static public Context getContext(){ return sContext; } //return application context
-
-    /**
-     * public custom setup function with custom configuration.
-     */
-    public Qwasi qwasiWithConfig(QwasiConfig config, String deviceToken){
-        return(initWithConfig(config, deviceToken));
-    }
-
-    /** public configuration function without a device token, new installs that have yet to have a device token
-     * */
-    public Qwasi qwasiWithConfig(QwasiConfig config) /*ios 57*/{
-        return(initWithConfig(config, ""));
-    }
 
     public boolean getRegistrationStatus() {
         return mRegistered;
@@ -226,6 +219,27 @@ public class Qwasi{
         }
     }
 
+    /**
+     * public custom setup function with custom configuration.
+     */
+    public Qwasi qwasiWithConfig(QwasiConfig config, String deviceToken){
+        return(initWithConfig(config, deviceToken));
+    }
+
+    /**
+     * public configuration function without a device token, new installs that have yet to have a device token
+     */
+    public Qwasi qwasiWithConfig(QwasiConfig config) /*ios 57*/{
+        return(initWithConfig(config, ""));
+    }
+
+    /**
+     * Qwasi initializing function is called when a Qwasi object is created, or when the config is set
+     * with QwasiWithConfig.
+     * @param iconfig  incoming config either from constructor using default values or custom
+     * @param deviceToken device token included in preferances by user or after registering
+     * @return initialized Qwasi object with the new config.
+     */
     private synchronized Qwasi initWithConfig(QwasiConfig iconfig, String deviceToken) /*ios*/ {
         if ((config != null)&&(config.isValid())) {
             mconfig = iconfig;
@@ -237,25 +251,26 @@ public class Qwasi{
         mLocationSyncFilter = LOCATION_SYNC_FILTER;
 
         if (((deviceToken == null) || (deviceToken.isEmpty())) &&
-                (mPreferences.contains("QwasiDeviceToken"))){
-            mDeviceToken = mPreferences.getString("QwasiDeviceToken", null);
-        } else mDeviceToken = deviceToken;  //use what was provided
+                (mPreferences.contains(QWASI_DEVICE_TOKEN))){
+            mDeviceToken = mPreferences.getString(QWASI_DEVICE_TOKEN, null);
+        } else{
+            mDeviceToken = deviceToken;  //use what was provided
+        }
 
-        mRegistered = mPreferences.getBoolean("registered", false);
+        mRegistered = mPreferences.getBoolean(QWASI_REGISTERED, false);
         //are localNotifcations set
-        museLocalNotifications = mPreferences.getBoolean("QwasiLocalNote", true);
+        museLocalNotifications = mPreferences.getBoolean(QWASI_LOCAL_NOTE, true);
         useLocalNotifications = museLocalNotifications;
 
         mMessageCache = mMessageCache == null? new HashMap<String, QwasiMessage>():mMessageCache;
         mHasClosedUnread = mHasClosedUnread == null? false:mHasClosedUnread;
         //if we have a device token saved already use it.
         //check if we have a gcm token already so we don't use too much data
-        mQwasiNotificationManager.setPushToken(mPreferences.getString("gcm_token", null));
+        mQwasiNotificationManager.setPushToken(mPreferences.getString(QWASI_GCM_TOKEN, null));
 
         if (mQwasiNotificationManager.getPushToken() == null){
             mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
         }
-
         String test = "";
         if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -265,15 +280,17 @@ public class Qwasi{
                     accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")) : null;
 
             test = mPreferences.getString("qwasi_user_token", "");
-        } else{
-            deviceName = "";
-        }
+        } else deviceName = "";
 
         mUserToken = !test.isEmpty()?test:"DROIDTOKEN";
-        mQwasiNotificationManager.addQwasi(this);
         return this;
     }
 
+    /**
+     * setting Config without initializing the whole object over again, is used for when you only want
+     * to change the Configuration of what server the Qwasi instance is talking to.
+     * @param iconfig
+     */
     public synchronized void setConfig(QwasiConfig iconfig)/*iOS 95*/{
         config = iconfig;
         mAppId = iconfig.mapplication;
@@ -281,26 +298,17 @@ public class Qwasi{
         mRegistered = false;
     }
 
-    public void setPushEnabled(Boolean pushEnabled)/*iOS 101*/{
-        setPushEnabled(pushEnabled, defaultCallback);
-    }
-
-    @Deprecated
-    public void setPushEnabled(final QwasiInterface callbacks){
-        setPushEnabled((mpushEnabled||pushEnabled), callbacks);
-    }
-
-    public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
-        if (pushEnabled) registerForNotifications(callbacks);
-        else unregisterForNotifications(callbacks);
-    }
-
+    /**
+     * function to inalize the listener monitor for location events on the device
+     * @param enabled
+     */
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
         mlocationEnabled = enabled;
         locationEnabled = enabled;
         Log.d(TAG, "setLocationEnabled"+locationEnabled.toString());
         if (enabled){
             locationManager = locationManager == null? QwasiLocationManager.getInstance():locationManager;
+            //todo move this functionality to the location manager maybe.
             mQwasiLocationHandler = new Reporter() {
                 @Override
                 public void notifyEvent(Object o) {
@@ -350,6 +358,14 @@ public class Qwasi{
         }
     }
 
+    /**
+     * method to register a new device public facings are all overloaded to nullify parameters.
+     * @param deviceToken device token that will be used
+     * @param name name of the device
+     * @param userToken usertoken/loyality number
+     * @param userInfo map of userinfo that will be stored on the device
+     * @param qwasiInterface success failure interface
+     */
     private synchronized void mregisterDevice(String deviceToken,
                                        String name,
                                        String userToken,
@@ -389,7 +405,7 @@ public class Qwasi{
         mClient.invokeMethod("device.register", info, new QwasiInterface() {
             @Override
             public void onSuccess(Object o) {
-                try{
+                try {
                     mRegistered = true; //we've now registered
                     JSONObject result = (JSONObject) o;
                     mDeviceToken = result.getString("id");  //set our device token from the server
@@ -402,29 +418,32 @@ public class Qwasi{
                     mPreferences.edit().putString("QwasiDeviceToken", mDeviceToken).apply();
                     Witness.notify(mDeviceToken);
                     qwasiInterface.onSuccess(mDeviceToken);
-                }
-                catch (JSONException e){
+                } catch (JSONException e) {
                     Log.wtf(TAG, "Malformed JsonObject response " + e.getMessage());
                 }
             }
 
             @Override
             public void onFailure(QwasiError e) {
-                Log.e("QwasiError", "Device Failed to Register: "+ e.getMessage());
-                QwasiError  error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceRegistrationFailed,
-                        "Device Registration failed" +e.getMessage());
+                Log.e("QwasiError", "Device Failed to Register: " + e.getMessage());
+                QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceRegistrationFailed,
+                        "Device Registration failed" + e.getMessage());
                 Witness.notify(error);
                 qwasiInterface.onFailure(error);
             }
         });
     }
 
+    /**
+     * public facing(s) for mRegisterDevice
+     */
     public void registerDevice(String deviceToken, String name, String userToken, QwasiInterface qwasiInterface){
         this.mregisterDevice(deviceToken, name, userToken, null, qwasiInterface);
     }
 
     public void registerDevice(String deviceToken, String name, String userToken, HashMap<String, Object> userInfo, QwasiInterface qwasiInterface) {
-        this.mregisterDevice(deviceToken, name, userToken, userInfo, qwasiInterface);}
+        this.mregisterDevice(deviceToken, name, userToken, userInfo, qwasiInterface);
+    }
 
     public void registerDeviceWithName(String deviceToken, String name, QwasiInterface qwasiInterface) {
         this.mregisterDevice(deviceToken, name, null, null, qwasiInterface);
@@ -446,10 +465,10 @@ public class Qwasi{
         this.mregisterDevice(deviceToken, null, null, null, defaultCallback);
     }
 
-    public void unregisterDevice(String deviceToken){
-        this.unregisterDevice(deviceToken, defaultCallback);
-    }
-
+    /**
+     * UserToken getter and setter
+     * @return
+     */
     public synchronized String getUserToken(){
         return mUserToken;
     }
@@ -474,12 +493,16 @@ public class Qwasi{
                             .errorWithCode(QwasiErrorCode.QwasiErrorSetUserTokenFailed,
                                     "Set UserToken Failed " + e.getMessage());
                     Witness.notify(error);
-                    //callbacks.onFailure(error);
                 }
             });
         }
     }
 
+    /**
+     * Removes a Device record from the server.
+     * @param deviceToken
+     * @param qwasiInterface
+     */
     public synchronized void unregisterDevice(String deviceToken, final QwasiInterface qwasiInterface)/*iOS 402*/{
         if(mRegistered){
             HashMap<String, Object> parm = new HashMap<>();
@@ -490,12 +513,12 @@ public class Qwasi{
                 public void onSuccess(Object o) {
                     mDeviceToken = "";
                     mRegistered = false;
-                    mpushEnabled = false;
                     pushEnabled = false;
-                    mlocationEnabled = false;
-                    locationEnabled = mlocationEnabled;
+                    mpushEnabled = pushEnabled;
+                    locationEnabled = false;
+                    mlocationEnabled = locationEnabled;
+                    unregisterForNotifications(defaultCallback);
                     setLocationEnabled(locationEnabled);
-                    setPushEnabled(pushEnabled);
                     Log.i(TAG, "UnregisterDevice Success");
                     qwasiInterface.onSuccess(new QwasiError()
                             .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
@@ -520,6 +543,34 @@ public class Qwasi{
         }
     }
 
+    public void unregisterDevice(String deviceToken){
+        this.unregisterDevice(deviceToken, defaultCallback);
+    }
+
+    /**
+     * RegisterforNotification and UnregisterforNotifications public facings boolean is the function to be called
+     * interface allows for optional callbacks.
+     * @param pushEnabled
+     */
+    public void setPushEnabled(Boolean pushEnabled)/*iOS 101*/{
+        setPushEnabled(pushEnabled, defaultCallback);
+    }
+
+    @Deprecated
+    public void setPushEnabled(final QwasiInterface callbacks){
+        setPushEnabled((mpushEnabled || pushEnabled), callbacks);
+    }
+
+    public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
+        if (pushEnabled) registerForNotifications(callbacks);
+        else unregisterForNotifications(callbacks);
+    }
+
+    /**
+     * register pushes the GCM token for the device to the server such that
+     * GCM push messages can be delivered to the handset.
+     * @param callback
+     */
     private synchronized void registerForNotifications(final QwasiInterface callback)/*iOS 433*/{
         String test = mQwasiNotificationManager.getPushToken();
         if (test == null || test.isEmpty())  {
@@ -530,7 +581,7 @@ public class Qwasi{
                 }
             };
             Witness.register(Boolean.class, mPushTokenCallback);
-        } else if (mRegistered){
+        } else if ((mRegistered)/*&& marshmallow notifications are allowed*/){
             Witness.remove(Boolean.class, mPushTokenCallback);
             String pushGCM = mQwasiNotificationManager.getPushToken();
             HashMap<String, Object> parms = new HashMap<>();
@@ -541,63 +592,8 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.i(TAG, "Set Push Token success");
-                    mQwasiNotificationHandler = new Reporter() {
-                        @Override
-                        public void notifyEvent(Object o) {
-                            HashMap<String, Object> results = new HashMap<>();
-                            String qwasi = ((Bundle) o).getString("qwasi", "");
-
-                            qwasi = qwasi.replaceAll(Pattern.quote("}"), "")
-                                    .replaceAll(Pattern.quote("{"), "")
-                                    .replaceAll(Pattern.quote("\""), "");
-
-                            String[] pairs = qwasi.split(Pattern.quote(","));
-                            for (String pair : pairs) {
-                                String[] key = pair.split(Pattern.quote(":"), 2);
-                                results.put(key[0], key[1]);
-                            }
-                            String msgId = results.get("msg_id").toString();
-                            String appId = results.get("app_id").toString();
-                            if (!(msgId.isEmpty()) && !(appId.isEmpty())) {
-                                if (appId.equals(config.mapplication)||appId.equals(mconfig.mapplication)) {
-                                    if ((mMessageCache.isEmpty()) || (!mMessageCache.containsKey(msgId))) {
-                                        fetchMessageForNotification(msgId, new QwasiInterface() {
-                                            @Override
-                                            public void onSuccess(Object o) {
-                                                useLocalNotifications = museLocalNotifications;
-                                                if (useLocalNotifications) {
-                                                    new QwasiGCMListener().sendNotification((QwasiMessage) o);
-                                                }
-                                                else {
-                                                    new QwasiGCMListener().onQwasiMessage((QwasiMessage)o);
-                                                    Witness.notify(o);
-                                                }
-                                            }
-
-                                            @Override
-                                            public void onFailure(QwasiError e) {
-
-                                            }
-                                        });
-                                    } else {
-                                        QwasiMessage message = mMessageCache.get(msgId);
-                                        useLocalNotifications = museLocalNotifications;
-                                        if (useLocalNotifications) new QwasiGCMListener().sendNotification(message);
-                                        else{
-                                            new QwasiGCMListener().onQwasiMessage(message);
-                                            Witness.notify(message);
-                                        }
-                                    }
-                                }
-                            } else {
-                                callback.onFailure(new QwasiError()
-                                        .errorWithCode(QwasiErrorCode.QwasiErrorInvaildMessage, "Message is Invalid"));
-                            }
-                        }
-                    };
-                    mpushEnabled = true;
-                    pushEnabled = mpushEnabled;
-                    Witness.register(Bundle.class, mQwasiNotificationHandler);
+                    pushEnabled = true;
+                    mpushEnabled = pushEnabled;
                     callback.onSuccess(mQwasiNotificationManager.getPushToken());
                     Witness.notify(mQwasiNotificationManager.getPushToken());
                 }
@@ -612,9 +608,7 @@ public class Qwasi{
                     callback.onFailure(error);
                 }
             });
-            //todo M Remote notification allowed?
-        }
-        else {
+        } else {
             Log.e("QwasiError", "Device Not Registered");
             QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                     "Device not Registered");
@@ -623,6 +617,11 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Removes the GCM token from the devices entry on the server setting the device to push.poll;
+     * making it such that the code must call messagefetch, or fetchUnreadMessage.
+     * @param callback
+     */
     private synchronized void unregisterForNotifications(final QwasiInterface callback){
         if(mRegistered){
             HashMap<String, Object> parms = new HashMap<>();
@@ -635,7 +634,7 @@ public class Qwasi{
                     Log.d(TAG, "Device unregistered for push success");
                     mpushEnabled = false;
                     pushEnabled = mpushEnabled;
-                    Witness.remove(Bundle.class, mQwasiNotificationHandler);
+                    //Witness.remove(Bundle.class, mQwasiNotificationHandler);
                     callback.onSuccess(new QwasiError().
                             errorWithCode(QwasiErrorCode.QwasiErrorNone, "UnSet Push Token success"));
                 }
@@ -657,6 +656,10 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Overloaded front facing for fetchMessageForNotification
+     * @param userInfo
+     */
     public void fetchMessageForNotification(String userInfo) {
         this.fetchMessageForNotification(userInfo, defaultCallback);
     }
@@ -697,9 +700,18 @@ public class Qwasi{
         }
     }
 
+    /**
+     * overloaded public facing for fetchUnreadmessage
+     */
     public void fetchUnreadMessage(){
-        this.fetchUnreadMessage(defaultCallback);}
+        this.fetchUnreadMessage(defaultCallback);
+    }
 
+    /**
+     * fetches messages that where attempted to be delivered while it was offline, alternatively this
+     * will rebroadcast messages for the ui for when the device was closed.
+     * @param qwasiInterface
+     */
     public synchronized void fetchUnreadMessage(final QwasiInterface qwasiInterface){
         if(mRegistered) {
             if (( !mMessageCache.isEmpty() ) && mHasClosedUnread ) {
@@ -724,11 +736,10 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotification(message);
-                    else {
-                        new QwasiGCMListener().onQwasiMessage(message);
-                        Witness.notify(message);
-                    }
+                    Witness.notify(message);
+                    if (useLocalNotifications || museLocalNotifications)
+                        new QwasiGCMListener().sendNotification(message);
+                    else QwasiService.SendtoCustom(message);
                     qwasiInterface.onSuccess(message);
                 }
 
@@ -757,6 +768,9 @@ public class Qwasi{
         }
     }
 
+    /**
+     * Post event will post the event though to the server
+     */
     public synchronized void postEvent(String type, HashMap<String, Object> data, Boolean retry, final QwasiInterface qwasiInterface){
         if(mRegistered){
             HashMap<String, Object> parms = new HashMap<>();
@@ -806,20 +820,20 @@ public class Qwasi{
 
     public synchronized void fetchLocationsNear(QwasiLocation place, final QwasiInterface qwasiInterface) {
         if(mRegistered) {
-            //if (mlocationEnabled) {
-            place = place == null? QwasiLocation.initEmpty() : place;
-            HashMap<String, Object> parms = new HashMap<>();
-            HashMap<String, Object> near = new HashMap<>();
-            if (!place.mEmpty) {
-                near.put("lng", place.getLongitude());
-                near.put("lat", place.getLatitude());
-                near.put("radius", mLocationSyncFilter * 10);
-                parms.put("near", near);
-                near = new HashMap<>();
-                near.put("schema", "2.0");
-                parms.put("options", near);
-            }
-            mClient.invokeMethod("location.fetch", parms, new QwasiInterface() {
+            if ((mlocationEnabled)||(locationEnabled)) {
+                place = place == null? QwasiLocation.initEmpty() : place;
+                HashMap<String, Object> parms = new HashMap<>();
+                HashMap<String, Object> near = new HashMap<>();
+                if (!place.mEmpty) {
+                    near.put("lng", place.getLongitude());
+                    near.put("lat", place.getLatitude());
+                    near.put("radius", mLocationSyncFilter * 10);
+                    parms.put("near", near);
+                    near = new HashMap<>();
+                    near.put("schema", "2.0");
+                    parms.put("options", near);
+                }
+                mClient.invokeMethod("location.fetch", parms, new QwasiInterface() {
                 @Override
                 public void onSuccess(Object o) {
                     JSONArray positions;
@@ -847,18 +861,20 @@ public class Qwasi{
                     qwasiInterface.onFailure(error);
                 }
             });
-            /*}
-            //todo for M: Handle location permissions
-            else{
-                Log.e("QwasiError", "Locations not enabled");
-                QwasiError error = new QwasiError()
-                        .errorWithCode(QwasiErrorCode.QwasiErrorLocationAccessDenied,
-                                "Location Access is Disabled");
-                Witness.notify(error);
-                qwasiInterface.onFailure(error);
-            }*/
-        }
-        else {
+            } else{
+                if (ContextCompat.checkSelfPermission(sContext, Manifest.permission
+                        .ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                    setLocationEnabled(!locationEnabled);
+                } else {
+                    Log.e("QwasiError", "Locations not enabled");
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorLocationAccessDenied,
+                                    "Location Access is Disabled");
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            }
+        } else {
             Log.e("QwasiError", "Device Not Registered");
             QwasiError error = new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered,
                     "Device not registered");
@@ -943,7 +959,9 @@ public class Qwasi{
         }
     }
 
-    //device set
+    /**
+     * device for key Setters
+     */
     public synchronized void setDeviceValue(Object value, String key, final QwasiInterface qwasiInterface){
         if(mRegistered){
             HashMap<String, Object> parms = new HashMap<>();
@@ -981,11 +999,13 @@ public class Qwasi{
         this.setDeviceValue(value, key, defaultCallback);
     }
 
+    /**
+     * Getters for device value for key
+     */
     public void deviceValueForKey(String key) {
         this.deviceValueForKey(key, defaultCallback); //default
     }
 
-    //device.get
     public synchronized void deviceValueForKey(final String key, final QwasiInterface qwasiInterface){
         if (mRegistered){
             final Map<String, Object> parms = new HashMap<>();
@@ -1154,40 +1174,33 @@ public class Qwasi{
     public synchronized void sendMessage(QwasiMessage message, String userToken, final QwasiInterface qwasiInterface){
         if(mRegistered) {
             Object payload = message.mpayload != null?
-                    message.mpayload == message.payload?
-                            message.payload:
-                            message.mpayload
+                    message.mpayload == message.payload? message.payload: message.mpayload
                     :message.payload;
-            //HashMap<String, Object> encrypted = new HashMap<>();
-            String encrypted;
             if (payload != null){
-                if (payload instanceof JSONObject) payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
-                else if (payload instanceof String) {  //payload is plaintext
+                String encrypted;
+                if (payload instanceof JSONObject){
+                    payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
+                } else if (payload instanceof String) {  //payload is plaintext
                     try {
                         encrypted = URLDecoder.decode((String) payload, "UTF-8");
                         payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
-                    }
-                    catch (UnsupportedEncodingException e){
+                    } catch (UnsupportedEncodingException e){
                         e.printStackTrace();
                         Log.e(TAG, "Decoding failed");
                     }
-                }
-                else payload = ""; //message is silent
+                } else payload = ""; //message is silent
             //throw an error, get the data if the data is null, or the error isn't print error
             //set payload to the JSONData
-            }
-            else{
+            } else{
                 qwasiInterface.onFailure(new QwasiError()
                         .errorWithCode(QwasiErrorCode.QwasiErrorInvaildMessage, "Invalid Message"));
             }
             Map<String, Object> parms = new HashMap<>();
-            HashMap<String, Object> audi = new HashMap<>();
-            audi.put("user_tokens", userToken);
-            parms.put("audience", audi); //can be devices, usertokens, channels w/e
-            parms.put("payload_type", message.mpayloadType);
-            parms.put("notification", new HashMap<String, Object>().put("text", message.malert));
+            parms.put("audience", (new HashMap<String, Object>().put("user_tokens", userToken)));
+            parms.put("payload_type", message.payloadType);
+            parms.put("notification", new HashMap<String, Object>().put("text", message.alert));
             parms.put("payload", payload);
-            parms.put("tags", message.mtags);
+            parms.put("tags", message.tags);
             parms.put("options", (new HashMap<String, Object>().put("encodedPayload", true)));
             mClient.invokeMethod("message.send", parms, new QwasiInterface() {
                 @Override
@@ -1219,8 +1232,16 @@ public class Qwasi{
         this.sendMessage(message, userToken, defaultCallback);
     }
 
+    /**
+     * Channel Getters, deprecated simply to conform naming standards.
+     */
+    @Deprecated
     public synchronized Map<String, Void> channels(){
         return (new HashMap<>(mChannels));
+    }
+
+    public synchronized Map<String, Void> getChannels(){
+        return(new HashMap<>(mChannels));
     }
 
     public interface QwasiInterface{
@@ -1228,35 +1249,10 @@ public class Qwasi{
         void onFailure(QwasiError e);
     }
 
-    @Deprecated
-    private void sendNotification(QwasiMessage message)/*android default notification builder*/{
-        if ((message != null) && (!message.silent())) {
-            Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            String appName = sContext.getPackageManager().getApplicationLabel(sContext.getApplicationInfo()).toString();
-            if (mQwasiNotificationManager.mNoteBuilder == null) new QwasiGCMListener().onMessagePolled();
-            NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.mNoteBuilder
-                    .setSmallIcon(sContext.getApplicationInfo().icon)
-                    .setContentTitle(appName)
-                    .setContentText(message.alert)
-                    .setAutoCancel(true)
-                    .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
-                    .setSound(defaultSoundUri); //default sound;
-            //configure expanded action
-            if (message.payloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-            else if (message.payloadType.contains("image")) Log.d(TAG, "Image");
-            //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-            else if (message.payloadType.contains("json")) Log.d(TAG, "App context");
-            NotificationManager noteMng = (NotificationManager) sContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            noteMng.notify(0, noteBuilder.build());
-            Witness.notify(message);
-        }
-    }
+    static float UPDATE_FILTER(float Speed, float Filter){return (Speed/PED_FILTER)*Filter;}
+    static float MAX(float number_1, float number_2){return number_1>number_2?number_1:number_2;}
 
-    static float UPDATE_FILTER(float Speed, float Filter)/*iOS inline function*/{return (Speed/PED_FILTER)*Filter;}
-    static float MAX(float number_1, float number_2)/*iOS inline function*/{return number_1>number_2?number_1:number_2;}
-
-    public boolean isInForground(){
+    public boolean isInForeground(){
         return mQwasiAppManager.isApplicationInForeground();
     }
 }
