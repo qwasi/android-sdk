@@ -48,14 +48,18 @@ import java.util.regex.Pattern;
 import io.hearty.witness.Witness;
 
 public class QwasiService extends Service {
-    private Qwasi mQwasi;
+    static private Qwasi mQwasi;
     static Class<?> mCustomListener;
     static Method mOnQwasiMessage;
     static private String mListenerName;
-    static private String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMListener";
+    static String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMListener";
     static String TAG = "QwasiService";
 
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+    /**
+     * Generic broadcastReceiver for this service used to handle messages delivered during
+     * operation of application, both opened and closed.
+     */
+    protected final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
             String action = intent.getAction();
@@ -80,14 +84,13 @@ public class QwasiService extends Service {
                                 @Override
                                 public void onSuccess(Object o) {
                                     QwasiMessage message = (QwasiMessage) o;
-                                    if (mQwasi.mQwasiAppManager.isApplicationStopped()) {
+                                    if (QwasiAppManager.isApplicationStopped()) {
                                         mQwasi.mHasClosedUnread = true;
                                         message.mClosedMessage = true;
                                     }
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
-                                    if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                                    else SendtoCustom(message);
+                                    SendNotification(message);
                                 }
 
                                 @Override
@@ -99,8 +102,7 @@ public class QwasiService extends Service {
                             QwasiMessage message = mQwasi.mMessageCache.get(msgId);
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                             Witness.notify(message); //when app is open
-                            if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                            else SendtoCustom(message);
+                            SendNotification(message);
                         }
                     }
                 }
@@ -108,9 +110,16 @@ public class QwasiService extends Service {
         }
     };
 
-    public static void SendtoCustom(QwasiMessage message){
+    /**
+     * Sends a QwasiMessage to the custom notification builder
+     * @param message
+     */
+    public static void SendNotification(QwasiMessage message){
         try {
-            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
+            if (mQwasi.useLocalNotifications){
+                QwasiGCMListener.class.newInstance().sendNotification(message);
+            }
+            else mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
         }catch (IllegalAccessException e) {
             Log.e(TAG, "Illegal access Exception, constuctor not public");
         }catch (InstantiationException e){
@@ -120,6 +129,9 @@ public class QwasiService extends Service {
         }
     }
 
+    /**
+     * Stub required to extend service
+     */
     public IBinder onBind(Intent intent){
         return null;
     }
@@ -153,7 +165,7 @@ public class QwasiService extends Service {
 
     @Override
     public void onDestroy(){
-        if (mQwasi.mQwasiAppManager.isApplicationStopped()){
+        if (QwasiAppManager.isApplicationStopped()){
             Log.e(TAG, "closed destroyed");
         }
     }

@@ -737,9 +737,7 @@ public class Qwasi{
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
                     Witness.notify(message);
-                    if (useLocalNotifications || museLocalNotifications)
-                        new QwasiGCMListener().sendNotification(message);
-                    else QwasiService.SendtoCustom(message);
+                    QwasiService.SendNotification(message);
                     qwasiInterface.onSuccess(message);
                 }
 

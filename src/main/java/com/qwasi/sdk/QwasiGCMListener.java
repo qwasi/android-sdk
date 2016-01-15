@@ -44,11 +44,11 @@ import android.util.Log;
 
 import com.google.android.gms.gcm.GcmListenerService;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 
 import io.hearty.witness.Witness;
-
-public class QwasiGCMListener extends GcmListenerService{
+abstract public class QwasiGCMListener extends GcmListenerService{
     private Context mBaseContext;
     private PackageManager mPM;
     private Intent mDefaultIntent;
@@ -73,39 +73,11 @@ public class QwasiGCMListener extends GcmListenerService{
         }
     }
 
-    @Deprecated
-    public void onMessagePolled(){
-        synchronized (this) {
-        }
-    }
-
     /**
      * Override this function to dictate logic when useLocalNotifications is set false
      * @param msg
      */
-    protected void onQwasiMessage(QwasiMessage msg) {
-        Log.d("QwasiGCM", "Custom Config used");
-    }
-
-    /**
-     * for uselocalNotifications default
-     */
-    /*package*/ void sendNotification(final Bundle data){
-        String alert = data.getString("collapse_key","");
-        if (!alert.contains("do_not_collapse")){
-            String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(Qwasi.getContext())
-                    .setSmallIcon(mBaseContext.getApplicationInfo().icon)
-                    .setContentIntent(mDefaultPendingIntent)
-                    .setContentTitle(appName)
-                    .setContentText(alert)
-                    .setAutoCancel(true)
-                    .setDefaults(Notification.DEFAULT_ALL)
-                    .setSound(mDefaultSoundUri);
-            NotificationManager noteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            noteMng.notify(1, noteBuilder.build());
-        }
-    }
+    abstract protected void onQwasiMessage(QwasiMessage msg);
 
     /**
      * used from inside the SDK to send fetched unreadmessages.
