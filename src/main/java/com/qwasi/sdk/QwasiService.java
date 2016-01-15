@@ -121,7 +121,8 @@ public class QwasiService extends Service {
             }
             else mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
         }catch (IllegalAccessException e) {
-            Log.e(TAG, "Illegal access Exception, constuctor not public");
+            Log.e(TAG, "Illegal access Exception, Constructor, or onQwasiMessage protection level" +
+                    " too high");
         }catch (InstantiationException e){
             Log.e(TAG, "Trouble instantiation of: "+mListenerName);
         }catch (InvocationTargetException e){
@@ -153,12 +154,12 @@ public class QwasiService extends Service {
             mOnQwasiMessage = mCustomListener.getMethod("onQwasiMessage", QwasiMessage.class);
         }catch (PackageManager.NameNotFoundException e){
             Log.e(TAG, "Packagename "+getPackageName()+" not found");
-            e.printStackTrace();
-        }catch (ClassNotFoundException e){
-            Log.e(TAG, "Custom GCMListener with Classname: "+mListenerName+" Not found");
-            e.printStackTrace();
-        }catch (NoSuchMethodException e){
-            Log.e(TAG, "Custom GCMListener has no method onQwasiMessage");
+        }catch (ClassNotFoundException e) {
+            Log.e(TAG, "Custom GCMListener with Classname: " + mListenerName + " Not found");
+        }
+        catch (NoSuchMethodException e){
+            Log.e(TAG, "Custom GCMListener has no method onQwasiMessage, make sure to extend " +
+                    "QwasiGCMListener");
         }
         return START_STICKY;
     }

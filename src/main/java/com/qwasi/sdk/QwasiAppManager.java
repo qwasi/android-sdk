@@ -78,8 +78,10 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityDestroyed(Activity activity){
-        mSharedApplication.mPreferences.edit().putString("QwasiStopped", "").apply();
-        mSharedApplication.locationManager.stopLocationUpdates();
+        if (activity.getApplication() == Qwasi.getsMainApplication()) {
+            mSharedApplication.mPreferences.edit().putString("QwasiStopped", "").apply();
+            mSharedApplication.locationManager.stopLocationUpdates();
+        }
     }
 
     @Override
