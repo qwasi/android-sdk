@@ -51,14 +51,16 @@ import io.hearty.witness.Witness;
 abstract public class QwasiGCMListener extends GcmListenerService{
     private Context mBaseContext;
     private PackageManager mPM;
-    private Intent mDefaultIntent;
     private PendingIntent mDefaultPendingIntent;
     private Uri mDefaultSoundUri;
 
     public QwasiGCMListener(){
         mBaseContext = Qwasi.getContext();
         mPM = mBaseContext.getPackageManager();
-        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        Intent mDefaultIntent;
+        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
+        mDefaultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
@@ -80,10 +82,10 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     abstract protected void onQwasiMessage(QwasiMessage msg);
 
     /**
-     * used from inside the SDK to send fetched unreadmessages.
+     * used from inside the SDK to send fetched unread messages, also c by the .
      * @param message
      */
-    /*Package*/ void sendNotification(final QwasiMessage message){
+    protected void sendNotification(final QwasiMessage message){
         String alert = message.alert;
         if (!alert.contains("do_not_collapse")){
             String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();

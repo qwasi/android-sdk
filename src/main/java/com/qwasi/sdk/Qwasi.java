@@ -31,22 +31,15 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Application;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.Manifest;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Base64;
 import android.util.Log;
@@ -62,7 +55,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class Qwasi{
     static final float LOCATION_EVENT_FILTER = 50.0f;
@@ -151,14 +143,14 @@ public class Qwasi{
         mClient = new QwasiClient();
         sMainApplication = application;
         mChannels = new HashMap<>();
-        sContext = application.getApplicationContext();
         mQwasiAppManager = new QwasiAppManager(this);
         networkInfo = ((ConnectivityManager) sContext.getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
         mQwasiNotificationManager = QwasiNotificationManager.getInstance();
-        mconfig = new QwasiConfig(sContext);
-        config = mconfig;
-        mlocationManager = QwasiLocationManager.getInstance();
-        locationManager = mlocationManager;
+        config = new QwasiConfig(sContext);
+        mconfig = config;
+        sMainApplication.startService(new Intent(sContext, QwasiLocationManager.class));
+        locationManager = QwasiLocationManager.getInstance();
+        mlocationManager = locationManager;
         application.registerActivityLifecycleCallbacks(mQwasiAppManager);
         mPreferences = PreferenceManager.getDefaultSharedPreferences(sContext);
         config.configWithFile(); //default
@@ -172,7 +164,8 @@ public class Qwasi{
      */
     public static Qwasi getInstance(Application application){
         if (instance == null){
-            application.getApplicationContext().startService(new Intent(application.getApplicationContext(), QwasiService.class));
+            sContext = application.getApplicationContext();
+            sContext.startService(new Intent(sContext, QwasiService.class));
             return new Qwasi(application);
         }
         return instance;

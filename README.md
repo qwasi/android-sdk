@@ -133,7 +133,7 @@ app notifications these will needed to be declared in your application.
         <!-- [End Geofence Listener]-->
         <!-- [START gcm_listener] -->
         <service
-            android:name="com.qwasi.sdk.QwasiGCMListener"
+            android:name="com.qwasi.sdk.QwasiGCMDefault"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />

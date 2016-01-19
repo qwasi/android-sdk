@@ -52,7 +52,7 @@ public class QwasiService extends Service {
     static Class<?> mCustomListener;
     static Method mOnQwasiMessage;
     static private String mListenerName;
-    static String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMListener";
+    static String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMDefault";
     static String TAG = "QwasiService";
 
     /**
@@ -95,7 +95,8 @@ public class QwasiService extends Service {
 
                                 @Override
                                 public void onFailure(QwasiError e) {
-
+                                    Log.e(TAG, "Fetch Message failed");
+                                    e.printStackTrace();
                                 }
                             });
                         } else {
@@ -117,7 +118,7 @@ public class QwasiService extends Service {
     public static void SendNotification(QwasiMessage message){
         try {
             if (mQwasi.useLocalNotifications){
-                QwasiGCMListener.class.newInstance().sendNotification(message);
+                new QwasiGCMDefault().sendNotification(message);
             }
             else mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
         }catch (IllegalAccessException e) {

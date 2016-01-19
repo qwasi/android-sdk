@@ -37,9 +37,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.app.Service;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.ErrorDialogFragment;
@@ -59,8 +61,8 @@ import java.util.List;
 
 import io.hearty.witness.Witness;
 
-public class QwasiLocationManager implements
-        GoogleApiClient.ConnectionCallbacks, //google api server callbacks
+public class QwasiLocationManager extends Service
+        implements GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
     private Context mSharedApplication;
@@ -80,18 +82,22 @@ public class QwasiLocationManager implements
     private static QwasiLocationManager mInstance;
     List<String> mLocationsFetched = new ArrayList<>();
 
-    private QwasiLocationManager(){
+    public QwasiLocationManager(){
+        getInstance();
+    }
+
+    private QwasiLocationManager initInstance(){
         mSharedApplication = Qwasi.getContext();
         mActiveManager.setInterval(mUpdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mUpdateDistance) //how far can the device move
                 .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
-        mInstance = this;
         qwasiBeacons = new QwasiBeacons();
+        return this;
     }
 
     public static synchronized QwasiLocationManager getInstance(){
-        return mInstance == null?new QwasiLocationManager():mInstance;
+        return mInstance == null?new QwasiLocationManager().initInstance():mInstance;
     }
 
     public QwasiLocation getLastLocation(){
@@ -112,6 +118,23 @@ public class QwasiLocationManager implements
 
     public LocationRequest foregroundManager(){
         return mActiveManager != null? mActiveManager:null;
+    }
+
+    /**
+     * todo something about binding to the qwasi object
+     * @param incoming
+     * @return
+     */
+    @Override
+    public IBinder onBind(Intent incoming){
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flag, int startId){
+        Log.d(TAG, "QwasiLocationMNG starting");
+        new QwasiLocationManager();
+        return START_NOT_STICKY;
     }
 
     @Override
