@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -132,9 +133,11 @@ public class QwasiService extends Service {
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
         try {
-            mListenerName = getPackageManager()
+            Bundle metadata = getPackageManager()
                     .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData.getString("GCMListener");
+                    .metaData;
+            mListenerName = metadata.containsKey("GCMListener")?metadata.getString("GCMListener")
+                    :"com.qwasi.sdk.QwasiGCMListener";
             mCustomListener = Class.forName(mListenerName);
             mOnQwasiMessage = mCustomListener.getDeclaredMethod("onQwasiMessage", QwasiMessage.class);
         }catch (PackageManager.NameNotFoundException e){
