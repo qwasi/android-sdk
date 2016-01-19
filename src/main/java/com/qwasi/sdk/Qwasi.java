@@ -33,6 +33,7 @@ import android.accounts.AccountManager;
 import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -287,7 +288,7 @@ public class Qwasi{
 
     @Deprecated
     public void setPushEnabled(final QwasiInterface callbacks){
-        setPushEnabled((mpushEnabled||pushEnabled), callbacks);
+        setPushEnabled((mpushEnabled || pushEnabled), callbacks);
     }
 
     public void setPushEnabled(Boolean pushEnabled, final QwasiInterface callbacks){
@@ -298,7 +299,7 @@ public class Qwasi{
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
         mlocationEnabled = enabled;
         locationEnabled = enabled;
-        Log.d(TAG, "setLocationEnabled"+locationEnabled.toString());
+        Log.d(TAG, "setLocationEnabled" + locationEnabled.toString());
         if (enabled){
             locationManager = locationManager == null? QwasiLocationManager.getInstance():locationManager;
             mQwasiLocationHandler = new Reporter() {
@@ -724,7 +725,8 @@ public class Qwasi{
                     QwasiMessage message = new QwasiMessage();
                     message.messageWithData((JSONObject) o);
                     mMessageCache.put(message.messageId, message);
-                    if (useLocalNotifications||museLocalNotifications) new QwasiGCMListener().sendNotification(message);
+                    if (useLocalNotifications || museLocalNotifications)
+                        new QwasiGCMListener().sendNotification(message);
                     else {
                         new QwasiGCMListener().onQwasiMessage(message);
                         Witness.notify(message);
@@ -1229,15 +1231,20 @@ public class Qwasi{
     }
 
     @Deprecated
-    private void sendNotification(QwasiMessage message)/*android default notification builder*/{
+    /*package*/void sendNotification(QwasiMessage message){
         if ((message != null) && (!message.silent())) {
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Intent intent = sContext.getPackageManager().getLaunchIntentForPackage(sContext
+                    .getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent pI = PendingIntent.getActivity(sContext, 0, intent, PendingIntent
+                    .FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
             String appName = sContext.getPackageManager().getApplicationLabel(sContext.getApplicationInfo()).toString();
             if (mQwasiNotificationManager.mNoteBuilder == null) new QwasiGCMListener().onMessagePolled();
-            NotificationCompat.Builder noteBuilder = mQwasiNotificationManager.mNoteBuilder
+            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(sContext)
                     .setSmallIcon(sContext.getApplicationInfo().icon)
                     .setContentTitle(appName)
                     .setContentText(message.alert)
+                    .setContentIntent(pI)
                     .setAutoCancel(true)
                     .setDefaults(Notification.DEFAULT_ALL) //default sound and vibrate
                     .setSound(defaultSoundUri); //default sound;

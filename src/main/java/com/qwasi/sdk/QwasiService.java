@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -84,7 +85,7 @@ public class QwasiService extends Service {
                                     }
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
-                                    if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                                    if (mQwasi.useLocalNotifications) mQwasi.sendNotification(message);
                                     else
                                         try {
                                             mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
@@ -98,17 +99,18 @@ public class QwasiService extends Service {
                                             e.printStackTrace();
                                         }
                                 }
-
+                                //message not fetched but still want to build a notification w/bundle
                                 @Override
                                 public void onFailure(QwasiError e) {
-
+                                    new QwasiGCMListener().sendNotification(intent.getBundleExtra
+                                            ("data"));
                                 }
                             });
                         } else {
                             QwasiMessage message = mQwasi.mMessageCache.get(msgId);
                             mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                             Witness.notify(message); //when app is open
-                            if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
+                            if (mQwasi.useLocalNotifications) mQwasi.sendNotification(message);
                             else {
                                 Application app = getApplication();
                                 Log.d("tag", "stuff");
@@ -131,9 +133,11 @@ public class QwasiService extends Service {
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
         try {
-            mListenerName = getPackageManager()
+            Bundle metadata = getPackageManager()
                     .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData.getString("GCMListener");
+                    .metaData;
+            mListenerName = metadata.containsKey("GCMListener")?metadata.getString("GCMListener")
+                    :"com.qwasi.sdk.QwasiGCMListener";
             mCustomListener = Class.forName(mListenerName);
             mOnQwasiMessage = mCustomListener.getDeclaredMethod("onQwasiMessage", QwasiMessage.class);
         }catch (PackageManager.NameNotFoundException e){
