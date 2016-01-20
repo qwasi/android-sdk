@@ -485,7 +485,8 @@ Example:
 
 ## Location
 
-The Qwasi SDK can provide device location and track Geofence, and Beacon events. The Geofences and Beacons must be pre-configured via the AIM or API interfaces.
+The Qwasi SDK can provide device location and track Geofence, and Beacon events. The Geofences 
+and Beacons must be pre-configured via the AIM or API interfaces.
 
 ### Enabling Location
 
@@ -521,12 +522,15 @@ Example:
 ```
 
 ####GeoFences
-These Locations are emitted when the Geofencehandler receives and handles an Intent from the Google GeoFencing API.  By default all Geofence transistions are tracked by only exit and dwell events emitted by the handler.
+These Locations are emitted when the Geofencehandler receives and handles an Intent from the 
+Google GeoFencing API. By default all Geofence transitions are tracked by only exit and dwell 
+events emitted by the handler.
 
 
 ####Beacons
-The 'Qwasi API' supports beacons with the use of the AltBeacon Android Library.  These are handled by the pre-configured Beacons added though the API.
-In order to use beacons, you must implement BeaconConsumer, in your main Activity an example of that is as follows:
+The 'Qwasi API' supports beacons with the use of the AltBeacon Android Library. These are handled
+ by the pre-configured Beacons added though the API. In order to use beacons, you must implement 
+ BeaconConsumer, in your main Activity an example of that is as follows:
 
 ```java
     @Override

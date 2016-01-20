@@ -103,8 +103,9 @@ public class Qwasi{
     static private Qwasi instance;
     final String TAG = "Qwasi";
     final static public String QWASI_REGISTERED = "registered";
-    final static public String QWASI_DEVICE_TOKEN = " QwasiDeviceToken";
+    final static public String QWASI_DEVICE_TOKEN = "QwasiDeviceToken";
     final static public String QWASI_LOCAL_NOTE = "QwasiLocalNote";
+    final static public String QWASI_USER_TOKEN = "QwasiUserToken";
     final static public String QWASI_GCM_TOKEN = "gcm_token";
 
     //event tags
@@ -122,15 +123,17 @@ public class Qwasi{
      * Default interface for overloaded methods that where not provided a interface by the developer
      */
     private QwasiInterface defaultCallback = new QwasiInterface() {
+        private final String TAG = "DefaultQwasiCallback";
         @Override
         public void onSuccess(Object o) { //should recieve QwasiMessage, or QwasiError
-            if(o instanceof QwasiMessage) Log.i("DefaultCallback", ((QwasiMessage) o).description());//ignore QwasiError since it's only NoError
+            if(o instanceof QwasiMessage) Log.i(TAG, ((QwasiMessage) o).description());//ignore
+            // QwasiError since it's only NoError
         }
 
         @Override
         public void onFailure(QwasiError e) {
             //e.printStackTrace();
-            Log.e("DefaultCallback", e.message);
+            Log.e(TAG, e.message);
         }
     };
 
@@ -148,7 +151,7 @@ public class Qwasi{
         mQwasiNotificationManager = QwasiNotificationManager.getInstance();
         config = new QwasiConfig(sContext);
         mconfig = config;
-        sMainApplication.startService(new Intent(sContext, QwasiLocationManager.class));
+        //sMainApplication.startService(new Intent(sContext, QwasiLocationManager.class));
         locationManager = QwasiLocationManager.getInstance();
         mlocationManager = locationManager;
         application.registerActivityLifecycleCallbacks(mQwasiAppManager);
@@ -235,8 +238,8 @@ public class Qwasi{
      */
     private synchronized Qwasi initWithConfig(QwasiConfig iconfig, String deviceToken) /*ios*/ {
         if ((config != null)&&(config.isValid())) {
-            mconfig = iconfig;
-            config = mconfig;
+            config = iconfig;
+            mconfig = config;
             setConfig(config);
         }
         mLocationUpdateFilter= LOCATION_UPDATE_FILTER;
@@ -252,8 +255,8 @@ public class Qwasi{
 
         mRegistered = mPreferences.getBoolean(QWASI_REGISTERED, false);
         //are localNotifcations set
-        museLocalNotifications = mPreferences.getBoolean(QWASI_LOCAL_NOTE, true);
-        useLocalNotifications = museLocalNotifications;
+        useLocalNotifications = mPreferences.getBoolean(QWASI_LOCAL_NOTE, true);
+        museLocalNotifications = useLocalNotifications;
 
         mMessageCache = mMessageCache == null? new HashMap<String, QwasiMessage>():mMessageCache;
         mHasClosedUnread = mHasClosedUnread == null? false:mHasClosedUnread;
@@ -272,7 +275,7 @@ public class Qwasi{
             deviceName = accounts.length > 0 ?
                     accounts[0].name.substring(0, accounts[0].name.lastIndexOf("@")) : null;
 
-            test = mPreferences.getString("qwasi_user_token", "");
+            test = mPreferences.getString(QWASI_USER_TOKEN, "");
         } else deviceName = "";
 
         mUserToken = !test.isEmpty()?test:"DROIDTOKEN";
@@ -286,7 +289,7 @@ public class Qwasi{
      */
     public synchronized void setConfig(QwasiConfig iconfig)/*iOS 95*/{
         config = iconfig;
-        mAppId = iconfig.mapplication;
+        mAppId = iconfig.application;
         mClient = mClient.clientWithConfig(config, this);
         mRegistered = false;
     }
@@ -296,9 +299,9 @@ public class Qwasi{
      * @param enabled
      */
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
-        mlocationEnabled = enabled;
         locationEnabled = enabled;
-        Log.d(TAG, "setLocationEnabled"+locationEnabled.toString());
+        mlocationEnabled = enabled;
+        Log.d(TAG, "setLocationEnabled" + locationEnabled.toString());
         if (enabled){
             locationManager = locationManager == null? QwasiLocationManager.getInstance():locationManager;
             //todo move this functionality to the location manager maybe.
@@ -364,33 +367,24 @@ public class Qwasi{
                                        String userToken,
                                        HashMap<String, Object> userInfo,
                                        final QwasiInterface qwasiInterface)/*iOS 301*/ {
-
         //if devicetoken is null set it empty so the server will gen one
         deviceToken = deviceToken == null? mDeviceToken:deviceToken;
-
         //if name is null get it from the phone, or user can give us one
         name = name == null? deviceName:name;
-
          //if we didn't get a usertoken set it to be the phone number
         userToken = userToken== null?mUserToken:userToken;
         mUserToken = userToken;
-
         Map<String, Object> info = new HashMap<>();
-
-        if (userInfo != null) {  //make sure that it's init so we don't crash
+        if (userInfo != null)   //make sure that it's init so we don't crash
             if (!userInfo.isEmpty()) { //make sure it's not empty
                 info.put("info", userInfo); //put all the recieved info into info
             }
-        }
-
         Map<String, Object> deviceInfo = new HashMap<>();
         deviceInfo.put("debug", BuildConfig.DEBUG);
         deviceInfo.put("version", String.valueOf(Build.VERSION.RELEASE));  //systemversion
         deviceInfo.put("system", getVerboseVersionName()); //kitkat or w/e the codename is
         deviceInfo.put("model", Build.MANUFACTURER + " " + Build.MODEL);  //Samsung Then the actual device name
-        deviceInfo.put("sdkVersion", mVersion);  //set because that's what the sdk is currently
-        //since JSONRPC2 on java reads from a Hashmap<string, object> easier to put it here
-        //and since the JSONRPC2 doesn't format it how the server expects have to do some playing.
+        deviceInfo.put("sdkVersion", mVersion);
         info.put("info", deviceInfo);
         info.put("name", name);
         info.put("user_token", userToken); //phonenumber
@@ -402,13 +396,11 @@ public class Qwasi{
                     mRegistered = true; //we've now registered
                     JSONObject result = (JSONObject) o;
                     mDeviceToken = result.getString("id");  //set our device token from the server
-
                     JSONObject info = result.getJSONObject("application");
-                    mapplicationName = info.get("name").toString();
-                    applicationName = mapplicationName;
-                    //ActivityCompat.requestPermissions(mainActivity, new String[]{});
+                    applicationName = info.get("name").toString();
+                    mapplicationName = applicationName;
                     Log.i(TAG, "Device Successfully Registered");
-                    mPreferences.edit().putString("QwasiDeviceToken", mDeviceToken).apply();
+                    mPreferences.edit().putString(QWASI_DEVICE_TOKEN, mDeviceToken).apply();
                     Witness.notify(mDeviceToken);
                     qwasiInterface.onSuccess(mDeviceToken);
                 } catch (JSONException e) {
@@ -625,8 +617,8 @@ public class Qwasi{
                 @Override
                 public void onSuccess(Object o) {
                     Log.d(TAG, "Device unregistered for push success");
-                    mpushEnabled = false;
-                    pushEnabled = mpushEnabled;
+                    pushEnabled = false;
+                    mpushEnabled = pushEnabled;
                     //Witness.remove(Bundle.class, mQwasiNotificationHandler);
                     callback.onSuccess(new QwasiError().
                             errorWithCode(QwasiErrorCode.QwasiErrorNone, "UnSet Push Token success"));

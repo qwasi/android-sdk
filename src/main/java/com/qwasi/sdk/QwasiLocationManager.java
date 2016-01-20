@@ -61,7 +61,7 @@ import java.util.List;
 
 import io.hearty.witness.Witness;
 
-public class QwasiLocationManager extends Service
+public class QwasiLocationManager //extends Service
         implements GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
@@ -82,22 +82,19 @@ public class QwasiLocationManager extends Service
     private static QwasiLocationManager mInstance;
     List<String> mLocationsFetched = new ArrayList<>();
 
-    public QwasiLocationManager(){
-        getInstance();
-    }
-
-    private QwasiLocationManager initInstance(){
+    private QwasiLocationManager(){
         mSharedApplication = Qwasi.getContext();
         mActiveManager.setInterval(mUpdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mUpdateDistance) //how far can the device move
                 .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
+        mInstance = this;
         qwasiBeacons = new QwasiBeacons();
-        return this;
+
     }
 
     public static synchronized QwasiLocationManager getInstance(){
-        return mInstance == null?new QwasiLocationManager().initInstance():mInstance;
+        return mInstance == null?new QwasiLocationManager():mInstance;
     }
 
     public QwasiLocation getLastLocation(){
@@ -122,9 +119,9 @@ public class QwasiLocationManager extends Service
 
     /**
      * todo something about binding to the qwasi object
-     * @param incoming
+     * @param
      * @return
-     */
+     *
     @Override
     public IBinder onBind(Intent incoming){
         return null;
@@ -135,7 +132,7 @@ public class QwasiLocationManager extends Service
         Log.d(TAG, "QwasiLocationMNG starting");
         new QwasiLocationManager();
         return START_NOT_STICKY;
-    }
+    }//*/
 
     @Override
     public void onConnectionSuspended(int i) {
