@@ -31,6 +31,9 @@ package com.qwasi.sdk;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -294,10 +297,6 @@ public class Qwasi{
         mRegistered = false;
     }
 
-    /**
-     * function to inalize the listener monitor for location events on the device
-     * @param enabled
-     */
     public synchronized void setLocationEnabled(boolean enabled)/*iOS 111*/{
         locationEnabled = enabled;
         mlocationEnabled = enabled;
