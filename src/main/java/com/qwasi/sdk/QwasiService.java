@@ -90,19 +90,6 @@ public class QwasiService extends Service {
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
                                     SendNotification(message);
-                                    if (mQwasi.useLocalNotifications) mQwasi.sendNotification(message);
-                                    else
-                                        try {
-                                            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
-                                        }
-                                        catch (IllegalAccessException e) {
-                                            Log.e("QwasiService", "Illegal access Exception, constuctor not public");
-                                        }
-                                        catch (InstantiationException e){
-                                            e.printStackTrace();
-                                        }catch (InvocationTargetException e){
-                                            e.printStackTrace();
-                                        }
                                 }
                                 //message not fetched but still want to build a notification w/bundle
                                 @Override
