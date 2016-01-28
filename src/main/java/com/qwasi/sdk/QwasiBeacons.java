@@ -67,7 +67,6 @@ public class QwasiBeacons extends Service
     public QwasiBeacons() {
         super();
         mContext = QwasiNotificationManager.getInstance().mContext;
-        //mMainAct = Qwasi.getMainActivity() instanceof  BeaconConsumer? (BeaconConsumer) Qwasi.sMainActivity:null;
         mMainAct = Qwasi.sMainApplication instanceof  BeaconConsumer? (BeaconConsumer)  Qwasi.sMainApplication:null;
         mMap = QwasiLocationManager.getInstance().regionMap;
         if ((mMainAct != null)&&(Qwasi.sMainApplication.getPackageManager() !=null)) {
@@ -97,6 +96,11 @@ public class QwasiBeacons extends Service
         mBeaconManager.setMonitorNotifier(this);
     }
 
+    /**
+     * when a beacon comes in range of the device they are broadcast out the app to handle
+     * @param collection
+     * @param region
+     */
     @Override
     public void didRangeBeaconsInRegion(Collection<Beacon> collection, Region region) {
         if(!collection.isEmpty()){

@@ -36,6 +36,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -64,7 +66,6 @@ abstract public class QwasiGCMListener extends GcmListenerService{
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        mNoteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     /**
@@ -95,8 +96,9 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     /*package*/void sendNotification(final Bundle data){
         String alert = data.getString("collapse_key", "");
         if (!alert.contains("do_not_collapse")){
-            NotificationCompat.Builder noteBuilder = noteBuilder(alert);
-            mNoteMng.notify(1, noteBuilder.build());
+            NotificationCompat.Builder builder = noteBuilder(alert);
+            mNoteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNoteMng.notify(1, builder.build());
         }
     }
 
@@ -107,30 +109,40 @@ abstract public class QwasiGCMListener extends GcmListenerService{
      */
     protected void sendNotification(final QwasiMessage message){
         String alert = message.alert;
-        if (!alert.contains("do_not_collapse")){
-            NotificationCompat.Builder noteBuilder = noteBuilder(alert);
-            if (message.payloadType.contains("text")) noteBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-                //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
-            else if (message.payloadType.contains("image")) Log.d("QwasiGCMListener", "Image");
-                //noteBuilder.setStyle(new NotificationCompat.BigPictureStyle().b);
-            else if (message.payloadType.contains("json")) Log.d("QwasiGCMListener", "App context");
-            mNoteMng.notify(1, noteBuilder.build());
+        if (!message.silent()){
+            NotificationCompat.Builder builder = noteBuilder(alert);
+            Bitmap bitmap = BitmapFactory.decodeResource(mBaseContext.getResources(),
+                    mBaseContext.getApplicationInfo().logo);
+            builder.setLargeIcon(bitmap);
+            mNoteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
+            if (message.payloadType.contains("text")) {
+                builder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            }
+            else if (message.payloadType.contains("image")){
+                Log.d("QwasiGCMListener", "Image");
+                builder.setStyle(new NotificationCompat.BigPictureStyle().bigPicture(bitmap));
+            }
+            else if (message.payloadType.contains("json")){
+                Log.d("QwasiGCMListener", "App context");
+                builder.setStyle(new NotificationCompat.InboxStyle()
+                        .addLine("")
+                        .setBigContentTitle(message.description())
+                        .setSummaryText("Testingthings"));
+            }
+            mNoteMng.notify(1, builder.build());
         }
     }
 
-    /**
-     * Builds our default NotificationBuilder so that this code isn't in two spots
-     * @param alert
-     * @return
-     */
     private NotificationCompat.Builder noteBuilder(String alert){
         String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
         return new NotificationCompat.Builder(mBaseContext)
-                .setSound(mDefaultSoundUri)
+                .setSmallIcon(mBaseContext.getApplicationInfo().icon)
                 .setContentIntent(mDefaultPendingIntent)
+                .setContentTitle(appName)
                 .setContentText(alert)
                 .setAutoCancel(true)
-                .setContentTitle(appName)
+                .setSound(mDefaultSoundUri)
                 .setDefaults(Notification.DEFAULT_ALL);
     }
 }

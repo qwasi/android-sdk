@@ -30,6 +30,7 @@
  */
 package com.qwasi.sdk;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -194,17 +195,24 @@ public class QwasiLocationManager //extends Service
         return this;
     }*/
 
-    public Object initWithRequiredAuthorization(){//todo M? granular location?
-        return this.init();
+    public Object initWithRequiredAuthorization(){
+        if (ContextCompat.checkSelfPermission(mSharedApplication, Manifest.permission_group.LOCATION)
+                == PackageManager.PERMISSION_GRANTED){
+            return this.init();
+        }
+        else{
+            return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorLocationAccessDenied,
+                    "incorrect permission level");
+        }
     }
 
     public synchronized Object init(){
-        mmanager = new GoogleApiClient.Builder(mSharedApplication)
+        manager = new GoogleApiClient.Builder(mSharedApplication)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-        manager = mmanager;
+        mmanager = manager;
         return this;
     }
 
@@ -256,7 +264,7 @@ public class QwasiLocationManager //extends Service
             String current = stringIterator.next();
             if(!mLocationsFetched.contains(current)) {
                 //if the regionmap has a location key not in the latest fetch
-                this.stopMonitoringLocation(regionMap.get(current));
+                stopMonitoringLocation(regionMap.get(current));
             }
         }
         mLocationsFetched.clear(); //so that next time locations are fetched we don't maintain old ones

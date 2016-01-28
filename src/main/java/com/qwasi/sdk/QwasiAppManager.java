@@ -35,7 +35,6 @@ package com.qwasi.sdk;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;

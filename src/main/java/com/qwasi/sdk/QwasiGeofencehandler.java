@@ -50,11 +50,19 @@ public class QwasiGeofencehandler extends IntentService {
     public QwasiGeofencehandler(){
         super("QwasiGeofence");
     }
+
+    /**
+     * not a bound class, so returns null
+     */
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * handles geofence intents broadcast from the GoogleLocationAPI
+     * @param input
+     */
     @Override
     public void onHandleIntent(Intent input) {
         synchronized (this) {
