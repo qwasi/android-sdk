@@ -328,6 +328,7 @@ public class QwasiLocationManager //extends Service
     private PendingIntent getGeoPendingIntent(){
         Intent intent = new Intent(mSharedApplication, QwasiGeofencehandler.class);
         mSharedApplication.getSystemService(Context.LOCATION_SERVICE);
-        return PendingIntent.getService(mSharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return PendingIntent.getService(mSharedApplication, 0, intent, PendingIntent
+                .FLAG_UPDATE_CURRENT);
     }
 }
