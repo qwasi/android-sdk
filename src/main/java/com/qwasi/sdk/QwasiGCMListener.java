@@ -62,7 +62,8 @@ abstract public class QwasiGCMListener extends GcmListenerService{
         mPM = mBaseContext.getPackageManager();
         Intent mDefaultIntent;
         mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
-        mDefaultIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        mDefaultIntent
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
