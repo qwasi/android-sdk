@@ -58,7 +58,7 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     private NotificationManager mNoteMng;
 
     public QwasiGCMListener(){
-        mBaseContext = Qwasi.getContext();
+        mBaseContext = this;
         mPM = mBaseContext.getPackageManager();
         Intent mDefaultIntent;
         mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
