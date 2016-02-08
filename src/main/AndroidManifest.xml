@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	  package="com.qwasi.sdk" >
-   
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!--Beacons-->
@@ -25,7 +24,6 @@
     <meta-data android:name="apiKey" android:value="4734601123be56bcdf4494907b2aaa9e"/>
     <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
     <meta-data android:name="gcm_senderid" android:value="335413682000" />-->
-    <meta-data android:name="sdk_version" android:value="2.1.18"/>
 
     <application>
         <receiver android:name="org.altbeacon.beacon.startup.StartupBroadcastReceiver">

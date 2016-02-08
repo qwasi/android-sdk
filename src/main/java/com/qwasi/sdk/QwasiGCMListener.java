@@ -36,6 +36,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,21 +46,25 @@ import android.util.Log;
 
 import com.google.android.gms.gcm.GcmListenerService;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 
 import io.hearty.witness.Witness;
-
-public class QwasiGCMListener extends GcmListenerService{
+abstract public class QwasiGCMListener extends GcmListenerService{
     private Context mBaseContext;
     private PackageManager mPM;
-    private Intent mDefaultIntent;
     private PendingIntent mDefaultPendingIntent;
     private Uri mDefaultSoundUri;
+    private NotificationManager mNoteMng;
 
     public QwasiGCMListener(){
-        mBaseContext = Qwasi.getContext();
+        mBaseContext = this;
         mPM = mBaseContext.getPackageManager();
-        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        Intent mDefaultIntent;
+        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
+        mDefaultIntent
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
         mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
     }
@@ -73,58 +79,71 @@ public class QwasiGCMListener extends GcmListenerService{
         }
     }
 
-    @Deprecated
-    public void onMessagePolled(){
-        synchronized (this) {
-        }
-    }
-
     /**
      * Override this function to dictate logic when useLocalNotifications is set false
      * @param msg
      */
-    protected void onQwasiMessage(QwasiMessage msg) {
-        Log.d("QwasiGCM", "Custom Config used");
-    }
+    abstract protected void onQwasiMessage(QwasiMessage msg);
 
     /**
-     * for uselocalNotifications default
+     * Optional method for client override on the fetch message failure.
      */
-    /*package*/ void sendNotification(final Bundle data){
-        String alert = data.getString("collapse_key","");
+    protected void onQwasiBundle(Bundle data){}
+
+    /**
+     * Notification builder when the fetch failed but we still have the bundle
+     * @param data
+     */
+    /*package*/void sendNotification(final Bundle data){
+        String alert = data.getString("collapse_key", "");
         if (!alert.contains("do_not_collapse")){
-            String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(Qwasi.getContext())
-                    .setSmallIcon(mBaseContext.getApplicationInfo().icon)
-                    .setContentIntent(mDefaultPendingIntent)
-                    .setContentTitle(appName)
-                    .setContentText(alert)
-                    .setAutoCancel(true)
-                    .setDefaults(Notification.DEFAULT_ALL)
-                    .setSound(mDefaultSoundUri);
-            NotificationManager noteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            noteMng.notify(1, noteBuilder.build());
+            NotificationCompat.Builder builder = noteBuilder(alert);
+            mNoteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNoteMng.notify(1, builder.build());
         }
     }
 
     /**
-     * used from inside the SDK to send fetched unreadmessages.
+     * Used as a default when the message is fetched.  Can be used to keep the default
+     * Notification by client overloaded projects.
      * @param message
      */
-    /*Package*/ void sendNotification(final QwasiMessage message){
+    protected void sendNotification(final QwasiMessage message){
         String alert = message.alert;
-        if (!alert.contains("do_not_collapse")){
-            String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
-            NotificationCompat.Builder noteBuilder = new NotificationCompat.Builder(mBaseContext)
-                    .setSmallIcon(mBaseContext.getApplicationInfo().icon)
-                    .setContentIntent(mDefaultPendingIntent)
-                    .setContentTitle(appName)
-                    .setContentText(alert)
-                    .setAutoCancel(true)
-                    .setDefaults(Notification.DEFAULT_ALL)
-                    .setSound(mDefaultSoundUri);
-            NotificationManager noteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
-            noteMng.notify(1, noteBuilder.build());
+        if (!message.silent()){
+            NotificationCompat.Builder builder = noteBuilder(alert);
+            Bitmap bitmap = BitmapFactory.decodeResource(mBaseContext.getResources(),
+                    mBaseContext.getApplicationInfo().logo);
+            builder.setLargeIcon(bitmap);
+            mNoteMng = (NotificationManager) mBaseContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
+            if (message.payloadType.contains("text")) {
+                builder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
+            }
+            else if (message.payloadType.contains("image")){
+                Log.d("QwasiGCMListener", "Image");
+                builder.setStyle(new NotificationCompat.BigPictureStyle().bigPicture(bitmap));
+            }
+            else if (message.payloadType.contains("json")){
+                Log.d("QwasiGCMListener", "App context");
+                builder.setStyle(new NotificationCompat.InboxStyle()
+                        .addLine("")
+                        .setBigContentTitle(message.description())
+                        .setSummaryText("Testingthings"));
+            }
+            mNoteMng.notify(1, builder.build());
         }
+    }
+
+    private NotificationCompat.Builder noteBuilder(String alert){
+        String appName = mPM.getApplicationLabel(mBaseContext.getApplicationInfo()).toString();
+        return new NotificationCompat.Builder(mBaseContext)
+                .setSmallIcon(mBaseContext.getApplicationInfo().icon)
+                .setContentIntent(mDefaultPendingIntent)
+                .setContentTitle(appName)
+                .setContentText(alert)
+                .setAutoCancel(true)
+                .setSound(mDefaultSoundUri)
+                .setDefaults(Notification.DEFAULT_ALL);
     }
 }

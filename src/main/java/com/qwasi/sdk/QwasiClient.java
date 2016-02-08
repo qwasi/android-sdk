@@ -45,13 +45,7 @@ public class QwasiClient {
     URL mServer = null;
     QwasiSession mQwasiSession;
     private JSONRPCHttpClient mSession = null;
-    //NetworkTask task;
     String TAG = "QwasiClient";
-
-    public QwasiClient(){
-        super();
-        //task = new NetworkTask();
-    }
 
     public QwasiClient clientWithConfig(QwasiConfig config, Qwasi input) {
         return this.initWithConfig(config, input);
@@ -67,6 +61,9 @@ public class QwasiClient {
         return this;
     }
 
+    /**
+     * This invokes the method given with w/ the JsonObject, returns the result.
+     */
     void invokeMethod(final String method, final Map<String, Object> parms, final Qwasi.QwasiInterface callbacks){
         new Thread (new Runnable() {
             @Override
@@ -88,6 +85,9 @@ public class QwasiClient {
         }).start();
     }
 
+    /**
+     * method for when an object doesn't need to be returned.
+     */
     void invokeNotification(final String method, final Map<String, Object> parms, final Qwasi.QwasiInterface callbacks){
         new Thread(new Runnable() {
             @Override

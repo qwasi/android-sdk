@@ -30,6 +30,7 @@
  */
 package com.qwasi.sdk;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -37,9 +38,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.app.Service;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.ErrorDialogFragment;
@@ -59,9 +62,8 @@ import java.util.List;
 
 import io.hearty.witness.Witness;
 
-public class QwasiLocationManager //extends IntentService
-        implements
-        GoogleApiClient.ConnectionCallbacks, //google api server callbacks
+public class QwasiLocationManager //extends Service
+        implements GoogleApiClient.ConnectionCallbacks, //google api server callbacks
         GoogleApiClient.OnConnectionFailedListener, //failed connection
         LocationListener{
     private Context mSharedApplication;
@@ -82,16 +84,14 @@ public class QwasiLocationManager //extends IntentService
     List<String> mLocationsFetched = new ArrayList<>();
 
     private QwasiLocationManager(){
-        //super(TAG);
         mSharedApplication = Qwasi.getContext();
         mActiveManager.setInterval(mUpdateInterval/10) //3 minute updates
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setSmallestDisplacement(mUpdateDistance) //how far can the device move
                 .setMaxWaitTime(mUpdateInterval); //30 minutes max to get an update
-        //if (ContextCompat.checkSelfPermission(Qwasi.sMainActivity, android.Manifest.permission.ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)
-        //    init();
         mInstance = this;
         qwasiBeacons = new QwasiBeacons();
+
     }
 
     public static synchronized QwasiLocationManager getInstance(){
@@ -117,6 +117,23 @@ public class QwasiLocationManager //extends IntentService
     public LocationRequest foregroundManager(){
         return mActiveManager != null? mActiveManager:null;
     }
+
+    /**
+     * todo something about binding to the qwasi object
+     * @param
+     * @return
+     *
+    @Override
+    public IBinder onBind(Intent incoming){
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flag, int startId){
+        Log.d(TAG, "QwasiLocationMNG starting");
+        new QwasiLocationManager();
+        return START_NOT_STICKY;
+    }//*/
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -178,17 +195,24 @@ public class QwasiLocationManager //extends IntentService
         return this;
     }*/
 
-    public Object initWithRequiredAuthorization(){//todo M? granular location?
-        return this.init();
+    public Object initWithRequiredAuthorization(){
+        if (ContextCompat.checkSelfPermission(mSharedApplication, Manifest.permission_group.LOCATION)
+                == PackageManager.PERMISSION_GRANTED){
+            return this.init();
+        }
+        else{
+            return new QwasiError().errorWithCode(QwasiErrorCode.QwasiErrorLocationAccessDenied,
+                    "incorrect permission level");
+        }
     }
 
     public synchronized Object init(){
-        mmanager = new GoogleApiClient.Builder(mSharedApplication)
+        manager = new GoogleApiClient.Builder(mSharedApplication)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-        manager = mmanager;
+        mmanager = manager;
         return this;
     }
 
@@ -240,7 +264,7 @@ public class QwasiLocationManager //extends IntentService
             String current = stringIterator.next();
             if(!mLocationsFetched.contains(current)) {
                 //if the regionmap has a location key not in the latest fetch
-                this.stopMonitoringLocation(regionMap.get(current));
+                stopMonitoringLocation(regionMap.get(current));
             }
         }
         mLocationsFetched.clear(); //so that next time locations are fetched we don't maintain old ones
@@ -304,6 +328,7 @@ public class QwasiLocationManager //extends IntentService
     private PendingIntent getGeoPendingIntent(){
         Intent intent = new Intent(mSharedApplication, QwasiGeofencehandler.class);
         mSharedApplication.getSystemService(Context.LOCATION_SERVICE);
-        return PendingIntent.getService(mSharedApplication, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return PendingIntent.getService(mSharedApplication, 0, intent, PendingIntent
+                .FLAG_UPDATE_CURRENT);
     }
 }
