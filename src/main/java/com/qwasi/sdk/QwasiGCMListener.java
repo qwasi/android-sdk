@@ -33,8 +33,10 @@ package com.qwasi.sdk;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -58,15 +60,28 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     private NotificationManager mNoteMng;
 
     public QwasiGCMListener(){
-        mBaseContext = this;
-        mPM = mBaseContext.getPackageManager();
-        Intent mDefaultIntent;
-        mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
-        mDefaultIntent
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
-        mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        this.onCreate();
+    }
+
+    @Override
+    public void onCreate(){
+        try{
+            mBaseContext = this.getBaseContext();
+            mBaseContext = mBaseContext!=null?mBaseContext:Qwasi.getContext();
+            mPM = mBaseContext.getPackageManager();
+            Intent mDefaultIntent;
+            mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
+            mDefaultIntent
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
+            mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            } catch(NullPointerException e){
+                Log.e("QwasiGCMListener", "nullissue");
+        }
+        /*IntentFilter filter = new IntentFilter();
+        filter.addAction("com.qwasi.sdk.QwasiNotification");
+        mBaseContext.registerReceiver(receiver, filter);*/
     }
 
     /**
@@ -133,6 +148,7 @@ abstract public class QwasiGCMListener extends GcmListenerService{
             }
             mNoteMng.notify(1, builder.build());
         }
+        stopSelf();
     }
 
     private NotificationCompat.Builder noteBuilder(String alert){

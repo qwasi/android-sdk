@@ -89,6 +89,7 @@ public class QwasiService extends Service {
                                     }
                                     mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
                                     Witness.notify(message);
+                                    sendBroadcast(new Intent("com.qwasi.sdk.QwasiNotification"));
                                     SendNotification(message);
                                 }
                                 //message not fetched but still want to build a notification w/bundle
@@ -173,6 +174,7 @@ public class QwasiService extends Service {
 
     @Override
     public void onDestroy(){
+        unregisterReceiver(receiver);
         if (QwasiAppManager.isApplicationStopped()){
             Log.e(TAG, "closed destroyed");
         }
