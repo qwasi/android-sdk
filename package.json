@@ -1,6 +1,6 @@
 {
   "name": "QwasiSDK",
-  "version": "2.1.19-5",
+  "version": "2.1.19-6",
   "description": "Android SDK",
   "main": "index.js",
   "scripts": {
