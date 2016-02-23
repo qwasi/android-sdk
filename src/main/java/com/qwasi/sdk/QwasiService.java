@@ -63,7 +63,8 @@ public class QwasiService extends Service {
         @Override
         public void onReceive(Context context, final Intent intent) {
             String action = intent.getAction();
-            final String data = intent.getStringExtra("qwasi");
+            final String data = intent.hasExtra("qwasi")? intent.getStringExtra("qwasi"):"";
+            if (data.isEmpty()) return;
             if (mQwasi.config.isValid()){
                 final HashMap<String, Object> results = new HashMap<>();
                 String qwasi = data.replaceAll(Pattern.quote("}"), "")
