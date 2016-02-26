@@ -58,7 +58,7 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     }
 
     @Override
-    public void onCreate(){
+    public void onCreate(){ //Droid-48
         try {
             mBaseContext = this.getBaseContext();
             mBaseContext = mBaseContext != null ? mBaseContext : Qwasi.getContext();
