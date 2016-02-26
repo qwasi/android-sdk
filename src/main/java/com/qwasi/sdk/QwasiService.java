@@ -134,7 +134,8 @@ public class QwasiService extends Service {
     }
 
     /**
-     * Stub required to extend service
+     * Bound service stub Required to subclass a service if it's a bound service or not.
+     * @param intent the intent to bind from another object
      */
     public IBinder onBind(Intent intent){
         return null;
@@ -174,6 +175,7 @@ public class QwasiService extends Service {
 
     @Override
     public void onDestroy(){
+        unregisterReceiver(receiver);
         if (QwasiAppManager.isApplicationStopped()){
             Log.e(TAG, "closed destroyed");
         }
