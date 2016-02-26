@@ -145,21 +145,4 @@ public class QwasiNotificationManager{
             }
         }).start();
     }
-
-    /**
-     * replaced by QwasiService
-     */
-    @Deprecated
-    void onMessage(NotificationCompat.Builder builder, Bundle data){
-        //this.mNoteBuilder = builder;
-        Witness.notify(data);
-    }
-
-    /**
-     * replaced by Qwasi Service
-     */
-    @Deprecated
-    void onMessage(NotificationCompat.Builder builder){
-        //this.mNoteBuilder = builder;
-    }
 }
