@@ -54,7 +54,7 @@ public class QwasiNotificationManager{
     static private String mPushToken = "";
     static private Boolean mRegistering;
     Context mContext;
-    private String mSenderId;
+    String mSenderId;
     public static final String GCM_SENDERID = "gcm_senderid";
     private final String DEFAULT_SENDER = "335413682000";
 
@@ -63,7 +63,6 @@ public class QwasiNotificationManager{
 
     private QwasiNotificationManager(){
         super();
-
         mRegistering = false;
         mPushToken = "";
         mContext = Qwasi.getContext();
@@ -77,7 +76,6 @@ public class QwasiNotificationManager{
             mSenderId = DEFAULT_SENDER; //default
         }
         instance = this;
-
     }
 
     public static QwasiNotificationManager getInstance(){
