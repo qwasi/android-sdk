@@ -282,7 +282,7 @@ public class Qwasi{
             test = mPreferences.getString(QWASI_USER_TOKEN, "");
         } else deviceName = "";
 
-        mUserToken = !test.isEmpty()?test:"DROIDTOKEN";
+        mUserToken = !test.isEmpty()?test:"";
         return this;
     }
 
