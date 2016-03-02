@@ -30,16 +30,20 @@
  */
 package com.qwasi.sdk;
 
-import android.app.Application;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -48,78 +52,93 @@ import java.util.regex.Pattern;
 import io.hearty.witness.Witness;
 
 public class QwasiService extends Service {
-    private Qwasi mQwasi;
-    private Class mCustomListener;
-    private Method mOnQwasiMessage;
-    private String mListenerName;
+    static private Qwasi mQwasi;
+    static Class<?> mCustomListener;
+    static Method mOnQwasiMessage, mOnQwasiBundle;
+    static private String mListenerName;
+    static String DEFAULT_GCM = "com.qwasi.sdk.QwasiGCMDefault";
+    static String TAG = "QwasiService";
 
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+    /**
+     * Generic broadcastReceiver for this service used to handle messages delivered during
+     * operation of application, both opened and closed.
+     */
+    protected final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
-            String action = intent.getAction();
-            String qwasi = intent.getStringExtra("qwasi");
-            Log.d("QwasiService", "" + mQwasi.mMessageCache.size());
-            if (mQwasi.config.isValid()){
-                HashMap<String, Object> results = new HashMap<>();
-                qwasi = qwasi.replaceAll(Pattern.quote("}"), "")
-                        .replaceAll(Pattern.quote("{"), "")
-                        .replaceAll(Pattern.quote("\""), "");
-                String[] pairs = qwasi.split(Pattern.quote(","));
-                for (String pair : pairs) {
-                    String[] key = pair.split(Pattern.quote(":"), 2);
-                    results.put(key[0], key[1]);
-                }
-                final String msgId = results.get("msg_id").toString();
-                String appId = results.get("app_id").toString();
-                if (!(msgId.isEmpty()) && !(appId.isEmpty())) {
-                    if (appId.equals(mQwasi.config.application)||appId.equals(mQwasi.mconfig.mapplication)) {
-                        if ((mQwasi.mMessageCache.isEmpty()) || (!mQwasi.mMessageCache.containsKey(msgId))) {
-                            mQwasi.fetchMessageForNotification(msgId, new Qwasi.QwasiInterface() {
-                                @Override
-                                public void onSuccess(Object o) {
-                                    QwasiMessage message = (QwasiMessage) o;
-                                    if (mQwasi.mQwasiAppManager.isApplicationStopped()) {
-                                        mQwasi.mHasClosedUnread = true;
-                                        message.mClosedMessage = true;
+            Bundle data = intent.hasExtra("qwasi")? intent.getBundleExtra("qwasi"):new Bundle();
+            String from = intent.hasExtra("from")? intent.getStringExtra("from"):""; //senderID
+            if (data.isEmpty()) return;
+            try {
+                JSONObject results = new JSONObject(data.getString("qwasi"));
+                if (mQwasi.config.isValid()) {
+                    String msgId = results.getString("msg_id");
+                    String appId = results.getString("app_id");
+                    if (!(msgId.isEmpty()) && !(appId.isEmpty()) && (mQwasi.pSenderId.equals(from))) {
+                        if (appId.equals(mQwasi.config.application) || appId.equals(mQwasi.mconfig.mapplication)) {
+                            if ((mQwasi.mMessageCache.isEmpty()) || (!mQwasi.mMessageCache.containsKey(msgId))) {
+                                mQwasi.fetchMessageForNotification(msgId, new Qwasi.QwasiInterface() {
+                                    @Override
+                                    public void onSuccess(Object o) {
+                                        QwasiMessage message = (QwasiMessage) o;
+                                        if (QwasiAppManager.isApplicationStopped()) {
+                                            mQwasi.mHasClosedUnread = true;
+                                            message.mClosedMessage = true;
+                                        }
+                                        mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
+                                        Witness.notify(message);
+                                        SendNotification(message);
                                     }
-                                    mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                                    Witness.notify(message);
-                                    if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                                    else
-                                        try {
-                                            mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
-                                        }
-                                        catch (IllegalAccessException e) {
-                                            Log.e("QwasiService", "Illegal access Exception, constuctor not public");
-                                        }
-                                        catch (InstantiationException e){
-                                            e.printStackTrace();
-                                        }catch (InvocationTargetException e){
-                                            e.printStackTrace();
-                                        }
-                                }
 
-                                @Override
-                                public void onFailure(QwasiError e) {
-
-                                }
-                            });
-                        } else {
-                            QwasiMessage message = mQwasi.mMessageCache.get(msgId);
-                            mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
-                            Witness.notify(message); //when app is open
-                            if (mQwasi.useLocalNotifications) new QwasiGCMListener().sendNotification(intent.getBundleExtra("data"));
-                            else {
-                                Application app = getApplication();
-                                Log.d("tag", "stuff");
+                                    //message not fetched but still want to build a notification w/bundle
+                                    @Override
+                                    public void onFailure(QwasiError e) {
+                                        Log.e(TAG, "Fetch Message failed");
+                                        if (mQwasi.useLocalNotifications) new QwasiGCMDefault()
+                                                .sendNotification(intent.getBundleExtra("data"));
+                                    }
+                                });
+                            } else {
+                                QwasiMessage message = mQwasi.mMessageCache.get(msgId);
+                                mQwasi.useLocalNotifications = mQwasi.museLocalNotifications;
+                                Witness.notify(message); //when app is open
+                                SendNotification(message);
+                                if (mQwasi.useLocalNotifications)
+                                    new QwasiGCMDefault().sendNotification(message);
                             }
                         }
                     }
                 }
+            }catch (JSONException e){
+                e.printStackTrace();
             }
         }
     };
 
+    /**
+     * Sends a QwasiMessage to the custom notification builder
+     * @param message
+     */
+    public static void SendNotification(QwasiMessage message){
+        try {
+            if (mQwasi.useLocalNotifications){
+                new QwasiGCMDefault().sendNotification(message);
+            }
+            else mOnQwasiMessage.invoke(mCustomListener.newInstance(), message);
+        }catch (IllegalAccessException e) {
+            Log.e(TAG, "Illegal access Exception, Constructor, or onQwasiMessage protection level" +
+                    " too high");
+        }catch (InstantiationException e){
+            Log.e(TAG, "Trouble instantiation of: "+mListenerName);
+        }catch (InvocationTargetException e){
+            Log.e(TAG, "Trouble calling onQwasiMessage of: " + mListenerName);
+        }
+    }
+
+    /**
+     * Bound service stub Required to subclass a service if it's a bound service or not.
+     * @param intent the intent to bind from another object
+     */
     public IBinder onBind(Intent intent){
         return null;
     }
@@ -131,27 +150,36 @@ public class QwasiService extends Service {
         filter.addAction("com.qwasi.sdk.QwasiService.RECEIVE");
         registerReceiver(receiver, filter);
         try {
-            mListenerName = getPackageManager()
-                    .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
-                    .metaData.getString("GCMListener");
+            Bundle metaData = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
+            mListenerName = metaData != null? //if not null
+                    metaData.containsKey("GCMListener")? //and contains the key we want
+                            metaData.getString("GCMListener") //get the key
+                            :DEFAULT_GCM
+                    :DEFAULT_GCM; //or set to default
             mCustomListener = Class.forName(mListenerName);
-            mOnQwasiMessage = mCustomListener.getDeclaredMethod("onQwasiMessage", QwasiMessage.class);
+            mOnQwasiMessage = mCustomListener.getMethod("onQwasiMessage", QwasiMessage.class);
+            mOnQwasiBundle  = mCustomListener.getMethod("onQwasiBundle", Bundle.class);
         }catch (PackageManager.NameNotFoundException e){
-            Log.e("QwasiService", "Packagename "+getPackageName()+" not found");
+            Log.e(TAG, "Packagename " + getPackageName() + " not found");
+        }catch (ClassNotFoundException e) {
+            Log.e(TAG, "Custom GCMListener with Classname: " + mListenerName + " Not found");
+        }
+        catch (NoSuchMethodException e){
+            Log.e(TAG, "Custom GCMListener has no method onQwasiMessage, make sure to extend " +
+                    "QwasiGCMListener");
+        }
+        catch (NullPointerException e){
+            Log.e(TAG, "Some Object in GCMListener set up was null");
             e.printStackTrace();
-        }catch (ClassNotFoundException e){
-            Log.e("QwasiService", "Custom GCMListener with Classname: "+mListenerName+" Not found");
-            e.printStackTrace();
-        }catch (NoSuchMethodException e){
-            Log.e("QwasiService", "Custom GCMListener has no method onQwasiMessage");
         }
         return START_STICKY;
     }
 
     @Override
     public void onDestroy(){
-        if (mQwasi.mQwasiAppManager.isApplicationStopped()){
-            Log.e("QwasiService", "closed destroyed");
+        unregisterReceiver(receiver);
+        if (QwasiAppManager.isApplicationStopped()){
+            Log.e(TAG, "closed destroyed");
         }
     }
 }

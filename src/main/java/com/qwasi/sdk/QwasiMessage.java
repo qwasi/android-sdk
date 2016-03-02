@@ -73,6 +73,9 @@ public class QwasiMessage{
         mClosedMessage = false;
     }
 
+    /**
+     * Intializes the QwasiMessage object with the data provided
+     */
     private QwasiMessage initWithData(Object input){
         try {
             JSONObject data = (JSONObject) input;
@@ -86,13 +89,10 @@ public class QwasiMessage{
             //mtags = new JSONArray();
             timeStamp = new Date();
             mtimestamp = timeStamp;
-
             payloadType = data.get("payload_type").toString();
             mpayloadType = payloadType;
-
             tags = data.has("tags")? data.getJSONArray("tags"): new JSONArray();
             mtags = tags;
-
             fetched = data.has("fetched")&&data.getBoolean("fetched");
             mEncodedPayload = data.has("payload")?data.get("payload"):"";
             byte[] temp = Base64.decode(mEncodedPayload.toString(), Base64.DEFAULT);
@@ -109,23 +109,23 @@ public class QwasiMessage{
                 e.printStackTrace();
                 Log.e(TAG, "Payload Encoding not supported");
             }
-            //Log.d(TAG, mpayload.toString());
             return this;
-        }
-        catch (JSONException e){
+        } catch (JSONException e){
             Log.wtf(TAG, "Malformed JSONobject" + e.getMessage());
             return null;
         }
     }
 
+    /**
+     * public initalizing function.
+     */
     public QwasiMessage messageWithData(JSONObject data){
         return this.initWithData(data);
     }
 
-    private Object initWithCoder(/*nsCoder*/){
-        return this;
-    }
-
+    /**
+     * public initilizer that has more information mainly for making messages to send with
+     */
     public Object initWithAlert(String alert, JSONObject payload, String payloadtype, ArrayList<Object> tags){
         malert = alert;
         this.alert = malert;
@@ -152,14 +152,28 @@ public class QwasiMessage{
         return this;
     }
 
+    /**
+     * checks to see if the message is silent, i.e. has no notification such that it doesn't get
+     * displayed to the end User.
+     * @return
+     */
     public Boolean silent(){
-        alert = alert == null? "":alert;
+        alert = alert == null? "": alert.contains("do_not_collapse")?"":alert;
         return (alert.isEmpty());
     }
 
+    /**
+     * returns the payload as a string rather than a Object
+     * @return
+     */
     public String description(){
         return payload != null? payload.toString(): "";
     }
 
+    /**
+     * allows access to the package level closedMessage, such that custom configurations can know
+     * if the message was received on a closed state.
+     * @return
+     */
     public Boolean getmClosedMessage(){return  mClosedMessage;}
 }
