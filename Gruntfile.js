@@ -13,21 +13,22 @@ module.exports = function(grunt) {
     grunt.initConfig({
 	package: grunt.file.readJSON('package.json'),
 	changelog: {
-            'mojo-engine': {
-                options: {
-                    featureRegex: /^(.*)implements (MOJO-\d+)(.*)/gim,
-                    fixRegex: /^(.*)fixes (MOJO-\d+)(.*)/gim,
-                    dest: 'CHANGELOG.md',
-                    template: '## Server Version <%= package.version %> / {{date}}\n\n{{> features}}{{> fixes}}',
-                    partials: {
-                        features: '{{#each features}}{{> feature}}{{/each}}',
-                        feature: '- [NEW] {{this}}\n',
-                        fixes: '{{#each fixes}}{{> fix}}{{/each}}',
-                        fix: "- [FIX] {{this}}\n"
+                'Qwasi Android SDK': {
+                    options: {
+                        featureRegex: /^(.*)implements (\[DROID-\d+\])(.*)/gim,
+                        fixRegex: /^(.*)/gim,
+                        after: '11564d3913b',
+                        dest: 'CHANGELOG.md',
+                        template: '## SDK Version <%= package.version %> / {{date}}\n\n{{> features}}{{> fixes}}',
+                        partials: {
+                            features: '{{#each features}}{{> feature}}{{/each}}',
+                            feature: '- [NEW] {{this}}\n',
+                            fixes: '{{#each fixes}}{{> fix}}{{/each}}',
+                            fix: "- [FIX] {{this}}\n"
+                        }
                     }
                 }
-            }
-        },
+            },
 	bump: {
 	    options: {
 		commit: true,
