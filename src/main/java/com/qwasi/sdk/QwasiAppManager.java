@@ -1,11 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.Activity;
-import android.app.Application;
-import android.os.Bundle;
-
-import java.util.HashMap;
-
 /**
  * Created by ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -39,30 +31,41 @@ import java.util.HashMap;
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
+package com.qwasi.sdk;
+
+import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
+
+import java.util.HashMap;
+
 public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
-    private int resumed;
-    private int paused;
-    private int started;
-    private int stopped;
+    private int mResumed;
+    private int mPaused;
+    private int mStarted;
+    private int mStopped;
     static boolean status;
-    final private Qwasi sharedApplication;
+    final private Qwasi mSharedApplication;
     private String event;
     private HashMap<String, Object> data;
     String TAG = "QwasiAppManager";
 
     public QwasiAppManager(Qwasi qwasi){
         super();
-        sharedApplication = qwasi;
+        mSharedApplication = qwasi;
     }
 
     private Thread postEvent = new Thread(new Runnable() {
         @Override
         public void run() {
-            sharedApplication.postEvent(event, data, null);
+            mSharedApplication.postEvent(event, data, null);
             this.notify();
         }
     });
 
+    //refactor me?
     static synchronized boolean getstatus(){
         return status;
     }
@@ -74,59 +77,86 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityDestroyed(Activity activity){
-        sharedApplication.mlocationManager.stopLocationUpdates();
+        if (activity.getApplication() == Qwasi.getsMainApplication()) {
+            mSharedApplication.mPreferences.edit().putString("QwasiStopped", "").apply();
+            mSharedApplication.locationManager.stopLocationUpdates();
+        }
     }
 
     @Override
     public void onActivityResumed(Activity activity){
         data = new HashMap<>();
-        event = sharedApplication.kEventApplicationState;
+        event = mSharedApplication.kEventApplicationState;
         data.put("", "");
         if (postEvent.getState() == Thread.State.TERMINATED)
             postEvent.start();
-        ++resumed;
-        if (QwasiLocationManager.getInstance().mmanager !=null) {
-            if (!sharedApplication.mlocationManager.mmanager.isConnected())
-                sharedApplication.mlocationManager.mmanager.connect();
+        ++mResumed;
+        if (!managerNull()) {
+            if (!mSharedApplication.locationManager.manager.isConnected())
+                mSharedApplication.locationManager.manager.connect();
         }
     }
 
     @Override
     public void onActivityPaused(Activity activity){
         android.util.Log.d(TAG, "ActivityPaused");
-        ++paused;
-        sharedApplication.mlocationManager.mmanager.disconnect();
+        ++mPaused;
+        if (!managerNull())
+            mSharedApplication.locationManager.manager.disconnect();
         android.util.Log.w(TAG, "application is in foreground: " + isApplicationInForeground());
     }
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle outState){
+        if (isApplicationStopped()){
+            outState.putString("ClosedMessages", mSharedApplication.mMessageCache.toString());
+        }
         android.util.Log.d(TAG, "SaveInstanceState");
     }
 
     @Override
     public void onActivityStarted(Activity activity){
         android.util.Log.d(TAG, "ActivityStarted");
-        ++started;
+        ++mStarted;
+        if (mSharedApplication.mPreferences.contains("QwasiStopped")) {
+            mSharedApplication.mPreferences.edit().remove("QwasiStopped").apply();
+        }
     }
 
+    /**
+     * allows for the ablity to know when the application to have been stopped.
+     */
     @Override
     public void onActivityStopped(Activity activity){
-        ++stopped;
         data = new HashMap<>();
-        event = sharedApplication.kEventApplicationState;
+        event = mSharedApplication.kEventApplicationState;
         data.put("", "");
-        sharedApplication.mlocationManager.mmanager.disconnect();
+        if (!managerNull())
+            mSharedApplication.locationManager.manager.disconnect();
         if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
         }
     }
 
-    public boolean isApplicationStopped(){
-        return (started > stopped);
+    /**
+     * Function macro to clean up issue of if the locationManager hasn't been set up.
+     */
+    private boolean managerNull(){
+        return QwasiLocationManager.getInstance().manager == null;
     }
 
+    /**
+     * Macro to deterimine if the app has been closed
+     * @return
+     */
+    static public boolean isApplicationStopped(){
+        return (PreferenceManager.getDefaultSharedPreferences(Qwasi.getContext()).contains("QwasiStopped"));
+    }
+
+    /**
+     * macro for if the application in foreground.
+     */
     public boolean isApplicationInForeground(){
-        return resumed>paused;
+        return mResumed>mPaused;
     }
 }

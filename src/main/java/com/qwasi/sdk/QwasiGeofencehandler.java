@@ -1,18 +1,3 @@
-package com.qwasi.sdk;
-
-import android.app.IntentService;
-import android.content.Intent;
-import android.os.IBinder;
-import android.util.Log;
-
-import com.google.android.gms.location.Geofence;
-import com.google.android.gms.location.GeofencingEvent;
-
-import java.util.HashMap;
-import java.util.List;
-
-import io.hearty.witness.Witness;
-
 /**
  * Created by ccoulton on 8/20/15.
  * for Qwasi Technology's Android Open source project
@@ -43,17 +28,41 @@ import io.hearty.witness.Witness;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import android.app.IntentService;
+import android.content.Intent;
+import android.os.IBinder;
+import android.util.Log;
+
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingEvent;
+
+import java.util.HashMap;
+import java.util.List;
+
+import io.hearty.witness.Witness;
+
 public class QwasiGeofencehandler extends IntentService {
     String TAG = "QwasiGeofence";
 
     public QwasiGeofencehandler(){
         super("QwasiGeofence");
     }
+
+    /**
+     * not a bound class, so returns null
+     */
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
+    /**
+     * handles geofence intents broadcast from the GoogleLocationAPI
+     * @param input
+     */
     @Override
     public void onHandleIntent(Intent input) {
         synchronized (this) {
@@ -70,17 +79,17 @@ public class QwasiGeofencehandler extends IntentService {
             //Test that the reported transition was of interest.
             for (Geofence geofence : triggeringGeofences) {
                 QwasiLocation temp = QwasiLocationManager.getInstance().
-                        mregionMap.get(geofence.getRequestId());
+                        regionMap.get(geofence.getRequestId());
                 if (temp != null) {
                     if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
                         // Send notification and log the transition details.
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
+                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
                         Witness.notify(temp);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                         temp.exit();
                         Witness.notify(temp);
                     } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                        temp.state = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
+                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
                         temp.enter();
                     }
                 }

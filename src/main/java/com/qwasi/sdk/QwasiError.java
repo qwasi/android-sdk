@@ -1,7 +1,3 @@
-package com.qwasi.sdk;
-
-import java.util.HashMap;
-
 /**
  * Created by Ccoulton on 6/11/15.
  * For Qwasi Inc. for the Open source Android SDK example
@@ -32,6 +28,11 @@ import java.util.HashMap;
  // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.qwasi.sdk;
+
+import java.util.HashMap;
+
 enum QwasiErrorCode{
     QwasiErrorNone,
     QwasiErrorDeviceNotRegistered,
@@ -85,6 +86,12 @@ public class QwasiError extends Throwable{
         this.code = code;
         return this;
     }
+
+    public  QwasiErrorCode getCode (){
+        return this.code;
+    }
+
+    public  Exception getError(){return this.error;}
 
     void setError(Exception e) {
         this.error = e;
