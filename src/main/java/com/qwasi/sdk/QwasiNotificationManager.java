@@ -54,7 +54,7 @@ public class QwasiNotificationManager{
     static private String mPushToken = "";
     static private Boolean mRegistering;
     Context mContext;
-    private String mSenderId;
+    String mSenderId;
     public static final String GCM_SENDERID = "gcm_senderid";
     private final String DEFAULT_SENDER = "335413682000";
 
@@ -63,7 +63,6 @@ public class QwasiNotificationManager{
 
     private QwasiNotificationManager(){
         super();
-
         mRegistering = false;
         mPushToken = "";
         mContext = Qwasi.getContext();
@@ -77,7 +76,6 @@ public class QwasiNotificationManager{
             mSenderId = DEFAULT_SENDER; //default
         }
         instance = this;
-
     }
 
     public static QwasiNotificationManager getInstance(){
@@ -144,22 +142,5 @@ public class QwasiNotificationManager{
                 mRegistering = false;
             }
         }).start();
-    }
-
-    /**
-     * replaced by QwasiService
-     */
-    @Deprecated
-    void onMessage(NotificationCompat.Builder builder, Bundle data){
-        //this.mNoteBuilder = builder;
-        Witness.notify(data);
-    }
-
-    /**
-     * replaced by Qwasi Service
-     */
-    @Deprecated
-    void onMessage(NotificationCompat.Builder builder){
-        //this.mNoteBuilder = builder;
     }
 }

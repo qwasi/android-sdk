@@ -64,6 +64,7 @@ public class Qwasi{
     static Application sMainApplication;
     static private Context sContext = null;
     SharedPreferences mPreferences;
+    String pSenderId;
     private float mLocationSyncFilter;
     private boolean mRegistered;
     String mAppId; //android code style
@@ -270,6 +271,7 @@ public class Qwasi{
 
         if (mQwasiNotificationManager.getPushToken() == null){
             mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
+            pSenderId = mQwasiNotificationManager.mSenderId;
         }
         String test = "";
         if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)

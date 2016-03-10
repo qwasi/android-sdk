@@ -27,8 +27,7 @@ module.exports = function(grunt) {
                         fix: "- [FIX] {{this}}\n"
                     }
                 }
-            }
-        },
+            },
 	bump: {
 	    options: {
 		commit: true,

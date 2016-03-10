@@ -48,10 +48,6 @@ import android.util.Log;
 
 import com.google.android.gms.gcm.GcmListenerService;
 
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-
-import io.hearty.witness.Witness;
 abstract public class QwasiGCMListener extends GcmListenerService{
     private Context mBaseContext;
     private PackageManager mPM;
@@ -76,12 +72,9 @@ abstract public class QwasiGCMListener extends GcmListenerService{
                     .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             mDefaultPendingIntent = PendingIntent.getActivity(mBaseContext, 0, mDefaultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT);
             mDefaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            } catch(NullPointerException e){
-                Log.e("QwasiGCMListener", "nullissue");
+        } catch (NullPointerException e){
+            Log.e("QwasiGCMListener", "null pointer thrown, most likely basecontext");
         }
-        /*IntentFilter filter = new IntentFilter();
-        filter.addAction("com.qwasi.sdk.QwasiNotification");
-        mBaseContext.registerReceiver(receiver, filter);*/
     }
 
     /**
@@ -90,7 +83,7 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data.getString("qwasi")).putExtra("from", from).putExtra("data",data));
+            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data).putExtra("from", from));
         }
     }
 
