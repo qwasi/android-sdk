@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import com.qwasi.sdk.Qwasi;
+import com.qwasi.sdk.QwasiConfig;
 import com.qwasi.sdk.QwasiError;
 import com.qwasi.sdk.QwasiMessage;
 
@@ -33,9 +34,10 @@ public class MainActivity extends AppCompatActivity {
         String name = preferences.getString("name", null);
         String userToken = preferences.getString("userToken", null);
         qwasi = Qwasi.getInstance(getApplication());
-        qwasi.qwasiWithConfig(null);
+        qwasi.qwasiWithConfig(new QwasiConfig(this));
         //log = (EditText) findViewById(R.id.log);
         final Qwasi value = qwasi;
+        qwasi.useLocalNotifications = true;
         qwasi.registerDevice(preferences.getString("QwasiDeviceToken", null), name, userToken, new Qwasi.QwasiInterface() {
             @Override
             public void onSuccess(Object o) {

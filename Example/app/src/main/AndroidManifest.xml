@@ -18,7 +18,10 @@
         android:theme="@style/AppTheme">
         <meta-data android:name="appID" android:value="5575fa17e1910a4f6e3244f3"/>
         <meta-data android:name="apiKey" android:value="c479a1f1c72b66fa510b7076890f5e01"/>
-        <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com/rpc"/>
+        <meta-data android:name="apiUrl" android:value="https://sandbox.qwasi.com:8443/v1"/>
+        <!--meta-data android:name="GCMListener" android:value="QwasiGCMDefault"/-->
+        <!--meta-data android:name="gcm_senderid" android:value="\ 335413682000"/-->
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
@@ -35,13 +38,15 @@
             android:permission="com.google.android.c2dm.permission.SEND" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name="com.qwasi.androidexample"/>
             </intent-filter>
         </receiver>
         <service
-            android:name="com.qwasi.sdk.QwasiGCMListener"
+            android:name="com.qwasi.sdk.QwasiGCMDefault"
             android:exported="false" >
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+                <category android:name="com.qwasi.androidexample"/>
             </intent-filter>
         </service>
         <service android:name="com.qwasi.sdk.QwasiGeofencehandler"
