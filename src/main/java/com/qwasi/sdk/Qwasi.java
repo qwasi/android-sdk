@@ -271,8 +271,8 @@ public class Qwasi{
 
         if (mQwasiNotificationManager.getPushToken() == null){
             mQwasiNotificationManager.registerForRemoteNotification(defaultCallback);
-            pSenderId = mQwasiNotificationManager.mSenderId;
         }
+        pSenderId = mQwasiNotificationManager.mSenderId;
         String test = "";
         if (ContextCompat.checkSelfPermission(sContext, Manifest.permission.GET_ACCOUNTS)
                 == PackageManager.PERMISSION_GRANTED) {
