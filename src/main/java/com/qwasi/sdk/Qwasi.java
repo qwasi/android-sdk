@@ -785,9 +785,50 @@ public class Qwasi{
         }
     }
 
+    public synchronized void postEvent(String eventType, JSONObject data, Boolean retry, final QwasiInterface qwasiInterface){
+        if(mRegistered){
+            data = data == null? new JSONObject():data;
+            HashMap<String, Object> params = new HashMap<>();
+            params.put("device", mDeviceToken);
+            params.put("type", eventType);
+            params.put("data", data);
+            mClient.invokeNotification("event.post", params, new QwasiInterface() {
+                @Override
+                public void onSuccess(Object o) {
+                    Log.i(TAG, "Event posted");
+                    qwasiInterface.onSuccess(new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorNone, "No Error"));
+                }
+                @Override
+                public void onFailure(QwasiError e) {
+                    Log.e("QwasiError", e.getMessage());
+                    QwasiError error = new QwasiError()
+                            .errorWithCode(QwasiErrorCode.QwasiErrorPostEventFailed, "Event post failed " + e.getMessage());
+                    Witness.notify(error);
+                    qwasiInterface.onFailure(error);
+                }
+            });
+        }
+        else {
+            Log.e("QwasiError", "Device NotRegistered");
+            QwasiError error = new QwasiError()
+                    .errorWithCode(QwasiErrorCode.QwasiErrorDeviceNotRegistered, "Device Not Registered");
+            Witness.notify(error);
+            qwasiInterface.onFailure(error);
+        }
+    }
+
+    public void postEvent(String type, JSONObject data, Boolean retry){
+        this.postEvent(type, data, retry, defaultCallback);
+    }
+
     public void postEvent(String type, HashMap<String, Object> data, Boolean retry){
         Boolean Retry = retry == null?true:retry;
         this.postEvent(type, data, Retry, defaultCallback);
+    }
+
+    public void tryPostEvent(String event, JSONObject data){
+        this.postEvent(event, data, false);
     }
 
     public void tryPostEvent(String event, HashMap<String, Object> data) {
