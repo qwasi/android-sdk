@@ -55,8 +55,9 @@ dependencies {
 	compile 'com.google.android.gms:play-services-location:8.4.0'
 	//beacons radiusnetworks
 	compile 'org.altbeacon:android-beacon-library:2.3.5'
-	//Json client and sending
+	//Json RPC client and sending
 	compile 'com.qwasi:QwasiJson:1.0.4'
+	compile 'com.github.danielgindi:httprequest:1.1.1'
 }
 
 sourceSets{

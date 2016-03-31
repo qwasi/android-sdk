@@ -41,20 +41,15 @@ import org.json.JSONObject;
 import java.util.Map;
 import java.net.URL;
 
-public class QwasiRPCClient {
-    URL mServer = null;
+public class QwasiRPCClient extends QwasiClient{
     QwasiSession mQwasiSession;
     private JSONRPCHttpClient mSession = null;
     String TAG = "QwasiRPCClient";
 
-    public QwasiRPCClient clientWithConfig(QwasiConfig config, Qwasi input) {
-        return this.initWithConfig(config, input);
-    }
-
-    private QwasiRPCClient initWithConfig(QwasiConfig config, Qwasi Manager){
-        if (config.murl != null){
+    protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager){
+        if (config.url != null){
             this.mQwasiSession = new QwasiSession(config, Manager);
-            mServer = config.murl;
+            mServer = config.url;
             //connection = (HttpURLConnection) server.openConnection();
             mSession = new JSONRPCHttpClient(mServer.toString(),mQwasiSession.mHeaders);
         }
@@ -64,7 +59,9 @@ public class QwasiRPCClient {
     /**
      * This invokes the method given with w/ the JsonObject, returns the result.
      */
-    void invokeMethod(final String method, final Map<String, Object> parms, final Qwasi.QwasiInterface callbacks){
+    void invokeMethod(final String method,
+                      final Map<String, Object> parms,
+                      final Qwasi.QwasiInterface callbacks){
         new Thread (new Runnable() {
             @Override
             public void run() {
@@ -88,7 +85,9 @@ public class QwasiRPCClient {
     /**
      * method for when an object doesn't need to be returned.
      */
-    void invokeNotification(final String method, final Map<String, Object> parms, final Qwasi.QwasiInterface callbacks){
+    void invokeNotification(final String method,
+                            final Map<String, Object> parms,
+                            final Qwasi.QwasiInterface callbacks){
         new Thread(new Runnable() {
             @Override
             public void run() {

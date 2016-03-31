@@ -77,7 +77,7 @@ public class Qwasi{
     public String mapplicationName = null;
     public String applicationName = null;
     private String mDeviceToken = null;
-    private QwasiRPCClient mClient = null;
+    private QwasiClient mClient = null;
     public NetworkInfo networkInfo;
     private Map<String, Void> mChannels;
     HashMap<String, QwasiMessage> mMessageCache;
