@@ -110,12 +110,12 @@ public class QwasiNotificationManager{
                 registerForPushInBackground();
             } else {
                 // check the version of the token
+                mRegistering = !mRegistering;
                 int appVersion = sharedPreferences.getInt("AppVersion", 0);
                 int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
                 // Our version is outdated, get a new one
                 if (registeredVersion != appVersion) {
                     registerForPushInBackground();
-                    mRegistering = !mRegistering;
                 }
             }
         }

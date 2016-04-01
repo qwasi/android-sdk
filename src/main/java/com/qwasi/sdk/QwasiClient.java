@@ -29,25 +29,51 @@
 
 package com.qwasi.sdk;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
+
+import io.hearty.witness.Reporter;
+import io.hearty.witness.Witness;
 
 abstract public class QwasiClient {
     URL mServer = null;
     private QwasiClient client;
     String TAG = "QwasiClient";
-    Boolean isVersion3;
+    Boolean isVersion3 = false;
+    Reporter Callback;
 
     public QwasiClient clientWithConfig(final QwasiConfig config, final Qwasi input){
         mServer = config.url;
-        isVersion3 = checkVersion();
+        checkVersion();
         if (isVersion3) client = new QwasiRestClient().initWithConfig(config, input);
         else            client = new QwasiRPCClient().initWithConfig(config, input);
         return client;
     }
 
-    Boolean checkVersion(){
-        return false;
+    void checkVersion(){
+        Callback = new Reporter() {
+            @Override
+            public void notifyEvent(Object o) {
+                isVersion3 = (Boolean) o;
+                Witness.remove(Boolean.class, Callback);
+            }
+        };
+        Witness.register(Boolean.class, Callback);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    HttpURLConnection connection = (HttpURLConnection) mServer.openConnection();
+                    if (connection.getContentLength() == 0) Witness.notify(false);
+                    else Witness.notify(true);
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
+                Witness.notify(false);
+            }
+        });
     }
 
     abstract protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager);

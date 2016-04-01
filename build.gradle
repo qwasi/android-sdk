@@ -57,7 +57,6 @@ dependencies {
 	compile 'org.altbeacon:android-beacon-library:2.3.5'
 	//Json RPC client and sending
 	compile 'com.qwasi:QwasiJson:1.0.4'
-	compile 'com.github.danielgindi:httprequest:1.1.1'
 }
 
 sourceSets{

@@ -39,7 +39,6 @@ import com.qwasi.QwasiJson.jsonrpc.JSONRPCHttpClient;
 import org.json.JSONObject;
 
 import java.util.Map;
-import java.net.URL;
 
 public class QwasiRPCClient extends QwasiClient{
     QwasiSession mQwasiSession;
