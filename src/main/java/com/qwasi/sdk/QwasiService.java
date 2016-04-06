@@ -66,7 +66,7 @@ public class QwasiService extends Service {
     protected final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
-            Bundle data = intent.hasExtra("qwasi")? intent.getBundleExtra("qwasi"):new Bundle();
+            final Bundle data = intent.hasExtra("qwasi")? intent.getBundleExtra("qwasi"):new Bundle();
             String from = intent.hasExtra("from")? intent.getStringExtra("from"):""; //senderID
             if (data.isEmpty()) return;
             try {
@@ -95,7 +95,7 @@ public class QwasiService extends Service {
                                     public void onFailure(QwasiError e) {
                                         Log.e(TAG, "Fetch Message failed");
                                         if (mQwasi.useLocalNotifications) new QwasiGCMDefault()
-                                                .sendNotification(intent.getBundleExtra("data"));
+                                                .sendNotification(data);
                                     }
                                 });
                             } else {
@@ -158,7 +158,7 @@ public class QwasiService extends Service {
                     :DEFAULT_GCM; //or set to default
             mCustomListener = Class.forName(mListenerName);
             mOnQwasiMessage = mCustomListener.getMethod("onQwasiMessage", QwasiMessage.class);
-            mOnQwasiBundle  = mCustomListener.getMethod("onQwasiBundle", Bundle.class);
+            //mOnQwasiBundle  = mCustomListener.getMethod("onQwasiBundle", Bundle.class);
         }catch (PackageManager.NameNotFoundException e){
             Log.e(TAG, "Packagename " + getPackageName() + " not found");
         }catch (ClassNotFoundException e) {
