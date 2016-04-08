@@ -29,7 +29,14 @@
 
 package com.qwasi.sdk;
 
+import android.os.AsyncTask;
+import android.util.Log;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
@@ -41,8 +48,14 @@ abstract public class QwasiClient {
     URL mServer = null;
     private QwasiClient client;
     String TAG = "QwasiClient";
-    Boolean isVersion3 = false;
-    Reporter Callback;
+    Boolean isVersion3 = false; //get versioning isn't behaving.
+    Reporter Callback = new Reporter() {
+        @Override
+        public void notifyEvent(Object o) {
+            isVersion3 = (Boolean) o;
+            Witness.remove(Boolean.class, this);
+        }
+    };
 
     public QwasiClient clientWithConfig(final QwasiConfig config, final Qwasi input){
         mServer = config.url;
@@ -53,27 +66,44 @@ abstract public class QwasiClient {
     }
 
     void checkVersion(){
-        Callback = new Reporter() {
-            @Override
-            public void notifyEvent(Object o) {
-                isVersion3 = (Boolean) o;
-                Witness.remove(Boolean.class, Callback);
-            }
-        };
         Witness.register(Boolean.class, Callback);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    HttpURLConnection connection = (HttpURLConnection) mServer.openConnection();
-                    if (connection.getContentLength() == 0) Witness.notify(false);
-                    else Witness.notify(true);
-                }catch (IOException e){
-                    e.printStackTrace();
+        try {
+            new AsyncTask<Void, Void, Boolean>() {
+                @Override
+                protected Boolean doInBackground(Void... params) {
+                    try {
+                        HttpURLConnection connection = (HttpURLConnection) mServer.openConnection();
+                        connection.setDoOutput(true);
+                        connection.setDoInput(true);
+                        connection.setChunkedStreamingMode(0);
+                        connection.setRequestMethod("GET");
+                        //OutputStream output = new BufferedOutputStream(connection.getOutputStream());
+                        InputStream input = new BufferedInputStream(connection.getInputStream());
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                        StringBuilder total = new StringBuilder();
+                        String line;
+                        while((line = reader.readLine()) != null) total.append(line);
+                        connection.disconnect();
+                        Log.d(TAG, total.toString());
+                        Witness.notify(true);
+                        return true;
+                    }catch (IOException e) {
+                        Witness.notify(false);
+                        Log.d(TAG, e.getMessage());
+                        return false;
+                    }
                 }
-                Witness.notify(false);
-            }
-        });
+
+                @Override
+                protected void onPostExecute(Boolean result){
+                    super.onPostExecute(result);
+                    isVersion3 = result;
+                }
+            }.execute().get();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        while(isVersion3 == null);
     }
 
     abstract protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager);

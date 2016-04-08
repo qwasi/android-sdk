@@ -34,6 +34,7 @@ package com.qwasi.sdk;
 import android.util.Base64;
 import android.util.Log;
 
+import org.apache.commons.lang3.CharEncoding;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -99,10 +100,10 @@ public class QwasiMessage{
             try {
                 if (payloadType.equalsIgnoreCase("application/json")) {
                     //error?
-                    payload = new JSONObject(new String(temp, "UTF-8"));
+                    payload = new JSONObject(new String(temp, CharEncoding.UTF_8));
 
                 } else if (payloadType.contains("text")) {
-                    payload = new String(temp, "UTF-8");
+                    payload = new String(temp, CharEncoding.UTF_8);
                 }
                 mpayload = payload;
             } catch (UnsupportedEncodingException e) {
