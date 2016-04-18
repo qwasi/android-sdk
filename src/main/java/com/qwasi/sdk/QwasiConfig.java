@@ -40,8 +40,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import org.apache.commons.lang3.CharEncoding;
-
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
@@ -52,7 +50,6 @@ import java.io.InputStreamReader;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 
 public class QwasiConfig{
     @Deprecated
@@ -96,7 +93,7 @@ public class QwasiConfig{
                 if (inFile.exists()) {//from stackoverflow.com
                     FileInputStream fileInputStream = new FileInputStream(inFile);
                     DataInputStream dataIn = new DataInputStream(fileInputStream);
-                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, CharEncoding.UTF_8));
+                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, "UTF-8"));
                     String line;
                     String splitString[];
                     while ((line = readBuffer.readLine()) != null) {

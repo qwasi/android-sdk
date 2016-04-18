@@ -31,8 +31,6 @@ package com.qwasi.sdk;
 
 import android.util.Log;
 
-import org.apache.commons.lang3.CharEncoding;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -43,7 +41,7 @@ import java.util.Map;
 public class QwasiRestClient extends QwasiClient{
     final String TAG = "QwasiRestClient";
     HttpURLConnection session;
-    private final String UTF_8 = CharEncoding.UTF_8;
+    final String UTF_8 = "UTF-8";
 
     protected QwasiRestClient initWithConfig(QwasiConfig config, Qwasi manager){
         try {

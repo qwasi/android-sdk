@@ -47,7 +47,6 @@ import android.util.Log;
 import io.hearty.witness.Reporter;
 import io.hearty.witness.Witness;
 
-import org.apache.commons.lang3.CharEncoding;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1239,7 +1238,7 @@ public class Qwasi{
                     payload = Base64.encode(payload.toString().getBytes(), Base64.DEFAULT);
                 } else if (payload instanceof String) {  //payload is plaintext
                     try {
-                        encrypted = URLDecoder.decode((String) payload, CharEncoding.UTF_8);
+                        encrypted = URLDecoder.decode((String) payload, "UTF-8");
                         payload = Base64.encode(encrypted.getBytes(), Base64.DEFAULT);
                     } catch (UnsupportedEncodingException e){
                         e.printStackTrace();

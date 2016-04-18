@@ -34,12 +34,11 @@ package com.qwasi.sdk;
 import android.util.Base64;
 import android.util.Log;
 
-import org.apache.commons.lang3.CharEncoding;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -66,7 +65,7 @@ public class QwasiMessage{
     Object mEncodedPayload;
     Boolean mClosedMessage;
     String TAG = "QwasiMessage";
-
+    Charset UTF_8 = Charset.forName("UTF-8");
     public QwasiMessage(){
         super();
         tags = new JSONArray();
@@ -97,19 +96,15 @@ public class QwasiMessage{
             fetched = data.has("fetched")&&data.getBoolean("fetched");
             mEncodedPayload = data.has("payload")?data.get("payload"):"";
             byte[] temp = Base64.decode(mEncodedPayload.toString(), Base64.DEFAULT);
-            try {
-                if (payloadType.equalsIgnoreCase("application/json")) {
-                    //error?
-                    payload = new JSONObject(new String(temp, CharEncoding.UTF_8));
 
-                } else if (payloadType.contains("text")) {
-                    payload = new String(temp, CharEncoding.UTF_8);
-                }
-                mpayload = payload;
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-                Log.e(TAG, "Payload Encoding not supported");
+            if (payloadType.equalsIgnoreCase("application/json")) {
+                //error?
+                payload = new JSONObject(new String(temp, UTF_8));
+
+            } else if (payloadType.contains("text")) {
+                payload = new String(temp, UTF_8);
             }
+            mpayload = payload;
             return this;
         } catch (JSONException e){
             Log.wtf(TAG, "Malformed JSONobject" + e.getMessage());
