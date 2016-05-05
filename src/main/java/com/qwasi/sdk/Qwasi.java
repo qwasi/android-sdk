@@ -51,6 +51,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -373,7 +377,7 @@ public class Qwasi{
         deviceToken = deviceToken == null? mDeviceToken:deviceToken;
         //if name is null get it from the phone, or user can give us one
         name = name == null? deviceName:name;
-         //if we didn't get a usertoken set it to be the phone number
+         //if we didn't get a usertoken set it to be the what ever the saved token is
         userToken = userToken== null?mUserToken:userToken;
         mUserToken = userToken;
         Map<String, Object> info = new HashMap<>();
@@ -654,7 +658,10 @@ public class Qwasi{
     public synchronized void fetchMessageForNotification(final String msgId, final QwasiInterface qwasiInterface) {
         if(mRegistered){
             HashMap<String, Object> params = new HashMap<>();
-            params.put("flags", new HashMap<>().put("opened", isInForeground()));
+            HashMap<String, Object> flags = new HashMap<>();
+            flags.put("delivered", false);
+            flags.put("opened", false);
+            params.put("flags", flags);
             params.put("device", mDeviceToken);
             params.put("id", msgId);
             mClient.invokeMethod("message.fetch", params, new QwasiInterface() {
@@ -827,6 +834,61 @@ public class Qwasi{
         this.postEvent(type, data, Retry, defaultCallback);
     }
 
+    public void postObject(Object object){
+        String classType = object.getClass().getSimpleName();
+        String eventType = "";
+        JSONObject data = new JSONObject();
+        switch(classType) {
+            case "JSONObject":
+                eventType = "com.qwasi.event.JSONObject";
+                postEvent(eventType, (JSONObject) object, false);
+                return;
+            case "HashMap":
+                eventType = "com.qwasi.event.HashMap";
+                postEvent(eventType, (HashMap<String, Object>) object, false);
+                return;
+            /*case "Parcelable":
+                eventType = "com.qwasi.event.NFC";
+                //do stuff?
+                break;*/
+            default: //serialize to binary, and base 64 encode binary
+                eventType = "com.qwasi.event.object";
+                ByteArrayOutputStream binStream = new ByteArrayOutputStream();
+                ObjectOutput output = null;
+                try{
+                    output = new ObjectOutputStream(binStream);
+                    output.writeObject(object);
+                    byte[] encoded = Base64.encode(binStream.toByteArray(), Base64.DEFAULT);
+                    data.put("Object", encoded);
+                    data.put("Length", encoded.length);
+                } catch (IOException e){
+                    e.printStackTrace();
+                } catch (JSONException e){
+                    Log.e(TAG, "JSON Exception encoding object to base64");
+                }
+                break;
+        }
+        postEvent(eventType, data, false);
+    }
+
+    /**
+     * Posts an dlr to the server,
+     * @param type
+     * @param msgId
+     * @param context
+     */
+    void postDlr(String type, String msgId, Object context){
+        HashMap<String, Object> data = new HashMap();
+        data.put("type", type);
+        data.put("to", mDeviceToken);
+        data.put("usertoken", mUserToken);
+        data.put("message", msgId);
+        data.put("proto", "push.gcm");
+        data.put("addr", mQwasiNotificationManager.getPushToken());
+        data.put("context", context);
+        tryPostEvent("com.qwasi.event.message.dlr",data);
+    }
+
     public void tryPostEvent(String event, JSONObject data){
         this.postEvent(event, data, false);
     }
@@ -836,7 +898,7 @@ public class Qwasi{
     }
 
     /**
-     * fetches a list of application nearby locations to track with the device, these locations
+     * cthches a list of application nearby locations to track with the device, these locations
      * can include but are not limited to Geofences and Beacons; defined within the AIM application.
      * @param place
      */

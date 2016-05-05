@@ -74,9 +74,14 @@ public class QwasiService extends Service {
                 if (mQwasi.config.isValid()) {
                     String msgId = results.getString("msg_id");
                     String appId = results.getString("app_id");
+                    JSONObject msgContext = results.has("context")?
+                            results.getJSONObject("context"):
+                            new JSONObject();
                     if (!(msgId.isEmpty()) && !(appId.isEmpty()) && (mQwasi.pSenderId.equals(from))) {
                         if (appId.equals(mQwasi.config.application) || appId.equals(mQwasi.mconfig.mapplication)) {
                             if ((mQwasi.mMessageCache.isEmpty()) || (!mQwasi.mMessageCache.containsKey(msgId))) {
+                                mQwasi.postDlr("delivered", msgId, msgContext);
+                                if (mQwasi.isInForeground()) mQwasi.postDlr("opened", msgId, msgContext);
                                 mQwasi.fetchMessageForNotification(msgId, new Qwasi.QwasiInterface() {
                                     @Override
                                     public void onSuccess(Object o) {

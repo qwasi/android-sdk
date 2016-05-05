@@ -448,8 +448,53 @@ bundle information regularly found in messages relayed though GCM.**
 ###### SDK ERROR - `QWASIERRORMESSAGEFETCHFAILED`
 ###### API METHOD - N/A
 
+## Message Delivery Receipts (DLR)
+`Qwasi` uses several Delivery Receipts, or DLR to enable feedback on how a message is being handled by the system. Previously DLR were handled exclusivly by the `Qwasi` Mojo server. From 2.1.21 forward several DLR have been added, and custom DLR are able to be used to add more flexablity and customization to what ever application is being built using `Qwasi` SDK.
+
+### DLR Types
+The following types are built into the the SDK, and `Qwasi` systems;
+1. Accepted
+2. Rejected
+3. Delivered
+4. Opened
+5. Fetched
+6. Acknowledged
+
+Accepted and Rejected DLR's are handled by the server, Opened and Delivered are created by the
+ SDK when fetching the message after it has been delivered to the device.  Fetched is handled
+ when the rich content of the message is retrieved from the server. Acknowledged is up to the
+ application to call from the `QwasiMessage` object retrieved from an emitter, or fetched from
+ various functions.
+
+Example:
+
+```java
+    ...
+    notifyEvent(Object o){
+        QwasiMessage message = (QwasiMessage) o;
+        message.ack();
+        ...
+    }
+    ...
+```
+
+For custom DLRs the public method postDLR on the QwasiMessage should be called with the string of
+ DLR type that is desired.
+
+Example:
+
+```java
+    ...
+    message.postDlr("liked");
+    ...
+```
+
+###### SDK EVENT - `MESSAGE.DLR`
+###### SDK ERROR - `QWASIEVENTPOSTFAILED`
+###### API METHOD - `EVENT.POST`
+
 ## Message Channels
-`Qwasi` AIM supports arbitrary message groups via channels. The API is simple.
+`Qwasi` supports arbitrary message groups via channels. The API is simple.
 
 ### Subscribe to a Channel
 
@@ -484,7 +529,7 @@ Example:
 
 The `Qwasi` platform supports triggers on application events, but the events have to be provided.
  By default, the library will send application state events (open, foreground, background, 
- location). You can send custom events and configure your AIM to act on those as you see fit.
+ location). You can send custom events and configure your `Qwasi` to act on those as you see fit.
 
 ```java
     public void  postEvent:(String, HashMap<String, Object>, QwasiInterface)
@@ -499,7 +544,7 @@ Example:
 ## Location
 
 The Qwasi SDK can provide device location and track Geofence, and Beacon events. The Geofences 
-and Beacons must be pre-configured via the AIM or API interfaces.
+and Beacons must be pre-configured via the `Qwasi` or API interfaces.
 
 ### Enabling Location
 

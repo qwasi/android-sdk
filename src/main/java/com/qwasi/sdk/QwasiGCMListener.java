@@ -116,7 +116,7 @@ abstract public class QwasiGCMListener extends GcmListenerService{
      */
     protected void sendNotification(final QwasiMessage message){
         String alert = message.alert;
-        if (!message.silent()){
+        if (!message.silent()) {
             NotificationCompat.Builder builder = noteBuilder(alert);
             Bitmap bitmap = BitmapFactory.decodeResource(mBaseContext.getResources(),
                     mBaseContext.getApplicationInfo().logo);
@@ -125,12 +125,10 @@ abstract public class QwasiGCMListener extends GcmListenerService{
             //allows stuff when expanded.  BigTextStyle, BigPictureStyle, and InboxStyle
             if (message.payloadType.contains("text")) {
                 builder.setStyle(new NotificationCompat.BigTextStyle().bigText(message.description()));
-            }
-            else if (message.payloadType.contains("image")){
+            } else if (message.payloadType.contains("image")) {
                 Log.d("QwasiGCMListener", "Image");
                 builder.setStyle(new NotificationCompat.BigPictureStyle().bigPicture(bitmap));
-            }
-            else if (message.payloadType.contains("json")){
+            } else if (message.payloadType.contains("json")) {
                 Log.d("QwasiGCMListener", "App context");
                 builder.setStyle(new NotificationCompat.InboxStyle()
                         .addLine("")
