@@ -75,11 +75,10 @@ public class QwasiError extends Throwable{
     public QwasiError errorWithCode(QwasiErrorCode code, String message, Error error){
         HashMap<String, Object> userInfo = new HashMap<>();
         userInfo.put("code", code);
-        if (error != null){
+        if (error != null) {
             userInfo.put(message + " reason= " + error.getMessage(), null);
             userInfo.put("innerError", error);
-        }
-        else{
+        } else {
             userInfo.put(message, null);
         }
         this.message = message;
@@ -91,7 +90,9 @@ public class QwasiError extends Throwable{
         return this.code;
     }
 
-    public  Exception getError(){return this.error;}
+    public  Exception getError(){
+        return this.error;
+    }
 
     void setError(Exception e) {
         this.error = e;

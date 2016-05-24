@@ -60,8 +60,11 @@ abstract public class QwasiClient {
     public QwasiClient clientWithConfig(final QwasiConfig config, final Qwasi input){
         mServer = config.url;
         checkVersion();
-        if (isVersion3) client = new QwasiRestClient().initWithConfig(config, input);
-        else            client = new QwasiRPCClient().initWithConfig(config, input);
+        if (isVersion3) {
+            client = new QwasiRestClient().initWithConfig(config, input);
+        } else {
+            client = new QwasiRPCClient().initWithConfig(config, input);
+        }
         return client;
     }
 
@@ -82,7 +85,9 @@ abstract public class QwasiClient {
                         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
                         StringBuilder total = new StringBuilder();
                         String line;
-                        while((line = reader.readLine()) != null) total.append(line);
+                        while((line = reader.readLine()) != null){
+                            total.append(line);
+                        }
                         connection.disconnect();
                         Log.d(TAG, total.toString());
                         Witness.notify(true);

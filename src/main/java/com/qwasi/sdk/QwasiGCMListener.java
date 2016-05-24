@@ -61,7 +61,9 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     public void onCreate(){ //Droid-48
         try {
             mBaseContext = this.getBaseContext();
-            mBaseContext = mBaseContext != null ? mBaseContext : Qwasi.getContext();
+            if (mBaseContext == null) {
+                mBaseContext = Qwasi.getContext();
+            }
             mPM = mBaseContext.getPackageManager();
             Intent mDefaultIntent;
             mDefaultIntent = mPM.getLaunchIntentForPackage(mBaseContext.getPackageName());
@@ -81,7 +83,9 @@ abstract public class QwasiGCMListener extends GcmListenerService{
     @Override
     public void onMessageReceived(String from, final Bundle data) {
         synchronized (this) {
-            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE").putExtra("qwasi", data).putExtra("from", from));
+            this.sendBroadcast(new Intent("com.qwasi.sdk.QwasiService.RECEIVE")
+                    .putExtra("qwasi", data)
+                    .putExtra("from", from));
         }
     }
 

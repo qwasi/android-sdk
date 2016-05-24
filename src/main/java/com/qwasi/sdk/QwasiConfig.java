@@ -110,7 +110,7 @@ public class QwasiConfig{
                 }
             } else if((mSharedPreferences.contains("QwasiApiKey"))&&
                     (mSharedPreferences.contains("QwasiAppId"))&&
-                    (mSharedPreferences.contains("QwasiUrl"))){
+                    (mSharedPreferences.contains("QwasiUrl"))) {
 
                 appID = mSharedPreferences.getString("QwasiAppId", "");
                 apiKey= mSharedPreferences.getString("QwasiApiKey", "");
@@ -125,7 +125,7 @@ public class QwasiConfig{
                     //start looking for key values
                     if((metaData.containsKey("apiKey"))&&
                             (metaData.containsKey("appID"))&&
-                            (metaData.containsKey("apiUrl"))){
+                            (metaData.containsKey("apiUrl"))) {
 
                         apiKey = metaData.getString("apiKey", "");
                         appID  = metaData.getString("appID", "");
@@ -178,19 +178,25 @@ public class QwasiConfig{
             catch (MalformedURLException e){
                 System.err.println("Malformed URL Exeption: "+e.getMessage());
             }
-        } else mSharedPreferences.edit().putString("QwasiUrl", url.getHost());
+        } else {
+            mSharedPreferences.edit().putString("QwasiUrl", url.getHost());
+        }
 
         mapplication = App;
         application = mapplication;
-        if (application == null){
+        if (application == null) {
             application = "INVAILD_APP_ID";
-        }else mSharedPreferences.edit().putString("QwasiAppId", application);
+        } else {
+            mSharedPreferences.edit().putString("QwasiAppId", application);
+        }
 
         mkey = Key;
         key = mkey;
-        if (key == null){
+        if (key == null) {
             key = "INVAILD_API_KEY";
-        } else mSharedPreferences.edit().putString("QwasiApiKey", key);
+        } else {
+            mSharedPreferences.edit().putString("QwasiApiKey", key);
+        }
         mSharedPreferences.edit().apply();
         return this;
     }

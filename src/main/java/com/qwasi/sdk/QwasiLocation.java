@@ -181,7 +181,6 @@ public class QwasiLocation extends Location {
                     location.setBeacon(new Region(location.id, identifierList));
                 } else if (input.has("geofence")) {  //geofence builder
                     location.mType = QwasiLocationType.QwasiLocationTypeGeofence;
-                    //location.mexitDelay = input.getJSONObject("properties").has("exit_interval")? input.getJSONObject("properties").getInt("exit_interval") *1000:;
                     location.mGeometry = input.getJSONObject("geofence").getJSONObject("geometry");
                     location.mLatitude = location.mGeometry.getJSONArray("coordinates").getDouble(1);
                     location.mLongitude = location.mGeometry.getJSONArray("coordinates").getDouble(0);

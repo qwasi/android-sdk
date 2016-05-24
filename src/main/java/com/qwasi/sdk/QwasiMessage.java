@@ -72,6 +72,12 @@ public class QwasiMessage{
         tags = new JSONArray();
         mtags = tags;
         mClosedMessage = false;
+        application = "";
+        messageId = "";
+        alert = "";
+        context = new JSONObject();
+        tags = new JSONArray();
+        mEncodedPayload = "";
     }
 
     /**
@@ -80,10 +86,24 @@ public class QwasiMessage{
     private QwasiMessage initWithData(Object input){
         try {
             JSONObject data = (JSONObject) input;
-            messageId = data.has("id")?data.getString("id"):"";
-            application = data.has("application")?data.getString("application"):"";
-            alert = data.has("text")?data.getString("text"):"";
-            context = data.has("context")?data.getJSONObject("context"):new JSONObject();
+            if (data.has("id")) {
+                messageId = data.getString("id");
+            }
+            if (data.has("application")) {
+                application = data.getString("application");
+            }
+            if (data.has("text")) {
+                alert = data.getString("text");
+            }
+            if (data.has("context")) {
+                context = data.getJSONObject("context");
+            }
+            if (data.has("tags")) {
+                tags = data.getJSONArray("tags");
+            }
+            if (data.has("payload")) {
+                mEncodedPayload = data.get("payload");
+            }
             malert = alert;
             selected = QwasiAppManager.getstatus();
             //dateformater = date
@@ -93,10 +113,8 @@ public class QwasiMessage{
             mtimestamp = timeStamp;
             payloadType = data.get("payload_type").toString();
             mpayloadType = payloadType;
-            tags = data.has("tags")? data.getJSONArray("tags"): new JSONArray();
             mtags = tags;
             fetched = data.has("fetched")&&data.getBoolean("fetched");
-            mEncodedPayload = data.has("payload")?data.get("payload"):"";
             byte[] temp = Base64.decode(mEncodedPayload.toString(), Base64.DEFAULT);
 
             if (payloadType.equalsIgnoreCase("application/json")) {
@@ -156,7 +174,9 @@ public class QwasiMessage{
      * @return
      */
     public Boolean silent(){
-        alert = alert == null? "": alert.contains("do_not_collapse")?"":alert;
+        if ((alert != null) & alert.contains("do_not_collapse")) {
+            alert = "";
+        }
         return (alert.isEmpty());
     }
 

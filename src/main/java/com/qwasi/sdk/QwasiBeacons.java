@@ -67,7 +67,11 @@ public class QwasiBeacons extends Service
     public QwasiBeacons() {
         super();
         mContext = QwasiNotificationManager.getInstance().mContext;
-        mMainAct = Qwasi.sMainApplication instanceof  BeaconConsumer? (BeaconConsumer)  Qwasi.sMainApplication:null;
+        if (Qwasi.sMainApplication instanceof  BeaconConsumer) {
+            mMainAct = (BeaconConsumer)  Qwasi.sMainApplication;
+        } else {
+            mMainAct = null;
+        }
         mMap = QwasiLocationManager.getInstance().regionMap;
         if ((mMainAct != null)&&(Qwasi.sMainApplication.getPackageManager() !=null)) {
             mBeaconManager = BeaconManager.getInstanceForApplication(Qwasi.sMainApplication);
@@ -78,11 +82,17 @@ public class QwasiBeacons extends Service
 
     synchronized void setMainAct(Activity main){
         Log.d(TAG, "SetMain");
-        mMainAct = BeaconConsumer.class.isAssignableFrom(main.getClass())?(BeaconConsumer) main:null;
+        if (BeaconConsumer.class.isAssignableFrom(main.getClass())) {
+            mMainAct = (BeaconConsumer) main;
+        } else {
+            mMainAct = null;
+        }
     }
 
     synchronized void addParser(BeaconParser input) {
-        if (!mParsers.contains(input)) mParsers.add(input);
+        if (!mParsers.contains(input)){
+            mParsers.add(input);
+        }
     }
 
     @Override

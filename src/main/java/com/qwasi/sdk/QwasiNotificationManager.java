@@ -67,7 +67,8 @@ public class QwasiNotificationManager{
         mPushToken = "";
         mContext = Qwasi.getContext();
         try {
-            ApplicationInfo appinfo = mContext.getPackageManager().getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
+            ApplicationInfo appinfo = mContext.getPackageManager().
+                getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
             Object temp = appinfo.metaData.containsKey(GCM_SENDERID)? //has senderid in manifest
                     appinfo.metaData.get(GCM_SENDERID): //get it
                     DEFAULT_SENDER;  //or set to default, default also included in case android munges it
