@@ -669,7 +669,7 @@ public class Qwasi{
   }
 
   /**
-  * Overloaded front facing for fetchMessageForNotification
+  * Overloaded front facing for messageForNotification
   * @param userInfo
   */
   public void fetchMessageForNotification(String userInfo) {
