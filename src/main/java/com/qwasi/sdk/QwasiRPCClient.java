@@ -41,68 +41,64 @@ import org.json.JSONObject;
 import java.util.Map;
 
 public class QwasiRPCClient extends QwasiClient{
-    QwasiSession mQwasiSession;
-    private JSONRPCHttpClient mSession = null;
-    String TAG = "QwasiRPCClient";
+  QwasiSession mQwasiSession;
+  private JSONRPCHttpClient mSession = null;
+  String TAG = "QwasiRPCClient";
 
-    protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager){
-        if (config.url != null){
-            this.mQwasiSession = new QwasiSession(config, Manager);
-            mServer = config.url;
-            //connection = (HttpURLConnection) server.openConnection();
-            mSession = new JSONRPCHttpClient(mServer.toString(),mQwasiSession.mHeaders);
+  protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager){
+    if (config.url != null){
+      this.mQwasiSession = new QwasiSession(config, Manager);
+      mServer = config.url;
+      //connection = (HttpURLConnection) server.openConnection();
+      mSession = new JSONRPCHttpClient(mServer.toString(),mQwasiSession.mHeaders);
+    }
+    return this;
+  }
+
+  /**
+   * This invokes the method given with w/ the JsonObject, returns the result.
+   */
+  void invokeMethod(final String method, final Map<String, Object> parms,
+                    final Qwasi.QwasiInterface callbacks){
+    new Thread (new Runnable() {
+      @Override
+      public void run() {
+        Log.d(TAG, "invoking API "+method+", with params: "+parms.toString());
+        JSONObject jsonparms = new JSONObject(parms);
+        try {
+          JSONObject response = mSession.callJSONObject(method, jsonparms);
+          Log.d(TAG, method + " successful");
+          callbacks.onSuccess(response);
+        } catch (JSONRPCException e) {
+          QwasiError temp = new QwasiError();
+          temp.errorWithCode(QwasiErrorCode.QwasiErrorNone, e.getCause().getMessage());
+          callbacks.onFailure(temp);
+          //handle when I know what the code is i'll deal with this
         }
-        return this;
-    }
+      }
+    }).start();
+  }
 
-    /**
-     * This invokes the method given with w/ the JsonObject, returns the result.
-     */
-    void invokeMethod(final String method,
-                      final Map<String, Object> parms,
-                      final Qwasi.QwasiInterface callbacks){
-        new Thread (new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "invoking API "+method+", with params: "+parms.toString());
-                JSONObject jsonparms = new JSONObject(parms);
-                try {
-                    JSONObject response = mSession.callJSONObject(method, jsonparms);
-                    Log.d(TAG, method + " successful");
-                    callbacks.onSuccess(response);
-                }
-                catch (JSONRPCException e) {
-                    QwasiError temp = new QwasiError();
-                    temp.errorWithCode(QwasiErrorCode.QwasiErrorNone, e.getCause().getMessage());
-                    callbacks.onFailure(temp);
-                    //handle when I know what the code is i'll deal with this
-                }
-            }
-        }).start();
-    }
-
-    /**
-     * method for when an object doesn't need to be returned.
-     */
-    void invokeNotification(final String method,
-                            final Map<String, Object> parms,
-                            final Qwasi.QwasiInterface callbacks){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "invoking API "+method+", with parms: "+parms.toString());
-                JSONObject jsonparms = new JSONObject(parms);
-                try{
-                    mSession.call(method, jsonparms);
-                    Log.d(TAG, method + " successful");
-                    callbacks.onSuccess(null);
-                }
-                catch (JSONRPCException e){
-                    QwasiError temp = new QwasiError();
-                    temp.errorWithCode(QwasiErrorCode.QwasiErrorNone, e.getCause().getMessage());
-                    callbacks.onFailure(temp);
-                }
-            }
-        }).start();
-    }
+  /**
+   * method for when an object doesn't need to be returned.
+   */
+  void invokeNotification(final String method, final Map<String, Object> parms,
+                          final Qwasi.QwasiInterface callbacks){
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        Log.d(TAG, "invoking API "+method+", with parms: "+parms.toString());
+        JSONObject jsonparms = new JSONObject(parms);
+        try{
+          mSession.call(method, jsonparms);
+          Log.d(TAG, method + " successful");
+          callbacks.onSuccess(null);
+        } catch (JSONRPCException e){
+          QwasiError temp = new QwasiError();
+          temp.errorWithCode(QwasiErrorCode.QwasiErrorNone, e.getCause().getMessage());
+          callbacks.onFailure(temp);
+        }
+      }
+    }).start();
+  }
 }

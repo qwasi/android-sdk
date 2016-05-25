@@ -7,9 +7,9 @@ import android.os.Bundle;
  * Provides a concrete class to communicate w/ QwasiGCMListener
  */
 public class QwasiGCMDefault extends QwasiGCMListener{
-    @Override
-    public void onQwasiMessage(QwasiMessage msg){} //required for overloading custom GCMListener
+  @Override
+  public void onQwasiMessage(QwasiMessage msg){} //required for overloading custom GCMListener
 
-    @Override
-    public void onQwasiBundle(Bundle msg){} //required
+  @Override
+  public void onQwasiBundle(Bundle msg){} //required
 }

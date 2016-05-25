@@ -39,29 +39,28 @@ import java.util.List;
 
 @SuppressWarnings("deprecation")
 public class QwasiSession {
-    private Qwasi mSharedApp;
-    private QwasiConfig mConfig;
-    Header[] mHeaders;
-    List[] mRequestHeaders;
+  private Qwasi mSharedApp;
+  private QwasiConfig mConfig;
+  Header[] mHeaders;
+  List[] mRequestHeaders;
 
-    public QwasiSession(QwasiConfig config, Qwasi main) {
-        mSharedApp = main;
-        mConfig = config;
-        mHeaders = new Header[4];  //convert to list?
-        mRequestHeaders = new List[4];
-        this.configure();
-    }
+  public QwasiSession(QwasiConfig config, Qwasi main) {
+    mSharedApp = main;
+    mConfig = config;
+    mHeaders = new Header[4];  //convert to list?
+    mRequestHeaders = new List[4];
+    this.configure();
+  }
 
-    public void configure() {
-        this.applyHeaders();
-    }
+  public void configure() {
+    this.applyHeaders();
+  }
 
-    private void applyHeaders() {
-        mHeaders[0] = new BasicHeader("x-qwasi-api-key", mConfig.mkey);
-        mHeaders[1] = new BasicHeader("x-qwasi-app-id", mConfig.mapplication);
-        mHeaders[2] = new BasicHeader("x-qwasi-device-id", mSharedApp.getMdeviceToken()); //is This needed?
-        mHeaders[3] = new BasicHeader("accept-version", "2.1.0");
-    }
-
+  private void applyHeaders() {
+    mHeaders[0] = new BasicHeader("x-qwasi-api-key", mConfig.mkey);
+    mHeaders[1] = new BasicHeader("x-qwasi-app-id", mConfig.mapplication);
+    mHeaders[2] = new BasicHeader("x-qwasi-device-id", mSharedApp.getMdeviceToken()); //is This needed?
+    mHeaders[3] = new BasicHeader("accept-version", "2.1.0");
+  }
 }
 

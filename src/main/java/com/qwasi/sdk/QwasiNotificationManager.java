@@ -51,97 +51,95 @@ import java.io.IOException;
 import io.hearty.witness.Witness;
 
 public class QwasiNotificationManager{
-    static private String mPushToken = "";
-    static private Boolean mRegistering;
-    Context mContext;
-    String mSenderId;
-    public static final String GCM_SENDERID = "gcm_senderid";
-    private final String DEFAULT_SENDER = "335413682000";
+  static private String mPushToken = "";
+  static private Boolean mRegistering;
+  Context mContext;
+  String mSenderId;
+  public static final String GCM_SENDERID = "gcm_senderid";
+  private final String DEFAULT_SENDER = "335413682000";
 
-    private static QwasiNotificationManager instance;
-    static final String TAG = "QwasiNotificationMngr";
+  private static QwasiNotificationManager instance;
+  static final String TAG = "QwasiNotificationMngr";
 
-    private QwasiNotificationManager(){
-        super();
-        mRegistering = false;
-        mPushToken = "";
-        mContext = Qwasi.getContext();
+  private QwasiNotificationManager(){
+    super();
+    mRegistering = false;
+    mPushToken = "";
+    mContext = Qwasi.getContext();
+    try {
+      ApplicationInfo appinfo = mContext.getPackageManager().
+          getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
+      Object temp = appinfo.metaData.containsKey(GCM_SENDERID)? //has senderid in manifest
+          appinfo.metaData.get(GCM_SENDERID): //get it
+          DEFAULT_SENDER;  //or set to default, default also included in case android munges it
+      mSenderId = temp instanceof String? temp.toString(): "";
+    }catch (PackageManager.NameNotFoundException e) {
+      mSenderId = DEFAULT_SENDER; //default
+    }
+    instance = this;
+  }
+
+  public static QwasiNotificationManager getInstance(){
+    return instance != null?instance:new QwasiNotificationManager();
+  }
+
+  public Boolean isRegistering() {
+    return mRegistering;
+  }
+
+  public String getPushToken() {
+    return mPushToken;
+  }
+
+  /*Package*/void setPushToken(String pushToken) {
+    mPushToken = pushToken;
+  }
+
+  /*Package*/synchronized void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
+    if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
+      // If we can find google play services, have the user download it?
+      //GooglePlayServicesUtil.getErrorDialog();
+      callbacks.onFailure(new QwasiError()
+          .errorWithCode(QwasiErrorCode.QwasiErrorPushNotEnabled, "Google play not enabled"));
+    } else {
+      SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+      String token = sharedPreferences.getString(Qwasi.QWASI_GCM_TOKEN, "");
+      // We don't have a token so get a new one
+      if (token.isEmpty()&& !mRegistering) {
+        mRegistering = !mRegistering;
+        registerForPushInBackground();
+      } else {
+        // check the version of the token
+        mRegistering = !mRegistering;
+        int appVersion = sharedPreferences.getInt("AppVersion", 0);
+        int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
+        // Our version is outdated, get a new one
+        if (registeredVersion != appVersion) {
+          registerForPushInBackground();
+        }
+      }
+    }
+    callbacks.onSuccess(this.getPushToken());
+  }
+
+  private synchronized void registerForPushInBackground() {
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
         try {
-            ApplicationInfo appinfo = mContext.getPackageManager().
-                getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-            Object temp = appinfo.metaData.containsKey(GCM_SENDERID)? //has senderid in manifest
-                    appinfo.metaData.get(GCM_SENDERID): //get it
-                    DEFAULT_SENDER;  //or set to default, default also included in case android munges it
-            mSenderId = temp instanceof String? temp.toString(): "";
-        }catch (PackageManager.NameNotFoundException e) {
-            mSenderId = DEFAULT_SENDER; //default
+          mRegistering = true;
+          Log.d(TAG, "Attempting to Aquire new Token");
+          Log.d(TAG, "Using SenderID: "+mSenderId);
+          InstanceID iId = InstanceID.getInstance(mContext);
+          String token = iId.getToken(mSenderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
+          mPushToken =!token.isEmpty()?token:"";
+          Log.d(TAG, "New GCM token acquired: " + token);
+          Witness.notify(mRegistering);
+        } catch (IOException e){
+          Log.d(TAG, "IOExecption");
         }
-        instance = this;
-    }
-
-    public static QwasiNotificationManager getInstance(){
-        return instance != null?instance:new QwasiNotificationManager();
-    }
-
-    public Boolean isRegistering() {
-        return mRegistering;
-    }
-
-    public String getPushToken() {
-        return mPushToken;
-    }
-
-    /*Package*/void setPushToken(String pushToken) {
-        mPushToken = pushToken;
-    }
-
-    /*Package*/synchronized void registerForRemoteNotification(final Qwasi.QwasiInterface callbacks) {
-        if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(mContext) != ConnectionResult.SUCCESS) {
-            // If we can find google play services, have the user download it?
-            //GooglePlayServicesUtil.getErrorDialog();
-            callbacks.onFailure(new QwasiError()
-                    .errorWithCode(QwasiErrorCode.QwasiErrorPushNotEnabled, "Google play not enabled"));
-        }
-        else {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            String token = sharedPreferences.getString(Qwasi.QWASI_GCM_TOKEN, "");
-            // We don't have a token so get a new one
-            if (token.isEmpty()&& !mRegistering) {
-                mRegistering = !mRegistering;
-                registerForPushInBackground();
-            } else {
-                // check the version of the token
-                mRegistering = !mRegistering;
-                int appVersion = sharedPreferences.getInt("AppVersion", 0);
-                int registeredVersion = sharedPreferences.getInt("com.google.android.gms.version", Integer.MIN_VALUE);
-                // Our version is outdated, get a new one
-                if (registeredVersion != appVersion) {
-                    registerForPushInBackground();
-                }
-            }
-        }
-        callbacks.onSuccess(this.getPushToken());
-    }
-
-    private synchronized void registerForPushInBackground() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    mRegistering = true;
-                    Log.d(TAG, "Attempting to Aquire new Token");
-                    Log.d(TAG, "Using SenderID: "+mSenderId);
-                    InstanceID iId = InstanceID.getInstance(mContext);
-                    String token = iId.getToken(mSenderId, GoogleCloudMessaging.INSTANCE_ID_SCOPE);
-                    mPushToken =!token.isEmpty()?token:"";
-                    Log.d(TAG, "New GCM token acquired: " + token);
-                    Witness.notify(mRegistering);
-                }
-                catch (IOException e){
-                    Log.d(TAG, "IOExecption");
-                }
-                mRegistering = false;
-            }
-        }).start();
-    }
+        mRegistering = false;
+      }
+    }).start();
+  }
 }

@@ -37,7 +37,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import java.util.HashMap;
 

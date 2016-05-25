@@ -108,7 +108,7 @@ abstract public class QwasiClient {
         }catch (Exception e){
             e.printStackTrace();
         }
-        while(isVersion3 == null);
+        while(isVersion3 == null) {} //stub for waiting the Version is checked
     }
 
     abstract protected QwasiClient initWithConfig(QwasiConfig config, Qwasi Manager);

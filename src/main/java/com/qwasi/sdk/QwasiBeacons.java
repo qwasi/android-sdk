@@ -52,92 +52,82 @@ import java.util.List;
 
 import io.hearty.witness.Witness;
 
-public class QwasiBeacons extends Service
-    implements BeaconConsumer,
-        RangeNotifier,
-        MonitorNotifier{
-    final static long FOCUSSCANPERIOD = 2000;
-    HashMap<String, QwasiLocation> mMap;
-    List<BeaconParser> mParsers;
-    BeaconManager mBeaconManager;
-    private static String TAG = "QwasiBeacon";
-    BeaconConsumer mMainAct;
-    Context mContext;
+public class QwasiBeacons extends Service implements BeaconConsumer, RangeNotifier, MonitorNotifier{
+  final static long FOCUSSCANPERIOD = 2000;
+  HashMap<String, QwasiLocation> mMap;
+  List<BeaconParser> mParsers;
+  BeaconManager mBeaconManager;
+  private static String TAG = "QwasiBeacon";
+  BeaconConsumer mMainAct;
+  Context mContext;
 
-    public QwasiBeacons() {
-        super();
-        mContext = QwasiNotificationManager.getInstance().mContext;
-        if (Qwasi.sMainApplication instanceof  BeaconConsumer) {
-            mMainAct = (BeaconConsumer)  Qwasi.sMainApplication;
-        } else {
-            mMainAct = null;
-        }
-        mMap = QwasiLocationManager.getInstance().regionMap;
-        if ((mMainAct != null)&&(Qwasi.sMainApplication.getPackageManager() !=null)) {
-            mBeaconManager = BeaconManager.getInstanceForApplication(Qwasi.sMainApplication);
-            mBeaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
-            mParsers = mBeaconManager.getBeaconParsers();
-        }
+  public QwasiBeacons() {
+    super();
+    mContext = QwasiNotificationManager.getInstance().mContext;
+    mMainAct = Qwasi.sMainApplication instanceof  BeaconConsumer ?
+        (BeaconConsumer)  Qwasi.sMainApplication : null;
+    mMap = QwasiLocationManager.getInstance().regionMap;
+    if ((mMainAct != null)&&(Qwasi.sMainApplication.getPackageManager() !=null)) {
+      mBeaconManager = BeaconManager.getInstanceForApplication(Qwasi.sMainApplication);
+      mBeaconManager.setForegroundBetweenScanPeriod(FOCUSSCANPERIOD);
+      mParsers = mBeaconManager.getBeaconParsers();
     }
+  }
 
-    synchronized void setMainAct(Activity main){
-        Log.d(TAG, "SetMain");
-        if (BeaconConsumer.class.isAssignableFrom(main.getClass())) {
-            mMainAct = (BeaconConsumer) main;
-        } else {
-            mMainAct = null;
-        }
-    }
+  synchronized void setMainAct(Activity main){
+    Log.d(TAG, "SetMain");
+    mMainAct = (BeaconConsumer.class.isAssignableFrom(main.getClass())) ?
+        (BeaconConsumer) main : null;
+  }
 
-    synchronized void addParser(BeaconParser input) {
-        if (!mParsers.contains(input)){
-            mParsers.add(input);
-        }
+  synchronized void addParser(BeaconParser input) {
+    if (!mParsers.contains(input)){
+      mParsers.add(input);
     }
+  }
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+  @Override
+  public IBinder onBind(Intent intent) {
+    return null;
+  }
 
-    @Override
-    public void onBeaconServiceConnect() {
-        mBeaconManager.setRangeNotifier(this);
-        mBeaconManager.setMonitorNotifier(this);
-    }
+  @Override
+  public void onBeaconServiceConnect() {
+    mBeaconManager.setRangeNotifier(this);
+    mBeaconManager.setMonitorNotifier(this);
+  }
 
-    /**
-     * when a beacon comes in range of the device they are broadcast out the app to handle
-     * @param collection
-     * @param region
-     */
-    @Override
-    public void didRangeBeaconsInRegion(Collection<Beacon> collection, Region region) {
-        if(!collection.isEmpty()){
-            for (Beacon beacon: collection){
-                Log.d(TAG, "beacon found: "+beacon.getId1()+
-                        " dist away"+beacon.getDistance()+
-                        " QwasiID "+region.getUniqueId());
-                mMap.get(region.getUniqueId()).mDistance = beacon.getDistance();
-                Witness.notify(mMap.get(region.getUniqueId()));
-            }
-        }
+  /**
+   * when a beacon comes in range of the device they are broadcast out the app to handle
+   * @param collection
+   * @param region
+   */
+  @Override
+  public void didRangeBeaconsInRegion(Collection<Beacon> collection, Region region) {
+    if(!collection.isEmpty()){
+      for (Beacon beacon: collection){
+        Log.d(TAG, "beacon found: "+beacon.getId1()+ " dist away"+beacon.getDistance()+ " QwasiID "
+            +region.getUniqueId());
+        mMap.get(region.getUniqueId()).mDistance = beacon.getDistance();
+        Witness.notify(mMap.get(region.getUniqueId()));
+      }
     }
+  }
 
-    @Override
-    public void didEnterRegion(Region region) {
-        Log.wtf(TAG, "Enter region");
-        mMap.get(region.getUniqueId()).enter();
-    }
+  @Override
+  public void didEnterRegion(Region region) {
+    Log.wtf(TAG, "Enter region");
+    mMap.get(region.getUniqueId()).enter();
+  }
 
-    @Override
-    public void didExitRegion(Region region) {
-        Log.wtf(TAG, "Exit region");
-        mMap.get(region.getUniqueId()).exit();
-    }
+  @Override
+  public void didExitRegion(Region region) {
+    Log.wtf(TAG, "Exit region");
+    mMap.get(region.getUniqueId()).exit();
+  }
 
-    @Override
-    public void didDetermineStateForRegion(int state, Region region) {
-        Log.wtf(TAG, "StateDet");
-    }
+  @Override
+  public void didDetermineStateForRegion(int state, Region region) {
+    Log.wtf(TAG, "StateDet");
+  }
 }

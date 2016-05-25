@@ -122,7 +122,7 @@ public class QwasiService extends Service {
             }
           }
         }
-      }catch (JSONException e){
+      } catch (JSONException e){
         e.printStackTrace();
       }
     }
@@ -164,24 +164,19 @@ public class QwasiService extends Service {
     registerReceiver(receiver, filter);
     try {
       Bundle metaData = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
-      if (metaData != null) {
-        if (metaData.containsKey("GCMListener")) {
-          mListenerName = metaData.getString("GCMListener");
-        }
-      }
+      mListenerName = ((metaData != null) && (metaData.containsKey("GCMListener")))?
+          metaData.getString("GCMListener") : DEFAULT_GCM;
       mCustomListener = Class.forName(mListenerName);
       mOnQwasiMessage = mCustomListener.getMethod("onQwasiMessage", QwasiMessage.class);
       //mOnQwasiBundle  = mCustomListener.getMethod("onQwasiBundle", Bundle.class);
-    }catch (PackageManager.NameNotFoundException e){
+    } catch (PackageManager.NameNotFoundException e){
       Log.e(TAG, "Packagename " + getPackageName() + " not found");
-    }catch (ClassNotFoundException e) {
+    } catch (ClassNotFoundException e) {
       Log.e(TAG, "Custom GCMListener with Classname: " + mListenerName + " Not found");
-    }
-    catch (NoSuchMethodException e){
+    } catch (NoSuchMethodException e){
       Log.e(TAG, "Custom GCMListener has no method onQwasiMessage, make sure to extend " +
           "QwasiGCMListener");
-    }
-    catch (NullPointerException e){
+    } catch (NullPointerException e){
       Log.e(TAG, "Some Object in GCMListener set up was null");
       e.printStackTrace();
     }

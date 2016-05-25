@@ -39,104 +39,110 @@ import java.net.URLEncoder;
 import java.util.Map;
 
 public class QwasiRestClient extends QwasiClient{
-    final String TAG = "QwasiRestClient";
-    HttpURLConnection session;
-    final String UTF_8 = "UTF-8";
+  final String TAG = "QwasiRestClient";
+  HttpURLConnection session;
+  final String UTF_8 = "UTF-8";
 
-    protected QwasiRestClient initWithConfig(QwasiConfig config, Qwasi manager){
-        try {
-            session = (HttpURLConnection) mServer.openConnection();
-            session.setDoOutput(true);
-            session.setDoInput(true);
-        }catch (IOException e ){
-            e.printStackTrace();
-            Log.e(TAG, "Server URL incorrect");
+  protected QwasiRestClient initWithConfig(QwasiConfig config, Qwasi manager){
+    try {
+      session = (HttpURLConnection) mServer.openConnection();
+      session.setDoOutput(true);
+      session.setDoInput(true);
+    }catch (IOException e ){
+      e.printStackTrace();
+      Log.e(TAG, "Server URL incorrect");
+    }
+    return this;
+  }
+
+  private String parseMethod(String method){
+    String[] methods = method.split("\\.");
+    switch(methods[0]){
+      case "device":
+        switch (methods[1]){
+          case "register":
+            return  "POST";
+          case "set_user_token":
+            //fallthough
+          case "set_push_token":
+            //fallthough
+          case "set_data":
+            return  "PUT";
+          case "unregister":
+            return  "DELETE";
+          case "get_data":
+            return "GET";
+        }//device setup
+      case "message":
+        switch (methods[1]){
+          case "fetch":
+            //fallthough
+          case "poll":
+            return "GET";
+          case "send":
+            return "POST";
         }
-        return this;
-    }
-
-    private String parseMethod(String method){
-        String[] methods = method.split("\\.");
-        switch(methods[0]){
-            case "device":
-                switch (methods[1]){
-                    case "register":
-                        return  "POST";
-                    case "set_user_token":
-                    case "set_push_token":
-                    case "set_data":
-                        return  "PUT";
-                    case "unregister":
-                        return  "DELETE";
-                    case "get_data":
-                        return "GET";
-                }//device setup
-            case "message":
-                switch (methods[1]){
-                    case "fetch":
-                    case "poll":
-                        return "GET";
-                    case "send":
-                        return "POST";
-                }
-            case "event":
-                return "PUT";//new event or update?
-                //return "POST";
-            case "location":
-                return "GET";
-            case "channel":
-                return "PUT";
-            case "member":
-                switch (methods[1]) {
-                    case "set":
-                    case "set_auth":
-                        return "PUT";
-                    case "get":
-                        return "GET";
-                    case "auth":
-                        return "POST";
-                }
-            default: //will never happen
-                return null;
+      case "event":
+        return "PUT";//new event or update?
+        //return "POST";
+      case "location":
+        return "GET";
+      case "channel":
+        return "PUT";
+      case "member":
+        switch (methods[1]) {
+          case "set":
+            //fallthough
+          case "set_auth":
+            return "PUT";
+          case "get":
+            return "GET";
+          case "auth":
+            return "POST";
         }
+      default: //will never happen
+        return null;
     }
+  }
 
-    @Override
-    void invokeMethod(String method, Map<String, Object> params, Qwasi.QwasiInterface callback) {
-        callRestMethod(method, params, callback);
-    }
+  @Override
+  void invokeMethod(String method, Map<String, Object> params, Qwasi.QwasiInterface callback) {
+    callRestMethod(method, params, callback);
+  }
 
-    @Override
-    void invokeNotification(String method, Map<String, Object> params, Qwasi.QwasiInterface callbacks) {
-        callRestMethod(method, params, callbacks);
-    }
+  @Override
+  void invokeNotification(String method, Map<String, Object> params, Qwasi.QwasiInterface callbacks) {
+    callRestMethod(method, params, callbacks);
+  }
 
-    private String mapToURIQueryString(Map<String, Object>params){
-        StringBuilder builder = new StringBuilder();
-        for (Map.Entry<String, Object> entry: params.entrySet()){
-            if (builder.length() > 0) builder.append('&');
-            try {
-                builder.append(URLEncoder.encode(entry.getKey(), UTF_8))
-                        .append('=')
-                        .append(URLEncoder.encode(entry.getValue().toString(), UTF_8));
-            }catch (UnsupportedEncodingException e){
-                e.printStackTrace();
-            }
-        }
-        return builder.toString();
+  private String mapToURIQueryString(Map<String, Object>params){
+    StringBuilder builder = new StringBuilder();
+    for (Map.Entry<String, Object> entry: params.entrySet()){
+      if (builder.length() > 0) {
+        builder.append('&');
+      }
+      try {
+        builder.append(URLEncoder.encode(entry.getKey(), UTF_8))
+            .append('=')
+            .append(URLEncoder.encode(entry.getValue().toString(), UTF_8));
+      } catch (UnsupportedEncodingException e){
+        e.printStackTrace();
+      }
     }
+    return builder.toString();
+  }
 
-    private void callRestMethod(String method, Map<String, Object> params, Qwasi.QwasiInterface callbacks){
-        String restMethod = parseMethod(method);
-        if (restMethod == null)
-            return;
-        try {
-            session.setRequestMethod(restMethod);
-            OutputStream output = session.getOutputStream();
-            String query = mapToURIQueryString(params);
-            //output.
-        }catch (IOException e){
-            e.printStackTrace();
-        }
+  private void callRestMethod(String method, Map<String, Object> params, Qwasi.QwasiInterface callbacks){
+    String restMethod = parseMethod(method);
+    if (restMethod == null)
+      return;
+    try {
+      session.setRequestMethod(restMethod);
+      OutputStream output = session.getOutputStream();
+      String query = mapToURIQueryString(params);
+      //output.
+    }catch (IOException e){
+      e.printStackTrace();
     }
+  }
 }
