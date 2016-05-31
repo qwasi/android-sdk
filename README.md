@@ -1,5 +1,7 @@
 # Qwasi
 
+[![MIT License](http://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/peter-edge/dlog-go/blob/master/LICENSE)
+
 The Qwasi `Android SDK` provides a convenient method for accessing the Qwasi JSON-RPC API.
 
 ## Usage
