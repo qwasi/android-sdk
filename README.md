@@ -655,3 +655,22 @@ Example Sender:
              payload, null, "chatMessage");
     qwasi.sendMessage(welcome,  "scurry88");
 ```
+
+## Zero Data Proxies
+
+Qwasi platform supports a reverse proxy service in the Qwasi object, service can be set up from QWASI.
+The proxy server will need to be saved into the manifest under the "zerodatarequest" meta flag.  This
+will allow the Qwasi Object to build a UrlConnection using the url and port provided.  When you provide
+this connection will provide a url you want to navigate to.
+
+Example:
+
+```java
+    HttpUrlConnection proxy = (HttpUrlConnection) qwasi.mZeroDataRequest("http://www.youtube.com");
+    proxy.getContent();
+    ...
+```
+
+###### SDK EVENT - N/A
+###### SDK ERROR - 'NONE'
+###### API METHOD - N/A
