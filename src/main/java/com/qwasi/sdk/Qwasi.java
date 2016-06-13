@@ -35,10 +35,12 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.Manifest;
 import android.support.annotation.Nullable;
@@ -49,6 +51,9 @@ import android.util.Log;
 import io.hearty.witness.Reporter;
 import io.hearty.witness.Witness;
 
+import org.apache.http.HttpHost;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,6 +63,12 @@ import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
+import java.net.Proxy;
+import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -108,6 +119,7 @@ public class Qwasi{
   public Boolean useLocalNotifications;
   /*package*/ Boolean mHasClosedUnread;
   static private Qwasi instance;
+  private String mZeroDataProxy;
   final String TAG = "Qwasi";
   final static public String QWASI_REGISTERED = "registered";
   final static public String QWASI_DEVICE_TOKEN = "QwasiDeviceToken";
@@ -174,6 +186,7 @@ public class Qwasi{
     config.configWithFile(); //default
     if (config.isValid()) {
       initWithConfig(config, "");
+      mZeroDataProxy = getmZeroDataProxy();
     } else {
       Log.e(TAG, "Config in Manifest not valid; Please init with valid config.");
     }
@@ -239,6 +252,42 @@ public class Qwasi{
       default:
         return "Android Unknown";   //24+ or other
     }
+  }
+
+  public URLConnection mZeroDataRequest(String url){
+    try {
+      if (mZeroDataProxy != null) {
+        Proxy requester = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(mZeroDataProxy, 3128));
+        URL tempurl = new URL(url);
+        return tempurl.openConnection(requester);
+      } else return null;
+    } catch (IOException e){
+      Log.e(TAG, "Failed to connect to "+ url + " using zerodatarequest: "+e.getMessage());
+      return null;
+    }
+    //return null;
+  }
+
+  String getmZeroDataProxy(){
+    try {
+      final Bundle metaData = sMainApplication.getPackageManager().getApplicationInfo
+          (sMainApplication.getPackageName(), PackageManager.GET_META_DATA).metaData;
+      if (((metaData != null)&&(!metaData.isEmpty()) && metaData.containsKey("zerodatarequest"))){
+        String proxyAddr = metaData.getString("zerodatarequest", "");
+        Authenticator auth = new Authenticator() {
+          public PasswordAuthentication getPasswordAuthentication() {
+            return (new PasswordAuthentication(config.application, config.key.toCharArray()));
+          }
+        };
+        Authenticator.setDefault(auth);
+        return proxyAddr;
+      }
+    } catch (PackageManager.NameNotFoundException e){
+      Log.e(TAG, "PackageName not found, check your packagename");
+    } catch (NullPointerException e){
+      Log.e(TAG, "ZeroDataRequest field is null");
+    }
+    return null;
   }
 
   /**
