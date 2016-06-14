@@ -257,7 +257,9 @@ public class Qwasi{
   public URLConnection mZeroDataRequest(String url){
     try {
       if (mZeroDataProxy != null) {
-        Proxy requester = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(mZeroDataProxy, 3128));
+        String[] ip = mZeroDataProxy.split(":");
+        Proxy requester = new Proxy(Proxy.Type.HTTP,
+            new InetSocketAddress(ip[0], Integer.parseInt(ip[1])));
         URL tempurl = new URL(url);
         return tempurl.openConnection(requester);
       } else return null;
