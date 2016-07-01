@@ -30,15 +30,21 @@
  */
 package com.qwasi.sdk;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.app.RemoteInput;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.EditText;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -127,6 +133,45 @@ public class QwasiService extends Service {
       }
     }
   };
+
+  /**
+   * Handles Reply interaction from the Notification if reply is clicked.
+   * @param recieves a intent from the notification with the context of the message as an extra
+   *                 with the key of message
+   */
+  public static class replyActivity extends Activity{
+    @Override
+    public void onCreate(Bundle savedInstance){
+      super.onCreate(savedInstance);
+      Log.i(TAG, "reply would have helped");
+      AlertDialog.Builder builder = new AlertDialog.Builder(this);
+      final String extras = getIntent().getStringExtra("message");
+      final EditText reply =new EditText(this);
+      builder.setTitle("Reply")
+          .setMessage("Please enter your reply")
+          .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              try {
+                mQwasi.postEvent("com.qwasi.event.message.mo", new JSONObject(extras)
+                    .put("reply", reply.getText().toString()), false);
+              } catch (JSONException e){
+                e.printStackTrace();
+              }
+              finish();
+            }
+          })
+          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              finish();
+            }
+          })
+          .setView(reply)
+          .create()
+          .show();
+    }
+  }
 
   /**
    * Sends a QwasiMessage to the custom notification builder

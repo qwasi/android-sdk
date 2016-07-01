@@ -69,9 +69,16 @@ public class QwasiNotificationManager{
     try {
       ApplicationInfo appinfo = mContext.getPackageManager().
           getApplicationInfo(mContext.getPackageName(), PackageManager.GET_META_DATA);
-      Object temp = appinfo.metaData.containsKey(GCM_SENDERID)? //has senderid in manifest
-          appinfo.metaData.get(GCM_SENDERID): //get it
+      Object temp;
+      if (appinfo.metaData != null) {
+        temp = appinfo.metaData.containsKey(GCM_SENDERID) ? //has senderid in manifest
+          appinfo.metaData.get(GCM_SENDERID) : //get it
           DEFAULT_SENDER;  //or set to default, default also included in case android munges it
+      }
+      else {
+        Log.e(TAG, "MetaData is null");
+        temp = new Object();
+      }
       mSenderId = temp instanceof String? temp.toString(): "";
     }catch (PackageManager.NameNotFoundException e) {
       mSenderId = DEFAULT_SENDER; //default

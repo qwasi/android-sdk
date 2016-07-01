@@ -63,6 +63,7 @@ public class QwasiMessage{
   public Boolean selected;
   public Boolean fetched;
   public JSONObject context;
+  Boolean interactive;
   Object mEncodedPayload;
   Boolean mClosedMessage;
   String TAG = "QwasiMessage";
@@ -72,6 +73,7 @@ public class QwasiMessage{
     tags = new JSONArray();
     mtags = tags;
     mClosedMessage = false;
+    interactive = true;
     application = "";
     messageId = "";
     alert = "";
@@ -92,6 +94,7 @@ public class QwasiMessage{
       context = (data.has("context")) ? data.getJSONObject("context") : context;
       tags = (data.has("tags")) ? data.getJSONArray("tags") : tags;
       mEncodedPayload = (data.has("payload")) ? data.get("payload") : mEncodedPayload;
+      interactive = (data.has("interactive")) ? data.getBoolean("interactive") : interactive;
       malert = alert;
       selected = QwasiAppManager.getstatus();
       //dateformater = date
@@ -190,5 +193,9 @@ public class QwasiMessage{
 
   public void postDlr(String type){
     Qwasi.getInstance(Qwasi.getsMainApplication()).postDlr(type, messageId, context);
+  }
+
+  public void reply(String replytext, JSONObject context){
+    Qwasi.getInstance(Qwasi.getsMainApplication()).postEvent("message.mo", context, false);
   }
 }

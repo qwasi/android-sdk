@@ -48,6 +48,14 @@
                 <action android:name="com.qwasi.sdk.QwasiService.RECEIVE"/>
             </intent-filter>
         </service>
+        <activity android:name=".QwasiService$replyActivity"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="com.qwasi.sdk.QwasiService.REPLY"/>
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
