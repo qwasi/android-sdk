@@ -37,7 +37,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import java.util.HashMap;
 
@@ -88,12 +87,14 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<>();
         event = mSharedApplication.kEventApplicationState;
         data.put("", "");
-        if (postEvent.getState() == Thread.State.TERMINATED)
+        if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
+        }
         ++mResumed;
         if (!managerNull()) {
-            if (!mSharedApplication.locationManager.manager.isConnected())
+            if (!mSharedApplication.locationManager.manager.isConnected()) {
                 mSharedApplication.locationManager.manager.connect();
+            }
         }
     }
 
@@ -101,8 +102,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
     public void onActivityPaused(Activity activity){
         android.util.Log.d(TAG, "ActivityPaused");
         ++mPaused;
-        if (!managerNull())
+        if (!managerNull()) {
             mSharedApplication.locationManager.manager.disconnect();
+        }
         android.util.Log.w(TAG, "application is in foreground: " + isApplicationInForeground());
     }
 
@@ -131,8 +133,9 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
         data = new HashMap<>();
         event = mSharedApplication.kEventApplicationState;
         data.put("", "");
-        if (!managerNull())
+        if (!managerNull()) {
             mSharedApplication.locationManager.manager.disconnect();
+        }
         if (postEvent.getState() == Thread.State.TERMINATED) {
             postEvent.start();
         }
@@ -150,7 +153,8 @@ public class QwasiAppManager implements Application.ActivityLifecycleCallbacks{
      * @return
      */
     static public boolean isApplicationStopped(){
-        return (PreferenceManager.getDefaultSharedPreferences(Qwasi.getContext()).contains("QwasiStopped"));
+        return (PreferenceManager.getDefaultSharedPreferences(
+                Qwasi.getContext()).contains("QwasiStopped"));
     }
 
     /**

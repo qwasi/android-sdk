@@ -45,55 +45,55 @@ import java.util.List;
 import io.hearty.witness.Witness;
 
 public class QwasiGeofencehandler extends IntentService {
-    String TAG = "QwasiGeofence";
+  String TAG = "QwasiGeofence";
 
-    public QwasiGeofencehandler(){
-        super("QwasiGeofence");
-    }
+  public QwasiGeofencehandler(){
+    super("QwasiGeofence");
+  }
 
-    /**
-     * not a bound class, so returns null
-     */
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+  /**
+   * not a bound class, so returns null
+   */
+  @Override
+  public IBinder onBind(Intent intent) {
+    return null;
+  }
 
-    /**
-     * handles geofence intents broadcast from the GoogleLocationAPI
-     * @param input
-     */
-    @Override
-    public void onHandleIntent(Intent input) {
-        synchronized (this) {
-            GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(input);
-            Log.i(TAG, "Geofence Intent");
-            if (geofencingEvent.hasError()) {
-                Log.e("QwasiGeofence", String.valueOf(geofencingEvent.getErrorCode()));
-                return;
-            }
-            HashMap<String, Object> data = new HashMap<>();
-            // Get the transition type.
-            int geofenceTransition = geofencingEvent.getGeofenceTransition();
-            List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
-            //Test that the reported transition was of interest.
-            for (Geofence geofence : triggeringGeofences) {
-                QwasiLocation temp = QwasiLocationManager.getInstance().
-                        regionMap.get(geofence.getRequestId());
-                if (temp != null) {
-                    if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
-                        // Send notification and log the transition details.
-                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
-                        Witness.notify(temp);
-                    } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-                        temp.exit();
-                        Witness.notify(temp);
-                    } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-                        temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
-                        temp.enter();
-                    }
-                }
-            }
+  /**
+   * handles geofence intents broadcast from the GoogleLocationAPI
+   * @param input
+   */
+  @Override
+  public void onHandleIntent(Intent input) {
+    synchronized (this) {
+      GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(input);
+      Log.i(TAG, "Geofence Intent");
+      if (geofencingEvent.hasError()) {
+        Log.e("QwasiGeofence", String.valueOf(geofencingEvent.getErrorCode()));
+        return;
+      }
+      HashMap<String, Object> data = new HashMap<>();
+      // Get the transition type.
+      int geofenceTransition = geofencingEvent.getGeofenceTransition();
+      List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+      //Test that the reported transition was of interest.
+      for (Geofence geofence : triggeringGeofences) {
+        QwasiLocation temp = QwasiLocationManager.getInstance().
+            regionMap.get(geofence.getRequestId());
+        if (temp != null) {
+          if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
+            // Send notification and log the transition details.
+            temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStateInside;
+            Witness.notify(temp);
+          } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            temp.exit();
+            Witness.notify(temp);
+          } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+            temp.mState = QwasiLocation.QwasiLocationState.QwasiLocationStatePending;
+            temp.enter();
+          }
         }
+      }
     }
+  }
 }

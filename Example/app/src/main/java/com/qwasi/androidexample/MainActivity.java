@@ -1,24 +1,26 @@
 package com.qwasi.androidexample;
 
 import android.content.SharedPreferences;
+import android.nfc.NdefMessage;
+import android.nfc.NfcAdapter;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.nfc.Tag;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.qwasi.sdk.Qwasi;
+import com.qwasi.sdk.QwasiConfig;
 import com.qwasi.sdk.QwasiError;
 import com.qwasi.sdk.QwasiMessage;
 
 import io.hearty.witness.Reporter;
 import io.hearty.witness.Witness;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  {
     Qwasi qwasi;
     //EditText log;
     @Override
@@ -33,9 +35,10 @@ public class MainActivity extends AppCompatActivity {
         String name = preferences.getString("name", null);
         String userToken = preferences.getString("userToken", null);
         qwasi = Qwasi.getInstance(getApplication());
-        qwasi.qwasiWithConfig(null);
+        qwasi.qwasiWithConfig(new QwasiConfig(this));
         //log = (EditText) findViewById(R.id.log);
         final Qwasi value = qwasi;
+        qwasi.useLocalNotifications = true;
         qwasi.registerDevice(preferences.getString("QwasiDeviceToken", null), name, userToken, new Qwasi.QwasiInterface() {
             @Override
             public void onSuccess(Object o) {
@@ -107,5 +110,17 @@ public class MainActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
         qwasi.fetchUnreadMessage();
+        if (NfcAdapter.ACTION_TAG_DISCOVERED.equals(getIntent().getAction())){
+            Tag tag = getIntent().getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            Log.d("example", tag.toString());
+        }
+        if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())){
+            Parcelable[] rawMsgs = getIntent().getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+            if (rawMsgs != null){
+                NdefMessage[] msgs = new NdefMessage[rawMsgs.length];
+                for (int index = 0; index < rawMsgs.length; index++)
+                    msgs[index] = (NdefMessage) rawMsgs[index];
+            }
+        }
     }
 }

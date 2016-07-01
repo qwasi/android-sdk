@@ -50,162 +50,163 @@ import java.io.InputStreamReader;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 
 public class QwasiConfig{
-    @Deprecated
-    public URL murl = null;
-    public URL url = murl;
-    @Deprecated
-    public String mapplication = "";
-    public String application = mapplication;
-    @Deprecated
-    public String mkey = "";
-    public String key = mkey;
-    private Context mSharedApplication;
-    private SharedPreferences mSharedPreferences;
-    String TAG = "QwasiConfig";
+  @Deprecated
+  public URL murl = null;
+  public URL url = murl;
+  @Deprecated
+  public String mapplication = "";
+  public String application = mapplication;
+  @Deprecated
+  public String mkey = "";
+  public String key = mkey;
+  private Context mSharedApplication;
+  private SharedPreferences mSharedPreferences;
+  String TAG = "QwasiConfig";
 
-    public QwasiConfig(Context context){
-        mSharedApplication = context;
-        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+  public QwasiConfig(Context context){
+      mSharedApplication = context;
+      mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+  }
+
+  /**
+   * @return default overloading constructor making path nullable.
+   */
+  public QwasiConfig configWithFile(){
+      return this.configWithFile(null);
+  }
+
+  /**
+   * @param path full pathname to file containing settings for a qwasi configuration.
+   * @return A QwasiConfig using 1 of 3 options, file if provided;
+   * from the default sharedPreferences if saved from a custom config;
+   * or from the manifest as a default for most applications.
+   */
+  public QwasiConfig configWithFile(String path){
+    try {
+      return parseInput(path);
+    } catch (FileNotFoundException e){ //file path given was not found
+      Log.e("QwasiError", "File not found "+e.getMessage());
+      Log.d(TAG, "Trying with default manifest");
+      return configWithFile(null); //try again w/o the file
+    } catch (MalformedURLException e){ //if the url provided was fubar
+      Log.e("QwasiError", "Malformed URL in file "+e.getMessage());
+      Log.d(TAG, "Passing to default values");
+      return configWithURL(null, null, null); //try defaults
+    } catch (IOException e) { //if the file failed at reading
+      Log.e("QwasiError", "I/O Error reading file at: " + path);
+      Log.d(TAG, "Trying with default manifest");
+      return configWithFile(null); //try again w/o the file
+    } catch (PackageManager.NameNotFoundException e){ //application was not found
+      Log.e("QwasiError", "Application name not found " + e.getMessage());
+      Log.d(TAG, "Passing to default values");
+      return configWithURL(null, null, null);
     }
+  }
 
-    /**
-     * @return default overloading constructor making path nullable.
-     */
-    public QwasiConfig configWithFile(){
-        return this.configWithFile(null);
-    }
-
-    /**
-     * @param path full pathname to file containing settings for a qwasi configuration.
-     * @return A QwasiConfig using 1 of 3 options, file if provided;
-     * from the default sharedPreferences if saved from a custom config;
-     * or from the manifest as a default for most applications.
-     */
-    public QwasiConfig configWithFile(String path){
-        String apiKey = "";
-        String appID  = "";
-        URL url = null;
-        try {
-            if (path != null){
-                File inFile = new File(path);
-                if (inFile.exists()) {//from stackoverflow.com
-                    FileInputStream fileInputStream = new FileInputStream(inFile);
-                    DataInputStream dataIn = new DataInputStream(fileInputStream);
-                    BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, Charset.forName("UTF-8")));
-                    String line;
-                    String splitString[];
-                    while ((line = readBuffer.readLine()) != null) {
-                        splitString = line.split("\\s");
-                        if (splitString[0].equalsIgnoreCase("apiKey")) {
-                            apiKey = splitString[1];
-                        } else if (splitString[0].equalsIgnoreCase("appID")) {
-                            appID = splitString[1];
-                        } else if (splitString[0].equalsIgnoreCase("apiUrl")) {
-                            url = new URL(splitString[1]);
-                        }
-                    }
-                    readBuffer.close();
-                }
-            } else if((mSharedPreferences.contains("QwasiApiKey"))&&
-                    (mSharedPreferences.contains("QwasiAppId"))&&
-                    (mSharedPreferences.contains("QwasiUrl"))){
-
-                appID = mSharedPreferences.getString("QwasiAppId", "");
-                apiKey= mSharedPreferences.getString("QwasiApiKey", "");
-                url = new URL(mSharedPreferences.getString("QwasiUrl",""));
-            } else{ //read from the Manifest
-                //set up new application info w/  Application.packageManager.getApplicationInfo("application name", get the meta data)
-                PackageManager packageManager = mSharedApplication.getPackageManager();
-                String packageName = mSharedApplication.getPackageName();
-                ApplicationInfo applicationInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
-                Bundle metaData = applicationInfo.metaData;
-                if((metaData != null)&&(!metaData.isEmpty())){  //make sure we have meta data to parse
-                    //start looking for key values
-                    if((metaData.containsKey("apiKey"))&&
-                            (metaData.containsKey("appID"))&&
-                            (metaData.containsKey("apiUrl"))){
-
-                        apiKey = metaData.getString("apiKey", "");
-                        appID  = metaData.getString("appID", "");
-                        url = new URL(metaData.getString("apiUrl", ""));
-                    }
-                }
-            }
+  private QwasiConfig parseInput(String path)
+      throws FileNotFoundException, MalformedURLException, IOException,
+      PackageManager.NameNotFoundException {
+    String apiKey = "";
+    String appID  = "";
+    URL url = null;
+    if (path != null){
+      File inFile = new File(path);
+      if (inFile.exists()) {//from stackoverflow.com
+        FileInputStream fileInputStream = new FileInputStream(inFile);
+        DataInputStream dataIn = new DataInputStream(fileInputStream);
+        BufferedReader readBuffer = new BufferedReader(new InputStreamReader(dataIn, "UTF-8"));
+        String line;
+        String splitString[];
+        while ((line = readBuffer.readLine()) != null) {
+          splitString = line.split("\\s");
+          if (splitString[0].equalsIgnoreCase("apiKey")) {
+            apiKey = splitString[1];
+          } else if (splitString[0].equalsIgnoreCase("appID")) {
+            appID = splitString[1];
+          } else if (splitString[0].equalsIgnoreCase("apiUrl")) {
+            url = new URL(splitString[1]);
+          }
         }
-        catch (FileNotFoundException e){ //file path given was not found
-            Log.e("QwasiError", "File not found "+e.getMessage());
-            Log.d(TAG, "Trying with default manifest");
-            return configWithFile(null); //try again w/o the file
+        readBuffer.close();
+      }
+    } else if((mSharedPreferences.contains("QwasiApiKey")) &&
+        (mSharedPreferences.contains("QwasiAppId")) && (mSharedPreferences.contains("QwasiUrl"))) {
+      appID = mSharedPreferences.getString("QwasiAppId", "");
+      apiKey= mSharedPreferences.getString("QwasiApiKey", "");
+      url = new URL(mSharedPreferences.getString("QwasiUrl",""));
+    } else { //read from the Manifest set up new application info w/
+      PackageManager packageManager = mSharedApplication.getPackageManager();
+      String packageName = mSharedApplication.getPackageName();
+      ApplicationInfo applicationInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
+      Bundle metaData = applicationInfo.metaData;
+      if((metaData != null)&&(!metaData.isEmpty())){  //make sure we have meta data to parse
+        //start looking for key values
+        if((metaData.containsKey("apiKey")) && (metaData.containsKey("appID")) &&
+            (metaData.containsKey("apiUrl"))) {
+          apiKey = metaData.getString("apiKey", "");
+          appID  = metaData.getString("appID", "");
+          url = new URL(metaData.getString("apiUrl", ""));
         }
-        catch (MalformedURLException e){ //if the url provided was fubar
-            Log.e("QwasiError", "Malformed URL in file "+e.getMessage());
-            Log.d(TAG, "Passing to default values");
-            return configWithURL(null, null, null); //try defaults
-        }
-        catch (IOException e) { //if the file failed at reading
-            Log.e("QwasiError", "I/O Error reading file at: " + path);
-            Log.d(TAG, "Trying with default manifest");
-            return configWithFile(null); //try again w/o the file
-        }
-        catch (PackageManager.NameNotFoundException e){ //application was not found
-            Log.e("QwasiError", "Application name not found " + e.getMessage());
-            Log.d(TAG, "Passing to default values");
-            return configWithURL(null, null, null);
-        }
-        return initWithURL(url, appID, apiKey);
+      }
+    }
+    return initWithURL(url, appID, apiKey);
+  }
+
+  /**
+   * public interface for initWithUrl
+   * @param iurl url from user or from configwithfile
+   * @param iapp appId
+   * @param ikey
+   * @return either a valid config or an config w/ invalid values in it.
+   */
+  public QwasiConfig configWithURL(URL iurl, String iapp, String ikey){
+    return initWithURL(iurl, iapp, ikey);
+  }
+
+  private QwasiConfig initWithURL(URL input, String App, String Key){
+    murl = input;
+    url = murl;
+    if (url == null){
+      try {
+        url = new URL("https://api.qwasi.com/v1:8000");
+      }
+      catch (MalformedURLException e){
+        System.err.println("Malformed URL Exeption: "+e.getMessage());
+      }
+    } else {
+      mSharedPreferences.edit().putString("QwasiUrl", url.getHost());
     }
 
-    /**
-     * public interface for initWithUrl
-     * @param iurl url from user or from configwithfile
-     * @param iapp appId
-     * @param ikey
-     * @return either a valid config or an config w/ invalid values in it.
-     */
-    public QwasiConfig configWithURL(URL iurl, String iapp, String ikey){
-        return initWithURL(iurl, iapp, ikey);
+    mapplication = App;
+    application = mapplication;
+    if (application == null) {
+      application = "INVAILD_APP_ID";
+    } else {
+      mSharedPreferences.edit().putString("QwasiAppId", application);
     }
 
-    private QwasiConfig initWithURL(URL input, String App, String Key){
-        murl = input;
-        url = murl;
-        if (url == null){
-            try {
-                url = new URL("https://api.qwasi.com/v1:8000");
-            }
-            catch (MalformedURLException e){
-                System.err.println("Malformed URL Exeption: "+e.getMessage());
-            }
-        } else mSharedPreferences.edit().putString("QwasiUrl", url.getHost());
-
-        mapplication = App;
-        application = mapplication;
-        if (application == null){
-            application = "INVAILD_APP_ID";
-        }else mSharedPreferences.edit().putString("QwasiAppId", application);
-
-        mkey = Key;
-        key = mkey;
-        if (key == null){
-            key = "INVAILD_API_KEY";
-        } else mSharedPreferences.edit().putString("QwasiApiKey", key);
-        mSharedPreferences.edit().apply();
-        return this;
+    mkey = Key;
+    key = mkey;
+    if (key == null) {
+      key = "INVAILD_API_KEY";
+    } else {
+      mSharedPreferences.edit().putString("QwasiApiKey", key);
     }
+    mSharedPreferences.edit().apply();
+    return this;
+  }
 
-    /**
-     * checks to see if the configuration is valid, I.E. did it get initialized without an issue.
-     * @return
-     */
-    public boolean isValid(){
-
-        return!((url == null)|| //if url is null
-                ((application == null) || //or if application is null, or (it's empty or invalid)
-                        (application.equalsIgnoreCase("")|| application.equalsIgnoreCase("INVAILD_APP_ID")))||
-                ((key == null) || //or if key is null, or it's empty or invalid
-                        (key.equalsIgnoreCase("")|| key.equalsIgnoreCase("INVAILD_API_KEY"))));
-    }
+  /**
+   * checks to see if the configuration is valid, I.E. did it get initialized without an issue.
+   * @return
+   */
+  public boolean isValid(){
+    return!((url == null)|| //if url is null
+        ((application == null) || //or if application is null, or (it's empty or invalid)
+             (application.equalsIgnoreCase("")|| application.equalsIgnoreCase("INVAILD_APP_ID"))) ||
+        ((key == null) || //or if key is null, or it's empty or invalid
+            (key.equalsIgnoreCase("")|| key.equalsIgnoreCase("INVAILD_API_KEY"))));
+  }
 }
