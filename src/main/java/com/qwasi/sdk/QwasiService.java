@@ -153,8 +153,10 @@ public class QwasiService extends Service {
             @Override
             public void onClick(DialogInterface dialog, int which) {
               try {
-                mQwasi.postEvent("com.qwasi.event.message.mo", new JSONObject(extras)
-                    .put("reply", reply.getText().toString()), false);
+                JSONObject bundles = new JSONObject()
+                    .put("text", reply.getText().toString())
+                    .put("context", extras);
+                QwasiMessage.reply(bundles);
               } catch (JSONException e){
                 e.printStackTrace();
               }
